@@ -4,6 +4,7 @@
 *.log
 *.pyc
 *.swp
+mcp-auth.json
 .buildlog/
 .history
 
@@ -117,3 +118,9 @@ app.*.symbols
 !**/ios/**/default.perspectivev3
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
 !/dev/ci/**/Gemfile.lock
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
+.beads/proxieddb/

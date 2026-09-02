@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "expert_listing",
+  "project_id": "15dcf6f4-b522-47ae-96bc-30e973712d74"
+}
