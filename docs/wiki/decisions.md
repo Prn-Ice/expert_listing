@@ -1,0 +1,82 @@
+# Decisions
+
+These entries answer questions whose rationale would otherwise be expensive to
+recover from code. The specification remains authoritative.
+
+## Why Hono instead of bare Deno handlers?
+
+Use Hono as a thin router inside one Supabase Edge Function named api. Supabase
+hosts and executes the function; Hono is not an edge-function provider.
+
+Readable route declarations, small middleware, centralized error mapping, and
+direct Request-to-Response tests justify the dependency. Controllers, an ORM,
+and a DI container would add ceremony without simplifying this assessment.
+Revisit bare Deno only if Hono stops supporting the selected stable Deno or
+Supabase runtime, or the API becomes so small that routing no longer earns a
+dependency.
+
+## Why Riverbloc?
+
+Riverpod owns configuration and object lifecycles; Bloc/Cubit owns feature
+behaviour; Riverbloc connects them without adding flutter_bloc.
+
+That split makes dependencies replaceable while keeping feed races and mutation
+reconciliation explicit and testable. Its trade-off is sensitivity to Riverpod
+lifecycle APIs. Revisit only if the packages become incompatible or a verified
+lifecycle test shows the bridge cannot close instances exactly once.
+
+## Why cursor pagination instead of offsets?
+
+Use the ordered tuple created_at descending, id descending and encode the last
+returned tuple in an opaque versioned cursor.
+
+Offsets can duplicate or skip rows when new posts arrive between requests. A
+cursor is slightly more work to validate but preserves stable continuation.
+Revisit only if the product needs random page access or a different ranking key;
+any replacement must prove insertion and tied-timestamp behaviour.
+
+## Why does the repository own offline fallback?
+
+Dio owns transport, and cache packages own persisted response mechanics. The
+repository owns failure classification, freshness, invalidation, and the words
+shown to users.
+
+Automatic cache fallback can hide whether a device is offline or the service
+failed, making stale data look fresh. Explicit fallback costs a little code but
+keeps the product honest. Revisit when an admitted cache library exposes the
+same provenance contract transparently and real persistence tests prove it.
+
+## Why is Storage public-read and server-write?
+
+The assessment needs durable images without implementing auth. Hono writes
+unique paths using its server-only credential and returns public URLs; Flutter
+only downloads those bytes.
+
+This simplifies viewing but is not a production privacy model. Revisit before
+real user or private listing data, when authentication, ownership policies,
+signed URLs, abuse controls, and retention rules must be designed together.
+
+## What belongs to Nix and what remains on the host?
+
+Nix provides the command-line toolchain. Flutter, Android tooling, emulator
+assets, Xcode, and container runtime state remain on the host so entering the
+project does not download mobile SDKs or start services.
+
+The trade-off is weaker fresh-machine reproduction of the mobile toolchain.
+Revisit when onboarding a machine without a working host setup.
+
+## Why are tests selected by promise rather than coverage?
+
+Test the browse/filter/paginate, create-and-reopen-images, and
+like/comment/persistence journeys against real boundaries. Repository fakes are
+appropriate for state-machine tests; Hono, Postgres, Storage, and disk
+persistence need integration evidence.
+
+Revisit a test when its protected risk disappears or a cheaper test proves the
+same contract. Coverage percentage is not the goal.
+
+## Why are goldens, Realtime, video posts, and queued writes deferred?
+
+They add baseline churn, ordering complexity, media failure modes, or conflict
+behaviour before the core is proven. Do not scaffold them during the
+assessment; [roadmap.md](roadmap.md) defines their entry and completion gates.

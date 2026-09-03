@@ -1,18 +1,49 @@
-# Roadmap
+# Deferred roadmap
 
-This page contains intentionally deferred work. Active implementation work is
-tracked in Beads, not here.
+All items below begin only after `v0.1.0` is published and independently
+verified. Active work belongs in Beads. Dark mode is required for the assessment
+and is not deferred.
 
 ## Golden tests
 
-Golden tests are not configured. Add them after the feed, post card, sheets,
-offline, empty, and error states are stable in a released build and match the
-Figma reference in a manual overlay review. Until then, widget structure and
-behaviour tests provide faster, less brittle feedback.
+Early baselines would preserve screen churn rather than confidence. Start after
+all three real journeys pass and the manual Figma overlay is accepted.
 
-## Commitlint
+The smallest complete slice covers stable feed, post card, filter, comments,
+create-post, offline, empty, error, light, and dark states at 428 and 360 logical
+pixels.
+Claim completion only with deterministic CI results and reviewed baseline
+provenance.
 
-Commitlint is deferred until the first verified release. Current commits use
-Conventional Commit messages by convention. Add local and CI enforcement only
-when it protects an established release workflow rather than delaying product
-work.
+## Supabase Realtime
+
+REST pagination and mutation reconciliation must be trustworthy before adding
+another ordering source. Start after cursor and desired-state mutation behaviour
+is stable.
+
+The smallest complete slice merges insert, update, and delete events by ID
+without duplicates, preserves cursor order, reconnects through a REST resync,
+and passes real-backend disconnect and reconnection tests.
+
+## Post video support
+
+Reliable bounded image upload, rollback, and rendering come first. Start after
+image validation and cleanup are stable.
+
+The smallest complete slice validates bytes, uploads and persists the media,
+generates a poster or thumbnail, renders and controls playback, supports retry
+and accessibility, and removes uploaded objects after cancellation or failure
+on a real device.
+
+## Offline mutation outbox
+
+Queued writes are unsafe until read provenance, idempotency, and online
+mutations are proven. Start after cache and mutation behaviour is trustworthy.
+
+The smallest complete slice defines the conflict policy, persists queued intent,
+shows pending and failed states, guarantees idempotent ordered replay, supports
+cancellation, and proves reconnection behaviour with real tests.
+
+Other boundaries remain those listed in the specification's
+[scope section](../spec/expert-listing-assessment.md#6-scope). Do not scaffold an
+excluded capability.

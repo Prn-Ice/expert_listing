@@ -128,3 +128,5 @@ app.*.symbols
 .direnv/
 .env.local
 .agent/plans/
+2026-09-02-expert-listing-assessment-handoff.md
+2026-09-02-expert-listing-assessment-plan.md

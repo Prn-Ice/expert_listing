@@ -1,50 +1,111 @@
 # Design system
 
-## Reference
+This page records measured design facts and shared UI contracts. Product scope
+is defined by the [assessment specification](../spec/expert-listing-assessment.md).
 
-The primary visual reference is Figma frame `[private design node removed]`, rendered at 428 logical
-pixels wide. Implement the header, stories, filters, composer, posts, and bottom
-navigation from that reference. Use the captured image as a comparison aid, not
-as a UI asset:
+## Design source and provenance
 
-`apps/expert_listing/assets/design/[private reference removed]`
+The primary reference is Figma node [private design node removed], “iPhone 14 Plus - 1312,” at 428
+logical pixels wide. Header node [private design node removed] contains the full Expert Listing logo
+and distinct mark.
 
-Captured icons and images live in `apps/expert_listing/assets/icons/` and
-`apps/expert_listing/assets/images/`. Keep asset names stable so widgets do not
-depend on Figma node identifiers.
+Use that node for measurements, variables, screenshots, and exact exports. The
+local screenshot at
+`../../apps/expert_listing_mobile/assets/design/[private reference removed]` is an
+overlay aid, never an app asset.
 
-## Color
+Captured icons live under
+`../../apps/expert_listing_mobile/assets/icons/` and reference imagery under
+`../../apps/expert_listing_mobile/assets/images/`. Before calling an asset
+final, record its Figma node and verify the committed bytes. Widgets use
+semantic asset names, not Figma IDs.
 
-Use semantic names in Flutter themes instead of scattering raw color values.
+The exact brand mark, wordmark, Open Runde files in weights 400, 500, 600, and
+700, and the OFL 1.1 licence must be committed before branded UI is complete.
+Do not recreate unavailable assets, use google_fonts, or permit silent fallback.
 
-| Role | Value |
+## Semantic colour roles
+
+The observed light reference currently establishes these roles:
+
+| Role | Light value |
 | --- | --- |
-| Canvas | `#ffffff` |
-| Surface | `#f4f4f4` |
-| Subtle surface | `#00000005` |
-| Primary text | `#1a1a1a` |
-| Secondary text | `#434343` |
-| Tertiary text | `#7c7c7c` |
-| Brand | `#a8dc66` |
-| Brand text | `#4f7a1f` |
-| Brand tint | `#f6fbef` |
-| Accent text | `#5b21b6` |
-| Accent tint | `#f7f3ff` |
+| Canvas | #ffffff |
+| Surface | #f4f4f4 |
+| Subtle surface | #00000005 |
+| Primary text | #1a1a1a |
+| Secondary text | #434343 |
+| Tertiary text | #7c7c7c |
+| Brand | #a8dc66 |
+| Brand text | #4f7a1f |
+| Brand tint | #f6fbef |
+| Accent text | #5b21b6 |
+| Accent tint | #f7f3ff |
 
-## Typography
+These values become named theme roles in app_ui; widgets do not repeat raw
+colour literals.
 
-The design uses Open Runde. Captured text roles use 12, 13, 14, and 16 px sizes
-with a 1.2 line height. Do not declare the font in the app until its source
-files and OFL license are available in the repository.
+Light mode is the Figma target. Dark mode is also required, follows system
+brightness, and reuses the same semantic roles without per-widget inversion or
+an invented theme selector. Record the reviewed dark palette and contrast
+evidence here when implemented.
 
-## Themes
+## Spacing, type, shape, and motion
 
-The Figma light appearance is the default. Dark mode must reuse the same
-semantic color roles rather than invert individual widgets. The supplied design
-has no visible theme selector.
+Observed text roles use 12, 13, 14, and 16 logical pixels with a 1.2 line
+height. Record the role-to-size and weight mapping with font provenance when the
+font files are committed.
 
-## Brand assets
+Define finite spacing, radius, border, icon, and interaction scales from
+repeated measurements. Keep one-off geometry as a named local constant with its
+Figma node noted.
 
-The only approved brand assets are `brand-mark.svg` and `brand-wordmark.svg`.
-Their direct exports are unavailable because of the Figma Starter-plan MCP
-limit. Do not recreate, approximate, or substitute them.
+Motion tokens remain small and explain touch feedback, state, or continuity.
+Reduced-motion settings remove translation, scale, bounce, shimmer, and
+repetitive animation.
+
+## Shared component contracts
+
+Implement these only where the repeated contract is used:
+
+- AppIcon renders an exact committed SVG with correct semantics.
+- AppIconButton preserves the Figma glyph size inside at least a 48 by 48
+  logical-pixel hit region, including focus, tooltip, semantics, platform press
+  feedback, and optional restrained haptic feedback.
+- AppSheet applies the shared design identity with current platform mechanics.
+- AppNotice provides one safe-area-aware transient message and prevents queues.
+- OfflineStatusBar persistently describes saved-feed provenance.
+
+Ordinary buttons and fields use themed semantic Flutter controls. The product
+feature is create_post: the feed row is CreatePostPrompt and the opened surface
+is CreatePostSheet. Avoid the ambiguous term composer.
+
+## Interaction quality
+
+Every interactive element must perform its specified action or show the
+specified boundary notice. Static metadata does not need a tap handler.
+
+Validate stable geometry, immediate feedback, sharp imagery, keyboard and
+safe-area behaviour, accessibility semantics, and restrained motion. Do not add
+blur, glass effects, pervasive shimmer, parallax, or tap haptics without a
+specific requirement.
+
+Notices contain one plain sentence, do not stack, do not expose raw exceptions,
+and do not announce success already visible on screen.
+
+## Validation
+
+Before release, record:
+
+- a 428-pixel light-mode screenshot overlay;
+- one 360-logical-pixel clipping and overflow check;
+- complete feed and core-sheet dark-mode screenshots at 428 and 360 logical
+  pixels;
+- system appearance transition behaviour;
+- icon family, stroke, spacing, typography, radii, and image ratio checks;
+
+Filter, comments, and create-post sheets are not supplied in Figma. Their
+restrained platform-appropriate design is an explicit assumption and must reuse
+the shared tokens.
+
+Use manual overlays plus behaviour and semantics tests for assessment evidence.
