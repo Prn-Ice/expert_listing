@@ -1,12 +1,173 @@
-import 'package:flutter_test/flutter_test.dart';
+import 'dart:ui' show Tristate;
 
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('adds one to input values', () {
-    final calculator = Calculator();
-    expect(calculator.addOne(2), 3);
-    expect(calculator.addOne(-7), -6);
-    expect(calculator.addOne(0), 1);
+  group('AppTheme', () {
+    test('light and dark themes share the Open Runde family', () {
+      final light = AppTheme.light();
+      final dark = AppTheme.dark();
+
+      expect(light.textTheme.bodyMedium?.fontFamily, AppTypography.fontFamily);
+      expect(dark.textTheme.bodyMedium?.fontFamily, AppTypography.fontFamily);
+      expect(AppTypography.fontFamily, contains('Open Runde'));
+    });
+
+    test('light and dark themes carry the same semantic roles', () {
+      final lightColors = AppTheme.light().extension<AppColors>()!;
+      final darkColors = AppTheme.dark().extension<AppColors>()!;
+
+      // Same roles, different values: identity roles stay stable.
+      expect(lightColors.brand, darkColors.brand);
+      expect(lightColors.canvas, isNot(darkColors.canvas));
+      expect(lightColors.textPrimary, isNot(darkColors.textPrimary));
+      expect(lightColors.accentTint, isNot(darkColors.accentTint));
+    });
+
+    test('themed surfaces and system bars follow their active roles', () {
+      final light = AppTheme.light();
+      final dark = AppTheme.dark();
+
+      expect(light.colorScheme.surface, AppColors.light.surface);
+      expect(dark.colorScheme.surface, AppColors.dark.surface);
+      expect(light.bottomSheetTheme.backgroundColor, AppColors.light.canvas);
+      expect(dark.bottomSheetTheme.backgroundColor, AppColors.dark.canvas);
+      expect(
+        light.appBarTheme.systemOverlayStyle?.statusBarIconBrightness,
+        Brightness.dark,
+      );
+      expect(
+        dark.appBarTheme.systemOverlayStyle?.statusBarIconBrightness,
+        Brightness.light,
+      );
+    });
+  });
+
+  group('AppIconButton', () {
+    Widget harness(Widget child, {ThemeData? theme}) {
+      return MaterialApp(
+        theme: theme ?? AppTheme.light(),
+        home: Scaffold(body: Center(child: child)),
+      );
+    }
+
+    testWidgets('keeps the measured glyph inside a 48x48 hit region', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        harness(
+          AppIconButton(
+            icon: AppIcons.heart,
+            tooltip: 'Like',
+            iconSize: AppIconSize.small,
+            onPressed: () => taps++,
+          ),
+        ),
+      );
+
+      final region = tester.getSize(find.byType(SizedBox).first);
+      expect(region.width, AppIconSize.tapTarget);
+      expect(region.height, AppIconSize.tapTarget);
+
+      // The visible glyph keeps its measured size.
+      final icon = tester.widget<AppIcon>(find.byType(AppIcon));
+      expect(icon.size, AppIconSize.small);
+
+      // Tapping the edge of the region still activates the control.
+      await tester.tapAt(tester.getTopLeft(find.byType(SizedBox).first));
+      expect(taps, 1);
+    });
+
+    testWidgets('exposes tooltip and button semantics', (tester) async {
+      await tester.pumpWidget(
+        harness(
+          AppIconButton(
+            icon: AppIcons.bookmark,
+            tooltip: 'Bookmark',
+            onPressed: () {},
+          ),
+        ),
+      );
+
+      expect(find.byTooltip('Bookmark'), findsOneWidget);
+      final semantics = tester.getSemantics(find.bySemanticsLabel('Bookmark'));
+      expect(semantics.flagsCollection.isButton, isTrue);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isTrue);
+    });
+
+    testWidgets('disabled state announces itself', (tester) async {
+      await tester.pumpWidget(
+        harness(
+          const AppIconButton(
+            icon: AppIcons.share,
+            tooltip: 'Share',
+            onPressed: null,
+          ),
+        ),
+      );
+
+      final semantics = tester.getSemantics(find.bySemanticsLabel('Share'));
+      expect(semantics.flagsCollection.isButton, isTrue);
+      expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+    });
+  });
+
+  group('AppNotice', () {
+    testWidgets('a second notice replaces the first instead of stacking', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => Center(
+                child: TextButton(
+                  onPressed: () => AppNotice.show(context, 'First notice.'),
+                  child: const Text('show'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('show'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final context = tester.element(find.text('show'));
+      AppNotice.show(context, 'Second notice.');
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('First notice.'), findsNothing);
+      expect(find.text('Second notice.'), findsOneWidget);
+    });
+  });
+
+  group('OfflineStatusBar', () {
+    testWidgets('renders provenance text on a themed surface', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark(),
+          home: const Scaffold(
+            body: OfflineStatusBar(message: 'Showing saved posts.'),
+          ),
+        ),
+      );
+
+      expect(find.text('Showing saved posts.'), findsOneWidget);
+      final box = tester.widget<ColoredBox>(
+        find.descendant(
+          of: find.byType(OfflineStatusBar),
+          matching: find.byType(ColoredBox),
+        ),
+      );
+      expect(box.color, AppColors.dark.surface);
+    });
   });
 }

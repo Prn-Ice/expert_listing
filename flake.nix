@@ -26,6 +26,8 @@
               gh
               jdk21
               postgresql
+              pngcrush
+              resvg
               supabase-cli
             ] ++ lib.optionals stdenv.hostPlatform.isDarwin [
               # macOS container runtime required by `supabase start`.

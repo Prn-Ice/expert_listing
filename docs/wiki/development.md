@@ -37,7 +37,7 @@ engine.
 
 | Nix provides | The host provides |
 | --- | --- |
-| Deno, Supabase CLI, Docker CLI, PostgreSQL client, JDK 21, GitHub CLI, and direnv | Flutter/Dart, Android SDK and device assets, standard Xcode, Docker daemon state, and account authentication |
+| Deno, Supabase CLI, Docker CLI, PostgreSQL client, JDK 21, GitHub CLI, resvg, pngcrush, and direnv | Flutter/Dart, Android SDK and device assets, standard Xcode, Docker daemon state, and account authentication |
 | OrbStack CLI on macOS | OrbStack VM state and Docker Compose integration |
 
 The flake supports Apple Silicon macOS and x86-64 Linux. macOS uses OrbStack;

@@ -1,4 +1,5 @@
-include: package:flutter_lints/flutter.yaml
+# This file configures the analyzer for the app_ui design system package.
+include: package:very_good_analysis/analysis_options.yaml
 
 analyzer:
   exclude:
@@ -9,6 +10,3 @@ analyzer:
     - windows/**
     - macos/**
     - linux/**
-
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
