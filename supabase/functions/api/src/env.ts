@@ -24,7 +24,8 @@ export function readEnv(): AppEnv | null {
     // Optional ops override for the externally reachable origin used in DTO
     // media URLs. Unset locally and hosted: the request's forwarded origin is
     // used instead, because the local runtime injects the internal kong host
-    // as SUPABASE_URL, which clients cannot reach.
-    publicUrlOverride: Deno.env.get("SUPABASE_PUBLIC_URL") ?? null,
+    // as SUPABASE_URL, which clients cannot reach. The name cannot start with
+    // SUPABASE_; the runtime strips those from custom configuration.
+    publicUrlOverride: Deno.env.get("PUBLIC_API_ORIGIN") ?? null,
   };
 }

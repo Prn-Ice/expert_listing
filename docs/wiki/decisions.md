@@ -106,8 +106,11 @@ DTOs must carry client-reachable public URLs, but the local Edge runtime
 injects the internal container host as `SUPABASE_URL`. The gateway already
 tells the function the public origin through `x-forwarded-host`,
 `x-forwarded-port`, and `x-forwarded-proto`, so media URLs are built from those
-headers, falling back to the request origin. An optional `SUPABASE_PUBLIC_URL`
-override wins first when an operator needs to pin the origin.
+headers, falling back to the request origin. An optional `PUBLIC_API_ORIGIN`
+override wins first when an operator needs to pin the origin — the hosted
+project uses it because the hosted gateway's forwarded scheme reports the
+internal hop rather than the client's TLS scheme, and custom environment names
+may not start with `SUPABASE_`.
 
 The trade-off is trusting gateway headers that Supabase controls on both local
 and hosted paths. Revisit if the hosted gateway stops sending forwarded headers

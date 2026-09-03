@@ -32,8 +32,11 @@ Configuration is environment-based:
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the Edge
   runtime and are the only credentials; they never appear in responses.
 - `CURRENT_USER_ID` optionally overrides the deterministic seeded current user.
-- `SUPABASE_PUBLIC_URL` optionally overrides the media-URL origin; see
+- `PUBLIC_API_ORIGIN` optionally overrides the media-URL origin (it cannot start
+  with `SUPABASE_`; the runtime strips those from custom configuration); see
   [decisions.md](decisions.md#why-do-media-urls-derive-from-the-forwarded-request-origin).
+  The hosted project pins it to the public project origin because the hosted
+  gateway reports the internal hop's scheme.
 
 ## Relational data
 
