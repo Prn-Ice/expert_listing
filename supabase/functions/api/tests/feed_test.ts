@@ -304,6 +304,19 @@ Deno.test("GET /api/posts rejects out-of-range locations", async () => {
   assertPostIds(longest.body, []);
 });
 
+Deno.test("GET /api/posts rejects unknown query parameters instead of failing open", async () => {
+  // transactionType was retired with the variant model; accepting it silently
+  // would return an unfiltered feed that looks like a working filter.
+  const legacy = await api("/posts?transactionType=for_rent");
+  assertValidationError(legacy);
+  if (!legacy.body.error.message.includes("transactionType")) {
+    throw new Error("The error should name the unsupported parameter.");
+  }
+
+  assertValidationError(await api("/posts?unknown=1"));
+  assertValidationError(await api("/posts?posttype=general"));
+});
+
 Deno.test("GET /api/posts returns stable discriminated DTO shapes", async () => {
   const result = await api("/posts?limit=20");
   if (result.status !== 200) {

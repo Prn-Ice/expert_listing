@@ -100,9 +100,10 @@ direnv exec . supabase test db --local
 direnv exec . scripts/run-api-tests
 ~~~
 
-The reset applies both migrations, loads fixed Lagos fixtures from
+The reset applies the three migrations, loads fixed Lagos fixtures from
 `supabase/seed.sql`, and uploads nine media fixtures. A direct second SQL seed
-application succeeded, and `supabase test db --local` passed 64 pgTAP
-assertions. The seed is repeat-safe for its known fixture IDs, advances
-identity sequences, and does not delete unrelated rows. The API test task runs
-16 real HTTP tests against the local stack.
+application succeeded, `supabase test db --local` passed 67 pgTAP assertions,
+and the API suite passed 17 checks: 16 direct Hono request tests against the
+real local database and one request through the served local Edge Function. The
+seed is repeat-safe for its known fixture IDs, advances
+identity sequences, and does not delete unrelated rows.

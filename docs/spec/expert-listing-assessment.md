@@ -529,10 +529,14 @@ Hono converts stored paths to environment-correct public URLs. Flutter never der
 
 Upload property images to unique property-oriented paths.
 
-Use one service-only, security-invoker `create_post` RPC transaction. It creates a
+Use one service-only, security-definer `create_post` RPC transaction. It creates a
 general post directly, a property request and its request post, or a property,
 its property post, and ordered `property_images`. Revoke execution from
 `PUBLIC`, `anon`, and `authenticated`; grant it only to `service_role`.
+
+The database surface reachable by API roles is vetted security-definer
+functions only; tables grant no privileges to `anon`, `authenticated`, or
+`service_role`. Each such function pins `search_path` to `public`.
 
 If a database insert fails:
 

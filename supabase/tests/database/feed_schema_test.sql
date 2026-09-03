@@ -1,6 +1,6 @@
 begin;
 
-select plan(64);
+select plan(67);
 
 select ok(to_regclass('public.users') is not null, 'users table exists');
 select ok(to_regclass('public.property_requests') is not null, 'property_requests table exists');
@@ -312,6 +312,68 @@ select is(
   (select count(*) from public.posts where post_type = 'property'),
   8::bigint,
   'deterministic fixtures include property posts'
+);
+
+-- The feed location filter must keep a predicate form PostgreSQL can connect
+-- to the per-variant trigram indexes: a direct ILIKE on each indexed location
+-- column, never an expression over several columns. With sequential scans
+-- disabled, each variant's predicate must resolve to its index as a
+-- server-side Index Cond rather than a post-scan Filter. At real scale the
+-- planner also chooses these indexes on cost; the engagement evidence is
+-- recorded on expert-listing-t70.
+create or replace function pg_temp.explain_location_predicate(p_table text)
+returns setof text
+language plpgsql
+set enable_seqscan = off
+as $explain$
+declare
+  plan_line text;
+begin
+  for plan_line in execute format(
+    'explain select id from public.%I where location ilike ''%%Yaba%%''',
+    p_table
+  )
+  loop
+    return next plan_line;
+  end loop;
+end;
+$explain$;
+
+select ok(
+  exists (
+    select 1
+    from pg_temp.explain_location_predicate('posts') as plan_line
+    where plan_line like '%Bitmap Index Scan on posts_location_trgm_idx%'
+  ) and exists (
+    select 1
+    from pg_temp.explain_location_predicate('posts') as plan_line
+    where plan_line like '%Index Cond: (location ~~*%'
+  ),
+  'general location predicates engage posts_location_trgm_idx as an index condition'
+);
+select ok(
+  exists (
+    select 1
+    from pg_temp.explain_location_predicate('property_requests') as plan_line
+    where plan_line like '%Bitmap Index Scan on property_requests_location_trgm_idx%'
+  ) and exists (
+    select 1
+    from pg_temp.explain_location_predicate('property_requests') as plan_line
+    where plan_line like '%Index Cond: (location ~~*%'
+  ),
+  'request location predicates engage property_requests_location_trgm_idx as an index condition'
+);
+select ok(
+  exists (
+    select 1
+    from pg_temp.explain_location_predicate('properties') as plan_line
+    where plan_line like '%Bitmap Index Scan on properties_location_trgm_idx%'
+  ) and exists (
+    select 1
+    from pg_temp.explain_location_predicate('properties') as plan_line
+    where plan_line like '%Index Cond: (location ~~*%'
+  ),
+  'property location predicates engage properties_location_trgm_idx as an index condition'
 );
 
 select * from finish();

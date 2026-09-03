@@ -8,6 +8,15 @@ const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 20;
 const MAX_LOCATION_LENGTH = 120;
 
+const ALLOWED_QUERY_PARAMS = new Set([
+  "limit",
+  "cursor",
+  "postType",
+  "requestType",
+  "propertyStatus",
+  "location",
+]);
+
 const POST_TYPES = new Set(["general", "request", "property"]);
 const REQUEST_TYPES = new Set(["looking_to_buy", "looking_to_rent"]);
 const PROPERTY_STATUSES = new Set(["for_sale", "for_rent"]);
@@ -174,6 +183,15 @@ function toPostDto(row: FeedRow, origin: string) {
 
 export async function getPosts(context: Context): Promise<Response> {
   const query = context.req.query();
+
+  // Fail closed: a removed or mistyped parameter (such as the retired
+  // transactionType) must never silently return an unfiltered feed.
+  for (const name of Object.keys(query)) {
+    if (!ALLOWED_QUERY_PARAMS.has(name)) {
+      throw validationError(`Remove the unsupported query parameter: ${name}.`);
+    }
+  }
+
   const limit = parseLimit(query.limit);
   const filters = parseFilters(query);
   const cursor = query.cursor === undefined ? null : decodeCursor(query.cursor);
