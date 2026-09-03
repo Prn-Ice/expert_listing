@@ -30,10 +30,53 @@ at `../../packages/app_ui/assets/fonts/open_runde/`. `app_ui` registers them as
 the `Open Runde` family and intentionally provides no fallback family.
 
 Native splash and launcher rasters are generated from `brand-mark.svg` with the
-dev shell's `resvg` renderer; `pngcrush` removes the unused alpha channel only
-from Apple's required opaque light App Icon. Android uses adaptive foreground,
-background, and monochrome layers. iOS uses Xcode's single-size App Icon slot
-with light, dark, and tinted 1024-pixel appearances.
+dev shell's `resvg` renderer. Android uses adaptive foreground, background, and
+monochrome layers. iOS uses Xcode's single-size App Icon slot with light, dark,
+and tinted 1024-pixel appearances. The default iOS asset is opaque; its dark
+variant has a transparent background, and its tinted artwork is grayscale, as
+required by Apple's current asset-catalog guidance.
+
+Regenerate native rasters from the repository root with the dev-shell tools.
+These commands preserve the committed safe-zone geometry and write to the
+committed destinations. The generated dark mark uses the existing lime brand
+role (`#a8dc66`) in place of the source export's deep green (`#105b48`); the
+tinted mark uses white:
+
+~~~sh
+perl -pe 's/#105B48/#A8DC66/g' apps/expert_listing_mobile/assets/brand/brand-mark.svg > /tmp/brand-mark-dark.svg
+perl -pe 's/#105B48/#FFFFFF/g' apps/expert_listing_mobile/assets/brand/brand-mark.svg > /tmp/brand-mark-tinted.svg
+resvg --width 144 --height 144 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/brand_mark_light.png
+resvg --width 144 --height 144 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/brand_mark_dark.png
+resvg --width 180 --height 180 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/adaptive-light.png
+sips --padToHeightWidth 432 432 /tmp/adaptive-light.png --out apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+resvg --width 180 --height 180 /tmp/brand-mark-tinted.svg /tmp/adaptive-monochrome.png
+sips --padToHeightWidth 432 432 /tmp/adaptive-monochrome.png --out apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
+resvg --width 117 --height 117 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/legacy-light.png
+sips --padToHeightWidth 192 192 /tmp/legacy-light.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+sips --resampleHeightWidth 144 144 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+sips --resampleHeightWidth 96 96 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+sips --resampleHeightWidth 72 72 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+sips --resampleHeightWidth 48 48 apps/expert_listing_mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+resvg --width 60 --height 60 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light.png
+resvg --width 120 --height 120 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light@2x.png
+resvg --width 180 --height 180 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light@3x.png
+resvg --width 60 --height 60 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark.png
+resvg --width 120 --height 120 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark@2x.png
+resvg --width 180 --height 180 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark@3x.png
+resvg --width 512 --height 512 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/app-icon-light.png
+sips --padToHeightWidth 1024 1024 --padColor ffffff /tmp/app-icon-light.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
+pngcrush -ow -c 2 -rem alla apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
+resvg --width 512 --height 512 /tmp/brand-mark-dark.svg /tmp/app-icon-dark.png
+sips --padToHeightWidth 1024 1024 /tmp/app-icon-dark.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Dark-1024x1024@1x.png
+resvg --width 512 --height 512 /tmp/brand-mark-tinted.svg /tmp/app-icon-tinted.png
+sips --padToHeightWidth 1024 1024 /tmp/app-icon-tinted.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Tinted-1024x1024@1x.png
+~~~
+
+Use the dark source for Android dark splash and adaptive output. Downsample the
+192-pixel legacy source to 144, 96, 72, and 48 pixels with `sips
+--resampleHeightWidth`. The commands strip unused alpha only from the opaque
+default iOS asset and retain transparency for dark and tinted variants. Validate
+the generated output's canvas, safe-zone, and active appearance before commit.
 
 ## Semantic colour roles
 

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:app_ui/src/tokens/icons.dart';
-import 'package:app_ui/src/tokens/motion.dart';
 import 'package:app_ui/src/widgets/app_icon.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -68,9 +68,17 @@ class AppIconButton extends StatelessWidget {
         enabled: onPressed != null,
         label: tooltip,
         child: isIos
-            ? _IosPressOpacity(
-                onTap: onPressed == null ? null : _handleTap,
-                child: child,
+            ? CupertinoTheme(
+                data: CupertinoTheme.of(context).copyWith(
+                  primaryColor: color ?? IconTheme.of(context).color,
+                ),
+                child: CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size.square(AppIconSize.tapTarget),
+                  pressedOpacity: 0.6,
+                  onPressed: onPressed == null ? null : _handleTap,
+                  child: child,
+                ),
               )
             : Material(
                 type: MaterialType.transparency,
@@ -84,45 +92,6 @@ class AppIconButton extends StatelessWidget {
                   child: child,
                 ),
               ),
-      ),
-    );
-  }
-}
-
-class _IosPressOpacity extends StatefulWidget {
-  const _IosPressOpacity({required this.onTap, required this.child});
-
-  final VoidCallback? onTap;
-  final Widget child;
-
-  @override
-  State<_IosPressOpacity> createState() => _IosPressOpacityState();
-}
-
-class _IosPressOpacityState extends State<_IosPressOpacity> {
-  bool _pressed = false;
-
-  void _setPressed(bool value) {
-    if (_pressed != value) {
-      setState(() => _pressed = value);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: widget.onTap,
-      onTapDown: widget.onTap == null ? null : (_) => _setPressed(true),
-      onTapUp: widget.onTap == null ? null : (_) => _setPressed(false),
-      onTapCancel: widget.onTap == null ? null : () => _setPressed(false),
-      child: AnimatedOpacity(
-        opacity: _pressed ? 0.6 : 1,
-        duration: reduceMotion ? Duration.zero : AppMotion.fast,
-        child: widget.child,
       ),
     );
   }

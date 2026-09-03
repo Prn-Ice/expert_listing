@@ -35,55 +35,55 @@ abstract final class AppTypography {
 
   /// Brand wordmark and rare 20px headings.
   static TextStyle brand(AppColors colors, {Color? color}) => _role(
-        colors,
-        size: 20,
-        weight: FontWeight.w600,
-        height: 1.2,
-        color: color,
-      );
+    colors,
+    size: 20,
+    weight: FontWeight.w600,
+    height: 1.2,
+    color: color,
+  );
 
   /// Author names and 16px semibold content.
   static TextStyle title(AppColors colors, {Color? color}) => _role(
-        colors,
-        size: 16,
-        weight: FontWeight.w600,
-        height: 1.25,
-        color: color,
-      );
+    colors,
+    size: 16,
+    weight: FontWeight.w600,
+    height: 1.25,
+    color: color,
+  );
 
   /// Post body copy.
   static TextStyle body(AppColors colors, {Color? color}) => _role(
-        colors,
-        size: 14,
-        weight: FontWeight.w400,
-        height: 1.45,
-        color: color,
-      );
+    colors,
+    size: 14,
+    weight: FontWeight.w400,
+    height: 1.45,
+    color: color,
+  );
 
   /// Emphasised 14px rows (for example "View all comments").
   static TextStyle bodyStrong(AppColors colors, {Color? color}) => _role(
-        colors,
-        size: 14,
-        weight: FontWeight.w600,
-        height: 1.45,
-        color: color,
-      );
+    colors,
+    size: 14,
+    weight: FontWeight.w600,
+    height: 1.45,
+    color: color,
+  );
 
   /// Secondary metadata: role, timestamps, liked-by.
   static TextStyle meta(AppColors colors, {Color? color}) => _role(
-        colors,
-        size: 13,
-        weight: FontWeight.w400,
-        height: 1.3,
-        color: color ?? colors.textSecondary,
-      );
+    colors,
+    size: 13,
+    weight: FontWeight.w400,
+    height: 1.3,
+    color: color ?? colors.textSecondary,
+  );
 
   /// Tags, locations, counts, and navigation labels.
   static TextStyle caption(AppColors colors, {Color? color}) => _role(
-        colors,
-        size: 12,
-        weight: FontWeight.w500,
-        height: 1.25,
-        color: color ?? colors.textSecondary,
-      );
+    colors,
+    size: 12,
+    weight: FontWeight.w500,
+    height: 1.25,
+    color: color ?? colors.textSecondary,
+  );
 }

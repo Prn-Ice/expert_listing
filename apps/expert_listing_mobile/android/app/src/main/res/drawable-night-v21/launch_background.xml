@@ -4,6 +4,6 @@
     <item>
         <bitmap
             android:gravity="center"
-            android:src="@drawable/brand_mark_light" />
+            android:src="@drawable/brand_mark_dark" />
     </item>
 </layer-list>

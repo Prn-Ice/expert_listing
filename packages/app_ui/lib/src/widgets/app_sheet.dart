@@ -21,14 +21,14 @@ abstract final class AppSheet {
       context: context,
       isScrollControlled: true,
       isDismissible: isDismissible,
-      useSafeArea: true,
       backgroundColor: colors.canvas,
       shape: const RoundedRectangleBorder(borderRadius: AppRadii.sheet),
-      // The sheet keeps clear of the keyboard; callers lay out their own
-      // scrollable content and bottom actions.
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+      builder: (context) => SafeArea(
+        top: false,
+        // SafeArea chooses the larger of this keyboard inset and the platform
+        // bottom inset, protecting sheet actions in both states.
+        minimum: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
         ),
         child: child,
       ),

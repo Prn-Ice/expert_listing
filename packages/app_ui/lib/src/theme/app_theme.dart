@@ -16,6 +16,7 @@ abstract final class AppTheme {
   static ThemeData dark() => _build(AppColors.dark, Brightness.dark);
 
   static ThemeData _build(AppColors colors, Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
     final textTheme = TextTheme(
       titleMedium: AppTypography.title(colors),
       bodyMedium: AppTypography.body(colors),
@@ -27,13 +28,56 @@ abstract final class AppTheme {
       brightness: brightness,
       primary: colors.brand,
       onPrimary: colors.onBrand,
+      primaryContainer: colors.brandTint,
+      onPrimaryContainer: colors.brandText,
+      primaryFixed: AppColors.light.brand,
+      primaryFixedDim: AppColors.light.brand,
+      onPrimaryFixed: AppColors.light.onBrand,
+      onPrimaryFixedVariant: AppColors.light.brandDeep,
       secondary: colors.brand,
       onSecondary: colors.onBrand,
-      error: const Color(0xffb3261e),
-      onError: Colors.white,
+      secondaryContainer: colors.brandTint,
+      onSecondaryContainer: colors.brandText,
+      secondaryFixed: AppColors.light.brand,
+      secondaryFixedDim: AppColors.light.brand,
+      onSecondaryFixed: AppColors.light.onBrand,
+      onSecondaryFixedVariant: AppColors.light.brandDeep,
+      tertiary: colors.accent,
+      onTertiary: isDark ? colors.accentTint : colors.canvas,
+      tertiaryContainer: colors.accentTint,
+      onTertiaryContainer: colors.accent,
+      tertiaryFixed: AppColors.light.accent,
+      tertiaryFixedDim: AppColors.light.accent,
+      onTertiaryFixed: AppColors.light.canvas,
+      onTertiaryFixedVariant: AppColors.light.accent,
+      error: isDark ? const Color(0xffffb4ab) : const Color(0xffba1a1a),
+      onError: isDark ? const Color(0xff690005) : colors.canvas,
+      errorContainer: isDark
+          ? const Color(0xff93000a)
+          : const Color(0xffffdad6),
+      onErrorContainer: isDark
+          ? const Color(0xffffdad6)
+          : const Color(0xff410002),
       surface: colors.surface,
       onSurface: colors.textPrimary,
+      surfaceDim: isDark ? colors.canvas : colors.surface,
+      surfaceBright: isDark ? colors.surface : colors.canvas,
+      surfaceContainerLowest: colors.canvas,
+      surfaceContainerLow: colors.surface,
+      surfaceContainer: colors.surface,
+      surfaceContainerHigh: colors.surface,
+      surfaceContainerHighest: colors.surface,
+      onSurfaceVariant: colors.textSecondary,
       outline: colors.border,
+      outlineVariant: colors.border,
+      shadow: Colors.black,
+      scrim: Colors.black,
+      inverseSurface: isDark ? AppColors.light.canvas : AppColors.dark.surface,
+      onInverseSurface: isDark
+          ? AppColors.light.textPrimary
+          : AppColors.dark.textPrimary,
+      inversePrimary: colors.brand,
+      surfaceTint: colors.brand,
     );
 
     return ThemeData(

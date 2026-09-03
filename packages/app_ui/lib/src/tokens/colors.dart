@@ -1,6 +1,6 @@
 /// Semantic colour roles for the Expert Listing design system.
 ///
-/// Light values are the Figma reference (frame [private design node removed]) recorded in
+/// Light values are the committed design reference recorded in
 /// docs/wiki/design-system.md. Dark values are the deliberate derived palette
 /// documented with contrast evidence on the same page.
 library;
@@ -84,7 +84,7 @@ final class AppColors extends ThemeExtension<AppColors> {
   static const light = AppColors(
     canvas: Color(0xffffffff),
     surface: Color(0xfff4f4f4),
-    subtleSurface: Color(0x08000000),
+    subtleSurface: Color(0x05000000),
     border: Color(0xffe8e8e8),
     textPrimary: Color(0xff1a1a1a),
     textSecondary: Color(0xff434343),

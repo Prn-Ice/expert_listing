@@ -1,8 +1,17 @@
 import 'dart:ui' show Tristate;
 
 import 'package:app_ui/app_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+Widget harness(Widget child, {ThemeData? theme}) {
+  return MaterialApp(
+    theme: theme ?? AppTheme.light(),
+    home: Scaffold(body: Center(child: child)),
+  );
+}
 
 void main() {
   group('AppTheme', () {
@@ -32,6 +41,10 @@ void main() {
 
       expect(light.colorScheme.surface, AppColors.light.surface);
       expect(dark.colorScheme.surface, AppColors.dark.surface);
+      expect(light.colorScheme.tertiary, AppColors.light.accent);
+      expect(dark.colorScheme.tertiary, AppColors.dark.accent);
+      expect(light.colorScheme.outlineVariant, AppColors.light.border);
+      expect(dark.colorScheme.outlineVariant, AppColors.dark.border);
       expect(light.bottomSheetTheme.backgroundColor, AppColors.light.canvas);
       expect(dark.bottomSheetTheme.backgroundColor, AppColors.dark.canvas);
       expect(
@@ -43,16 +56,13 @@ void main() {
         Brightness.light,
       );
     });
+
+    test('subtle light surface preserves the documented alpha', () {
+      expect(AppColors.light.subtleSurface, const Color(0x05000000));
+    });
   });
 
   group('AppIconButton', () {
-    Widget harness(Widget child, {ThemeData? theme}) {
-      return MaterialApp(
-        theme: theme ?? AppTheme.light(),
-        home: Scaffold(body: Center(child: child)),
-      );
-    }
-
     testWidgets('keeps the measured glyph inside a 48x48 hit region', (
       tester,
     ) async {
@@ -112,6 +122,65 @@ void main() {
       final semantics = tester.getSemantics(find.bySemanticsLabel('Share'));
       expect(semantics.flagsCollection.isButton, isTrue);
       expect(semantics.flagsCollection.isEnabled, Tristate.isFalse);
+    });
+
+    testWidgets('iOS control receives focus and activates from the keyboard', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      var taps = 0;
+
+      try {
+        await tester.pumpWidget(
+          harness(
+            AppIconButton(
+              icon: AppIcons.filter,
+              tooltip: 'Filter',
+              onPressed: () => taps++,
+            ),
+          ),
+        );
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+
+        expect(taps, 1);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+  });
+
+  group('AppSheet', () {
+    testWidgets('protects bottom actions from keyboard and device insets', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(
+            viewPadding: EdgeInsets.only(bottom: 34),
+            viewInsets: EdgeInsets.only(bottom: 300),
+          ),
+          child: harness(
+            Builder(
+              builder: (context) => TextButton(
+                onPressed: () => AppSheet.show<void>(
+                  context,
+                  child: const SizedBox(height: 48),
+                ),
+                child: const Text('Show sheet'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Show sheet'));
+      await tester.pumpAndSettle();
+
+      final safeArea = tester.widget<SafeArea>(find.byType(SafeArea).last);
+      expect(safeArea.top, isFalse);
+      expect(safeArea.minimum.bottom, 300);
     });
   });
 

@@ -1202,7 +1202,9 @@ Android requires:
 
 iOS requires:
 
-- opaque assets;
+- an opaque default asset;
+- a transparent-background dark asset so the system background shows through;
+- grayscale tinted artwork;
 - no pre-rounded corners;
 - current light, dark, and tinted appearances where supported without altering the mark.
 

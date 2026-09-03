@@ -17,8 +17,7 @@ abstract final class AppIconSize {
   static const double tapTarget = 48;
 }
 
-/// The committed SVG icon inventory (Figma frame [private design node removed]; per-icon node IDs
-/// are tracked in docs/wiki/design-system.md provenance).
+/// The committed SVG icon inventory.
 abstract final class AppIcons {
   static const String _dir = 'assets/icons';
 
@@ -62,5 +61,5 @@ abstract final class AppIcons {
   static const String storyAdd = '$_dir/story-add.svg';
 
   /// Request-type / property-status tag glyph.
-  static const String transactionTag = '$_dir/transaction-tag.svg';
+  static const String postTag = '$_dir/post-tag.svg';
 }
