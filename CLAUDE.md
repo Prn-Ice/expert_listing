@@ -2,6 +2,19 @@
 
 This file provides instructions and context for AI coding agents working on this project.
 
+## Documentation
+
+- Write documentation for the person operating or changing the project, not as
+  an internal reasoning transcript.
+- State verified behaviour, decisions, constraints, file locations, and exact
+  commands. Explain a trade-off only when it changes an implementation choice.
+- Do not use question-and-answer templates, self-dialogue, speculative status,
+  or generic process language.
+- Keep each page focused on one subject and update it in the same change that
+  alters its documented behaviour.
+- Record deferred work only with its current boundary and a concrete condition
+  for revisiting it. Use Beads for active task tracking.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:6cd5cc61 -->
 ## Beads Issue Tracker
 
@@ -58,20 +71,36 @@ This protocol applies when ending a Beads implementation workflow. It is subordi
 <!-- END BEADS INTEGRATION -->
 
 
-## Build & Test
+## Build And Test
 
-_Add your build and test commands here_
+Run Flutter checks from `apps/expert_listing/`:
 
 ```bash
-# Example:
-# npm install
-# npm test
+flutter analyze
+flutter test
+```
+
+Run the local API health checks from the repository root after starting
+OrbStack, Supabase, and the `api` Edge Function:
+
+```bash
+direnv exec . scripts/run-api-tests
 ```
 
 ## Architecture Overview
 
-_Add a brief overview of your project architecture_
+The Flutter application is in `apps/expert_listing/`; shared presentation code
+belongs in `packages/app_ui/`. `AppConfig` reads the public API base URL from a
+Flutter build define.
+
+The local backend is a Supabase project in `supabase/`. The `api` Edge Function
+uses Hono and exposes routes below `/functions/v1/api`.
 
 ## Conventions & Patterns
 
-_Add your project-specific conventions here_
+- Keep public Flutter configuration in build defines. Do not bundle Supabase
+  service-role credentials in the mobile application.
+- Use `scripts/run-api-tests` for local API tests so credentials remain in
+  process memory.
+- Keep Figma-derived images and icons under the Flutter asset tree. Do not
+  recreate unavailable brand assets.

@@ -47,6 +47,19 @@ cp -rf source dest          # NOT: cp -r source dest
 - `apt-get` - use `-y` flag
 - `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
 
+## Documentation
+
+- Write documentation for the person operating or changing the project, not as
+  an internal reasoning transcript.
+- State verified behaviour, decisions, constraints, file locations, and exact
+  commands. Explain a trade-off only when it changes an implementation choice.
+- Do not use question-and-answer templates, self-dialogue, speculative status,
+  or generic process language.
+- Keep each page focused on one subject and update it in the same change that
+  alters its documented behaviour.
+- Record deferred work only with its current boundary and a concrete condition
+  for revisiting it. Use Beads for active task tracking.
+
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:970c3bf2 -->
 ## Beads Issue Tracker
 

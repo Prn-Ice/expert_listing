@@ -1,47 +1,50 @@
 # Design system
 
-## Source
+## Reference
 
-Question: What defines the mobile visual system?
+The primary visual reference is Figma frame `[private design node removed]`, rendered at 428 logical
+pixels wide. Implement the header, stories, filters, composer, posts, and bottom
+navigation from that reference. Use the captured image as a comparison aid, not
+as a UI asset:
 
-Answer: Figma frame `[private design node removed]` in the copied Expert Listing file is the primary
-source, rendered at 428 logical pixels wide.
+`apps/expert_listing/assets/design/[private reference removed]`
 
-Reason/trade-off: The captured header, stories, filter, composer, text post,
-and navigation contexts establish the observed type, spacing, controls, and
-asset geometry. App code adapts these references to Flutter; it does not copy
-the generated React reference code.
+Captured icons and images live in `apps/expert_listing/assets/icons/` and
+`apps/expert_listing/assets/images/`. Keep asset names stable so widgets do not
+depend on Figma node identifiers.
 
-Revisit trigger: A named represented detail is missing from the local capture.
+## Color
 
-## Tokens
+Use semantic names in Flutter themes instead of scattering raw color values.
 
-Captured Figma variables include:
+| Role | Value |
+| --- | --- |
+| Canvas | `#ffffff` |
+| Surface | `#f4f4f4` |
+| Subtle surface | `#00000005` |
+| Primary text | `#1a1a1a` |
+| Secondary text | `#434343` |
+| Tertiary text | `#7c7c7c` |
+| Brand | `#a8dc66` |
+| Brand text | `#4f7a1f` |
+| Brand tint | `#f6fbef` |
+| Accent text | `#5b21b6` |
+| Accent tint | `#f7f3ff` |
 
-- base `#ffffff`, surface `#f4f4f4`, and surface 2 `#00000005`;
-- text primary `#1a1a1a`, secondary `#434343`, and tertiary `#7c7c7c`;
-- primary main `#a8dc66`, primary text `#4f7a1f`, and primary tint `#f6fbef`;
-- purple text `#5b21b6` and purple tint `#f7f3ff`.
+## Typography
 
-Open Runde is the required type family. The capture showed 12/13/14/16 px roles
-with 1.2 line height; local font files and the OFL license still need exact
-source capture.
+The design uses Open Runde. Captured text roles use 12, 13, 14, and 16 px sizes
+with a 1.2 line height. Do not declare the font in the app until its source
+files and OFL license are available in the repository.
 
-## Theme modes
+## Themes
 
-The Figma light appearance is the default theme. A dark theme is required by
-product direction and derives from the same semantic token names rather than
-inverting individual widgets. It is tracked in `expert-listing-cnr.4.1` and
-does not add a visible theme selector because the supplied design has none.
+The Figma light appearance is the default. Dark mode must reuse the same
+semantic color roles rather than invert individual widgets. The supplied design
+has no visible theme selector.
 
-## Asset provenance
+## Brand assets
 
-The primary reference export is
-`apps/expert_listing/assets/design/[private reference removed]`. Captured icons and
-images are stored under the app asset tree with their Figma source node recorded
-by the design-context call.
-
-The approved brand set contains exactly `brand-mark.svg` and
-`brand-wordmark.svg`. Figma's Starter-plan MCP limit blocked the direct exports
-for nodes `[private design node removed]` and `[private design node removed]`; no substitute or reconstructed brand asset
-is permitted.
+The only approved brand assets are `brand-mark.svg` and `brand-wordmark.svg`.
+Their direct exports are unavailable because of the Figma Starter-plan MCP
+limit. Do not recreate, approximate, or substitute them.
