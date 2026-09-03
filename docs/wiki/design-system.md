@@ -72,11 +72,15 @@ resvg --width 512 --height 512 /tmp/brand-mark-tinted.svg /tmp/app-icon-tinted.p
 sips --padToHeightWidth 1024 1024 /tmp/app-icon-tinted.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Tinted-1024x1024@1x.png
 ~~~
 
-Use the dark source for Android dark splash and adaptive output. Downsample the
-192-pixel legacy source to 144, 96, 72, and 48 pixels with `sips
---resampleHeightWidth`. The commands strip unused alpha only from the opaque
-default iOS asset and retain transparency for dark and tinted variants. Validate
-the generated output's canvas, safe-zone, and active appearance before commit.
+Use the dark source for Android dark splash and adaptive output. Android API
+31+ uses the committed `drawable/splash_mark_light.xml` and
+`drawable/splash_mark_dark.xml` VectorDrawables: their 432-pixel viewport
+centers a 144-pixel mark so system masking cannot blur or clip it. Pre-31 uses
+the 144-pixel mark directly. Downsample the 192-pixel legacy source to 144, 96,
+72, and 48 pixels with `sips --resampleHeightWidth`. The commands strip unused
+alpha only from the opaque default iOS asset and retain transparency for dark
+and tinted variants. Validate the generated output's canvas, safe-zone, and
+active appearance before commit.
 
 ## Semantic colour roles
 
