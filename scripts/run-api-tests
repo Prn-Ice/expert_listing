@@ -1,0 +1,39 @@
+#!/bin/sh
+set -eu
+
+status=$(supabase status --output env)
+
+value_for() {
+  printf '%s\n' "$status" | while IFS= read -r line; do
+    name=${line%%=*}
+
+    if [ "$name" = "$1" ]; then
+      value=${line#*=}
+      value=${value#\"}
+      value=${value%\"}
+      printf '%s' "$value"
+      break
+    fi
+  done
+}
+
+api_url=$(value_for API_URL)
+service_role_key=$(value_for SERVICE_ROLE_KEY)
+
+case "$api_url" in
+  http://127.0.0.1:*|http://localhost:*) ;;
+  *)
+    printf '%s\n' 'Local Supabase API URL must resolve to loopback.' >&2
+    exit 1
+    ;;
+esac
+
+if [ -z "$service_role_key" ]; then
+  printf '%s\n' 'Local Supabase service-role key is unavailable.' >&2
+  exit 1
+fi
+
+API_BASE_URL="$api_url/functions/v1/api" \
+SUPABASE_URL="$api_url" \
+SUPABASE_SERVICE_ROLE_KEY="$service_role_key" \
+deno task --config supabase/functions/api/deno.json test

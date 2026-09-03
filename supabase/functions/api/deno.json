@@ -1,0 +1,8 @@
+{
+  "tasks": {
+    "test": "deno test --allow-env=API_BASE_URL,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY --allow-net=127.0.0.1"
+  },
+  "imports": {
+    "hono": "npm:hono@^4.13.5"
+  }
+}

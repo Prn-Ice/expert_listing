@@ -1,6 +1,5 @@
 # Miscellaneous
 *.class
-*.lock
 *.log
 *.pyc
 *.swp
@@ -124,3 +123,8 @@ app.*.symbols
 *.db
 .beads-credential-key
 .beads/proxieddb/
+
+# Local project configuration and agent scratch work.
+.direnv/
+.env.local
+.agent/plans/
