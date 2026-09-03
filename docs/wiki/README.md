@@ -7,6 +7,7 @@ contracts, development workflows, and deliberately deferred work.
 | Page | Read it when |
 | --- | --- |
 | [Architecture](architecture.md) | Changing feature ownership or cross-boundary data flow |
+| [API and data](api-and-data.md) | Changing the implemented relational or media contract |
 | [Decisions](decisions.md) | Understanding why a foundational choice exists or when to revisit it |
 | [Development](development.md) | Starting services, running checks, or working with Supabase |
 | [Design system](design-system.md) | Implementing themes, assets, shared controls, or interaction geometry |

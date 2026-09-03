@@ -35,6 +35,18 @@ cursor is slightly more work to validate but preserves stable continuation.
 Revisit only if the product needs random page access or a different ranking key;
 any replacement must prove insertion and tied-timestamp behaviour.
 
+## Why separate requests and properties from posts?
+
+A post describes feed presentation and engagement. A request owns the area and
+intent someone is seeking; a property owns its physical location, sale or rent
+status, and images. Keeping those values on their domain rows prevents an
+impossible feed item such as a general post with property images or a request
+with a property status.
+
+The trade-off is a small join when hydrating the feed. Revisit only if the
+product gains a shared, real domain object that needs a different relationship;
+do not reintroduce a combined subtype field merely to avoid that join.
+
 ## Why does the repository own offline fallback?
 
 Dio owns transport, and cache packages own persisted response mechanics. The

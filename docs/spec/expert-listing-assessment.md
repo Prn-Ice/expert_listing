@@ -57,7 +57,7 @@ Build the core Expert Listing mobile experience in Flutter:
 - comments;
 - sharing;
 - bookmarks;
-- post creation with images, location, and transaction type.
+- general, request, and property post creation with their owned locations and property images.
 
 Likes, viewing and adding comments, and filters must work rather than merely appear interactive.
 
@@ -72,7 +72,7 @@ The required backend surface is:
 - direct Flutter-to-Hono API use for the feed and interactions;
 - basic, useful error handling.
 
-The original assessment explicitly requires relational Users, Posts, Comments, and Likes. This implementation also includes `post_images`, because ordered multi-image posts cannot otherwise be represented honestly.
+The original assessment explicitly requires relational Users, Posts, Comments, and Likes. This implementation also includes property requests, properties, and `property_images`, because requests and properties own different data and only properties can own ordered images.
 
 The current user is deterministic and selected on the server. Full authentication is outside scope.
 
@@ -113,7 +113,7 @@ A reviewer must be able to:
 3. pull to refresh;
 4. apply and clear filters;
 5. load additional pages;
-6. create a post with ordered images, location, and optional transaction type;
+6. create a general, request, or property post with its applicable location and property images;
 7. like a post;
 8. view and add comments;
 9. refresh or relaunch and confirm server-backed changes persisted;
@@ -124,6 +124,15 @@ A reviewer must be able to:
 14. lose connectivity and see an explicitly labelled saved feed;
 15. use both light and dark system appearances;
 16. install the release APK without assembling the project.
+
+### Request-location assumption
+
+For a request post, location means the area where the author wants to buy or
+rent, not the author's or device's location. The supplied Figma example is
+ambiguous because its request text and location label name different areas.
+Implement the desired-property-area meaning without blocking delivery, and ask
+Expert Listing to confirm it. Record any reply and revise this contract before
+release if their intended meaning differs.
 
 ## 6. Scope
 
@@ -281,8 +290,8 @@ It owns:
 
 - body text;
 - location;
-- optional transaction type;
-- zero to four ordered images;
+- post type and its applicable request type or property status;
+- zero to four ordered property images;
 - image removal;
 - upload progress;
 - submission;
@@ -386,8 +395,8 @@ Flutter:
 ## 11. Relational schema
 
 Use lowercase snake-case identifiers, `timestamptz`, database constraints, and
-indexed foreign keys. Users use UUIDs; posts, comments, and images use generated
-integer IDs.
+indexed foreign keys. Users use UUIDs; posts, property requests, properties,
+comments, and images use generated integer IDs.
 
 ### `users`
 
@@ -407,32 +416,52 @@ integer IDs.
 | `id` | `bigint generated always as identity primary key` |
 | `author_id` | `uuid not null references users(id)` |
 | `body` | trimmed length from 1 through 2000 |
-| `location` | trimmed length from 1 through 120 |
-| `transaction_type` | nullable; one approved enum value |
+| `post_type` | required `general`, `request`, or `property` enum value |
+| `location` | nullable; trimmed length from 1 through 120; only general posts use it |
+| `property_request_id` | nullable unique foreign key to `property_requests` |
+| `property_id` | nullable unique foreign key to `properties` |
 | `view_count` | non-negative integer, default 0 |
 | `bookmark_count` | non-negative integer, default 0 |
 | `created_at` | `timestamptz not null default now()` |
 
-Approved transaction values:
+The post variant check is mandatory:
 
-- `for_sale`;
-- `for_rent`;
-- `looking_to_buy`;
-- `looking_to_rent`.
+- `general` has its own location and no subtype reference;
+- `request` has a `property_request_id`, no post location, and no property reference;
+- `property` has a `property_id`, no post location, and no request reference.
 
 `created_at` is immutable because it participates in the pagination key.
 
-### `post_images`
+### `property_requests`
 
 | Column | Contract |
 |---|---|
 | `id` | `bigint generated always as identity primary key` |
-| `post_id` | references `posts(id)` with cascade delete |
+| `request_type` | required `looking_to_buy` or `looking_to_rent` enum value |
+| `location` | required desired-area location, trimmed length from 1 through 120 |
+| `created_at` | `timestamptz not null default now()` |
+
+### `properties`
+
+| Column | Contract |
+|---|---|
+| `id` | `bigint generated always as identity primary key` |
+| `property_status` | required `for_sale` or `for_rent` enum value |
+| `location` | required physical location, trimmed length from 1 through 120 |
+| `created_at` | `timestamptz not null default now()` |
+
+### `property_images`
+
+| Column | Contract |
+|---|---|
+| `id` | `bigint generated always as identity primary key` |
+| `property_id` | references `properties(id)` with cascade delete |
 | `storage_path` | `text not null unique` |
 | `position` | integer from 0 through 3 |
 | `created_at` | `timestamptz not null default now()` |
 
-`(post_id, position)` is unique.
+`(property_id, position)` is unique. General and request posts cannot have images;
+properties may have zero through four ordered images.
 
 ### `comments`
 
@@ -468,10 +497,12 @@ Enable `pg_trgm`.
 Indexes must support:
 
 - posts by `(created_at desc, id desc)`;
-- filtered posts by `(transaction_type, created_at desc, id desc)`;
-- case-insensitive substring location search with a `pg_trgm` GIN index;
+- posts filtered by `(post_type, created_at desc, id desc)`;
+- request-type and property-status filtering;
+- case-insensitive substring search across the applicable general-post, request,
+  and property location columns with `pg_trgm` GIN indexes;
 - comments by `(post_id, created_at, id)`;
-- images by `(post_id, position)`;
+- images by `(property_id, position)`;
 - every foreign key not already covered by a leading primary or unique key.
 
 Do not issue one database request per post when hydrating authors, images, counts, and current-user like state. Use one relational query/RPC or a fixed number of batched queries.
@@ -496,13 +527,16 @@ Hono converts stored paths to environment-correct public URLs. Flutter never der
 
 ### Atomic post creation
 
-Upload images to unique post-scoped paths.
+Upload property images to unique property-oriented paths.
 
-Create the `posts` row and its ordered `post_images` rows in one database RPC transaction. Restrict RPC execution to `service_role` after revoking access from `PUBLIC`, `anon`, and `authenticated`. Keep it security-invoker rather than using `SECURITY DEFINER`.
+Use one service-only, security-invoker `create_post` RPC transaction. It creates a
+general post directly, a property request and its request post, or a property,
+its property post, and ordered `property_images`. Revoke execution from
+`PUBLIC`, `anon`, and `authenticated`; grant it only to `service_role`.
 
 If a database insert fails:
 
-- the post and all image rows roll back;
+- the post, subtype row, and image metadata rows roll back;
 - the server attempts to remove only the newly uploaded Storage objects;
 - cleanup is best-effort;
 - the API returns an honest server error.
@@ -513,24 +547,20 @@ Seed:
 
 - fixed user UUIDs;
 - varied authors and roles;
-- all transaction types;
+- all post types, request types, and property statuses;
 - Lagos locations;
 - deliberately tied timestamps;
-- posts with and without images;
-- posts with and without transaction types;
+- properties with zero, one, and multiple images;
+- general, request, and property posts;
 - posts with and without engagement;
-- ordered multi-image posts;
+- ordered property images;
 - comments;
 - likes;
 - enough rows to cross at least three small test pages.
 
-Do not serialize a separate post-kind field.
-
-The Dart `Post` model derives its display category in one focused tested mapping:
-
-- null transaction type → `general`;
-- `for_sale` or `for_rent` → `property`;
-- `looking_to_buy` or `looking_to_rent` → `request`.
+Serialize `postType` and its matching discriminated payload. Dart uses simple
+sealed or discriminated models so a general post cannot be mistaken for a
+property.
 
 The current-user UUID is fixed in server configuration and seed data. Flutter does not submit a pretend `userId`.
 
@@ -542,7 +572,7 @@ Seed operations must be safe to repeat against the dedicated assessment project:
 - advance identity sequences beyond the greatest existing ID;
 - never delete reviewer-created or unrelated rows.
 
-Commit deterministic avatars and post images under `supabase/seed_media/`.
+Commit deterministic avatars and property images under `supabase/seed_media/`.
 
 ## 13. Cursor pagination
 
@@ -585,7 +615,9 @@ Tests must cover:
 
 The approved filter sheet contains:
 
-- one optional transaction-type choice;
+- one optional post-type choice;
+- a request-type choice when filtering requests;
+- a property-status choice when filtering properties;
 - one optional location query;
 - `Clear`;
 - `Apply`;
@@ -593,7 +625,8 @@ The approved filter sheet contains:
 
 Filtering is server-side.
 
-Location matching:
+Location matching searches the selected variant's owned location. Without a post
+type it searches general post, request, and property locations. It:
 
 - trims input;
 - is case-insensitive;
@@ -634,7 +667,9 @@ Optional query parameters:
 |---|---|
 | `limit` | integer from 1 through 20 |
 | `cursor` | opaque cursor |
-| `transactionType` | approved transaction enum |
+| `postType` | `general`, `request`, or `property` |
+| `requestType` | approved request enum; valid only with `postType=request` |
+| `propertyStatus` | approved property enum; valid only with `postType=property` |
 | `location` | trimmed string from 1 through 120 characters |
 
 Response `200`:
@@ -645,8 +680,7 @@ Response `200`:
     {
       "id": 42,
       "body": "Newly serviced 3-bedroom apartment with a bright living room and secure parking.",
-      "location": "Lekki Phase 1, Lagos",
-      "transactionType": "for_rent",
+      "postType": "property",
       "createdAt": "2026-09-02T08:00:00.000Z",
       "viewCount": 1000,
       "bookmarkCount": 2,
@@ -660,24 +694,31 @@ Response `200`:
         "role": "Developer",
         "avatarUrl": "https://assets.example.invalid/avatars/boyd-from.webp"
       },
-      "images": [
-        {
-          "id": 7,
-          "url": "https://assets.example.invalid/posts/42/front.webp",
-          "position": 0
-        }
-      ]
+      "property": {
+        "id": 7,
+        "status": "for_rent",
+        "location": "Lekki Phase 1, Lagos",
+        "images": [
+          {
+            "id": 7,
+            "url": "https://assets.example.invalid/properties/7/front.webp",
+            "position": 0
+          }
+        ]
+      }
     }
   ],
   "nextCursor": null
 }
 ```
 
-Every post includes:
+Feed items are discriminated:
 
-- `transactionType`, with JSON `null` for general posts;
-- `images`, with `[]` for text-only posts;
-- stable ordered image positions.
+- a general item has `postType: "general"` and `location`;
+- a request item has `postType: "request"` and `request { type, location }`;
+- a property item has `postType: "property"` and `property { id, status, location, images }`.
+
+The legacy combined subtype field is absent. Property image positions are stable and ordered.
 
 The final page uses JSON null, never a string sentinel.
 
@@ -688,11 +729,14 @@ Use `multipart/form-data`.
 Fields:
 
 - `body`: trimmed, 1 through 2000 characters;
-- `location`: trimmed, 1 through 120 characters;
-- `transactionType`: optional approved value;
-- repeated `images` fields in display order.
+- `postType`: required `general`, `request`, or `property`;
+- `location`: required, trimmed 1 through 120 characters; it is the general
+  location, desired request area, or physical property location by variant;
+- `requestType`: required only for requests;
+- `propertyStatus`: required only for properties;
+- repeated `images` fields in display order, permitted only for properties.
 
-Accept zero through four JPEG, PNG, or WebP images. The required integration journey must exercise multiple images.
+Properties accept zero through four JPEG, PNG, or WebP images. The required integration journey must exercise multiple images.
 
 Client constraints before upload:
 
@@ -701,7 +745,8 @@ Client constraints before upload:
 
 Server constraints:
 
-- at most four images;
+- no images for general or request posts and at most four property images;
+- no request fields on general or property posts, and no property fields on general or request posts;
 - at most 8 MiB across all image parts;
 - actual media type and bytes verified;
 - client filename and MIME headers are not trusted.
@@ -772,7 +817,7 @@ Use correct HTTP status codes and one stable envelope:
 {
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Choose a valid transaction type."
+    "message": "Choose a valid post type."
   }
 }
 ```
@@ -986,7 +1031,7 @@ Manual overlays and behavioural tests are P0.
 
 ## 18. Interaction contract
 
-Every visually interactive element must respond. Static labels such as location, transaction type, view count, and liked-by text do not require artificial tap handlers.
+Every visually interactive element must respond. Static labels such as location, post type, request type, property status, view count, and liked-by text do not require artificial tap handlers.
 
 | Surface | Required outcome |
 |---|---|
@@ -1006,7 +1051,7 @@ Every visually interactive element must respond. Static labels such as location,
 | Multiple images | Swipe carousel, stable height, understated page indicator |
 | Like or like count | Whole action cell updates immediately, reconciles, or rolls back |
 | Comment, count, preview, or View all | Open the same comments sheet |
-| Share | Native share sheet with truthful post text, location, and type when present; no fake URL |
+| Share | Native share sheet with truthful post text, owned location, and request type or property status when applicable; no fake URL |
 | Bookmark | Persist locally; first use only: `Saved on this device.` |
 | Pull to refresh | Real network refresh with platform-adaptive feedback |
 | Pagination | Quiet stable footer; inline `Try again` after failure |
@@ -1182,8 +1227,8 @@ boundary evidence where mocks could drift from the implementation.
 | Promise or invariant | Primary evidence |
 |---|---|
 | Relational constraints, indexes, and seed assumptions | pgTAP against local Postgres |
-| Post and ordered-image atomicity | Real pgTAP failure proving both tables roll back |
-| Cursor ordering and filters | Real Hono HTTP tests against local Supabase/Postgres |
+| Variant and ordered-property-image atomicity | Real pgTAP failure proving post, subtype, and image rows roll back |
+| Cursor ordering and variant filters | Real Hono HTTP tests against local Supabase/Postgres |
 | Idempotent likes and comments | Real Hono HTTP tests |
 | Create-post validation and Storage behaviour | Real Hono/Postgres/Storage tests |
 | Storage cleanup after database failure | Focused route-boundary test with exact-object cleanup assertion |
@@ -1222,11 +1267,11 @@ Widget tests should override repository providers while retaining the real provi
 
 #### Feed journey
 
-Launch, see seeded posts, apply transaction and location filters, clear filters, paginate, and refresh.
+Launch, see seeded posts, apply post-type, request-type, property-status, and location filters, clear filters, paginate, and refresh.
 
 #### Create-post journey
 
-Create a post with multiple ordered images, location, and transaction type; see it in the feed; relaunch; prove content and image order persist.
+Create a property post with multiple ordered images, property location, and status; see it in the feed; relaunch; prove content and image order persist. Also prove general and request creation without images.
 
 #### Engagement journey
 
