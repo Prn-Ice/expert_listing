@@ -127,6 +127,9 @@ app.*.symbols
 # Local project configuration and agent scratch work.
 .direnv/
 .env.local
+supabase/.env
+supabase/.env.*
+supabase/functions/.env
 .agent/plans/
 2026-09-02-expert-listing-assessment-handoff.md
 2026-09-02-expert-listing-assessment-plan.md

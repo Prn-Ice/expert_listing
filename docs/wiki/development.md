@@ -68,6 +68,12 @@ supabase start
 supabase functions serve api --no-verify-jwt
 ~~~
 
+`supabase start` already serves the function at the address above, but its
+runtime caches worker code; after editing `supabase/functions/api/`, either
+restart the runtime container (`docker restart
+supabase_edge_runtime_expert_listing`) or use the separate `functions serve`
+terminal, which reloads on change.
+
 Run real local API checks from another terminal:
 
 ~~~sh

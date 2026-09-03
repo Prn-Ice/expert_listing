@@ -87,6 +87,32 @@ persistence need integration evidence.
 Revisit a test when its protected risk disappears or a cheaper test proves the
 same contract. Coverage percentage is not the goal.
 
+## Why is the database surface security-definer functions only?
+
+Feed tables carry no direct grants to API roles. `create_post` and `feed_page`
+are security-definer functions executable only by `service_role`, so the entire
+database surface reachable through PostgREST is those two vetted contracts. This
+also repaired a latent defect: a security-invoker `create_post` would have
+failed through PostgREST because `service_role` has no table privileges.
+
+The trade-off is discipline inside the functions: each pins `search_path` so
+the definer context cannot be hijacked. Revisit if per-caller RLS policies are
+introduced; then selective grants with security-invoker functions may express
+the contract more directly.
+
+## Why do media URLs derive from the forwarded request origin?
+
+DTOs must carry client-reachable public URLs, but the local Edge runtime
+injects the internal container host as `SUPABASE_URL`. The gateway already
+tells the function the public origin through `x-forwarded-host`,
+`x-forwarded-port`, and `x-forwarded-proto`, so media URLs are built from those
+headers, falling back to the request origin. An optional `SUPABASE_PUBLIC_URL`
+override wins first when an operator needs to pin the origin.
+
+The trade-off is trusting gateway headers that Supabase controls on both local
+and hosted paths. Revisit if the hosted gateway stops sending forwarded headers
+or if the API gains non-gateway callers that must not influence URL generation.
+
 ## Why are goldens, Realtime, video posts, and queued writes deferred?
 
 They add baseline churn, ordering complexity, media failure modes, or conflict
