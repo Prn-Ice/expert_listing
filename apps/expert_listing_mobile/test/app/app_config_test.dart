@@ -42,5 +42,21 @@ void main() {
 
       expect(config.apiBaseUri.scheme, 'https');
     });
+
+    test('requires the Hono API path in every build', () {
+      expect(
+        () => AppConfig.parse('https://project.supabase.co', isRelease: false),
+        throwsA(isA<AppConfigException>()),
+      );
+    });
+
+    test('accepts any valid HTTPS host in release builds', () {
+      final config = AppConfig.parse(
+        'https://api.example.com/functions/v1/api',
+        isRelease: true,
+      );
+
+      expect(config.apiBaseUri.host, 'api.example.com');
+    });
   });
 }

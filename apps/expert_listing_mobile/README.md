@@ -1,8 +1,9 @@
 # Expert Listing Flutter app
 
-This directory contains the Flutter client. It is currently a foundation
-scaffold; feed features are not yet implemented, and device journeys are not
-yet verified.
+This directory contains the Flutter client. M4 implements the network-first
+feed, filters, refresh, pagination, saved-feed provenance, and bounded public
+image rendering. Create-post and engagement journeys remain later feature work;
+named-device journeys are not yet verified.
 
 The approved architecture uses Riverpod for dependency lifecycles, Bloc/Cubit
 for feature behaviour, and Riverbloc to connect them. JSON requests and

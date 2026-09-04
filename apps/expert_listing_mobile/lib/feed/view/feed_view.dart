@@ -1,0 +1,376 @@
+import 'dart:async';
+
+import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/feed/bloc/feed_event.dart';
+import 'package:expert_listing/feed/bloc/feed_state.dart';
+import 'package:expert_listing/feed/feed_providers.dart';
+import 'package:expert_listing/feed/models/feed_load_result.dart';
+import 'package:expert_listing/feed/view/create_post_prompt.dart';
+import 'package:expert_listing/feed/view/feed_header.dart';
+import 'package:expert_listing/feed/view/filter_sheet.dart';
+import 'package:expert_listing/feed/view/post_card.dart';
+import 'package:expert_listing/feed/view/story_strip.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// The network-first Expert Listing feed body.
+class FeedView extends ConsumerStatefulWidget {
+  /// Creates the feed view.
+  const FeedView({super.key});
+
+  @override
+  ConsumerState<FeedView> createState() => FeedViewState();
+}
+
+/// Owns feed scroll position and the feed-specific lifecycle.
+class FeedViewState extends ConsumerState<FeedView> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_loadMoreWhenNeeded);
+    ref.read(feedBlocProvider.bloc).add(const FeedStarted());
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_loadMoreWhenNeeded)
+      ..dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<FeedState>(feedBlocProvider, _showSavedFeedTransition);
+    final state = ref.watch(feedBlocProvider);
+
+    return SafeArea(
+      bottom: false,
+      child: RefreshIndicator.adaptive(
+        onRefresh: _refresh,
+        child: CustomScrollView(
+          controller: _scrollController,
+          key: const PageStorageKey<String>('feed-scroll'),
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: FeedHeader(
+                onLogoPressed: scrollToTop,
+                onNotice: _showNotice,
+              ),
+            ),
+            SliverToBoxAdapter(child: StoryStrip(onNotice: _showNotice)),
+            SliverToBoxAdapter(
+              child: _FilterControl(
+                activeCount: state.filter.activeCount,
+                onPressed: _openFilters,
+              ),
+            ),
+            SliverToBoxAdapter(child: CreatePostPrompt(onNotice: _showNotice)),
+            if (state.isShowingSavedPosts)
+              SliverToBoxAdapter(
+                child: OfflineStatusBar(
+                  message: state.fallbackReason == FeedFallbackReason.connection
+                      ? 'Offline · Showing saved posts'
+                      : 'Showing saved posts',
+                  onRetry: _retryFirstPage,
+                ),
+              ),
+            if (state.refreshFailed)
+              const SliverToBoxAdapter(
+                child: _InlineStatus(
+                  message:
+                      "Couldn't refresh. Showing the posts already loaded.",
+                ),
+              ),
+            _FeedContent(
+              state: state,
+              onNotice: _showNotice,
+              onRetryFirstPage: _retryFirstPage,
+              onRetryNextPage: _retryNextPage,
+              onClearFilters: _clearFilters,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Returns the feed to its top, or refreshes while it is already at top.
+  void returnToTopOrRefresh() {
+    if (!_scrollController.hasClients || _scrollController.offset <= 0) {
+      _retryFirstPage();
+      return;
+    }
+    scrollToTop();
+  }
+
+  /// Smoothly returns the feed to its top without triggering a refresh.
+  void scrollToTop() {
+    if (!_scrollController.hasClients || _scrollController.offset <= 0) return;
+    _scrollController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+    );
+  }
+
+  Future<void> _refresh() async {
+    final bloc = ref.read(feedBlocProvider.bloc);
+    await (bloc..add(const FeedRefreshed())).stream.firstWhere(
+      (state) => !state.isRefreshing && !state.isInitialLoading,
+    );
+  }
+
+  void _retryFirstPage() =>
+      ref.read(feedBlocProvider.bloc).add(const FeedRetryRequested());
+
+  void _retryNextPage() =>
+      ref.read(feedBlocProvider.bloc).add(const FeedNextPageRequested());
+
+  void _loadMoreWhenNeeded() {
+    if (_scrollController.position.extentAfter < 360) {
+      _retryNextPage();
+    }
+  }
+
+  Future<void> _openFilters() async {
+    final state = ref.read(feedBlocProvider);
+    final filter = await showFeedFilterSheet(context, filter: state.filter);
+    if (!mounted || filter == null) return;
+    ref
+        .read(feedBlocProvider.bloc)
+        .add(
+          filter.isEmpty
+              ? const FeedFiltersCleared()
+              : FeedFiltersApplied(filter),
+        );
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _clearFilters() =>
+      ref.read(feedBlocProvider.bloc).add(const FeedFiltersCleared());
+
+  void _showSavedFeedTransition(FeedState? previous, FeedState next) {
+    if (previous == null) return;
+    if (!previous.isShowingSavedPosts &&
+        next.isShowingSavedPosts &&
+        next.fallbackReason == FeedFallbackReason.service) {
+      AppNotice.show(context, 'Service unavailable. Showing saved posts.');
+    }
+    if (previous.isShowingSavedPosts &&
+        !next.isShowingSavedPosts &&
+        previous.fallbackReason == FeedFallbackReason.connection &&
+        next.source == FeedDataSource.network) {
+      AppNotice.show(context, 'Back online. Feed updated.');
+    }
+  }
+
+  void _showNotice(String message) => AppNotice.show(context, message);
+}
+
+final class _FilterControl extends StatelessWidget {
+  const _FilterControl({required this.activeCount, required this.onPressed});
+
+  final int activeCount;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xlarge,
+        AppSpacing.small,
+        AppSpacing.xlarge,
+        AppSpacing.medium,
+      ),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          key: const ValueKey<String>('feed-filters'),
+          onPressed: onPressed,
+          style: OutlinedButton.styleFrom(
+            tapTargetSize: MaterialTapTargetSize.padded,
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.medium,
+              vertical: AppSpacing.small,
+            ),
+            side: BorderSide(
+              color: AppColors.of(context).textPrimary.withValues(alpha: 0.1),
+            ),
+            shape: const StadiumBorder(),
+            foregroundColor: AppColors.of(context).textSecondary,
+            textStyle: AppTypography.postBody(AppColors.of(context)),
+          ),
+          icon: AppIcon(
+            AppIcons.filter,
+            size: AppIconSize.small,
+            color: AppColors.of(context).textSecondary,
+          ),
+          label: Text(activeCount == 0 ? 'Filters' : 'Filters ($activeCount)'),
+        ),
+      ),
+    );
+  }
+}
+
+final class _FeedContent extends StatelessWidget {
+  const _FeedContent({
+    required this.state,
+    required this.onNotice,
+    required this.onRetryFirstPage,
+    required this.onRetryNextPage,
+    required this.onClearFilters,
+  });
+
+  final FeedState state;
+  final ValueChanged<String> onNotice;
+  final VoidCallback onRetryFirstPage;
+  final VoidCallback onRetryNextPage;
+  final VoidCallback onClearFilters;
+
+  @override
+  Widget build(BuildContext context) {
+    if (state.isInitialLoading) {
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(child: CircularProgressIndicator.adaptive()),
+      );
+    }
+
+    if (state.failure != null && state.posts.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _FeedFailure(
+          failure: state.failure!,
+          onRetry: onRetryFirstPage,
+        ),
+      );
+    }
+
+    if (state.posts.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: _FeedEmpty(
+          isFiltered: !state.filter.isEmpty,
+          onClear: onClearFilters,
+          onNotice: onNotice,
+        ),
+      );
+    }
+
+    return SliverMainAxisGroup(
+      slivers: [
+        SliverList.builder(
+          itemCount: state.posts.length,
+          itemBuilder: (context, index) => KeyedSubtree(
+            key: ValueKey(state.posts[index].id),
+            child: PostCard(post: state.posts[index], onNotice: onNotice),
+          ),
+        ),
+        if (state.isLoadingMore)
+          const SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.large),
+              child: Center(child: CircularProgressIndicator.adaptive()),
+            ),
+          ),
+        if (state.nextPageFailed)
+          SliverToBoxAdapter(
+            child: Center(
+              child: TextButton(
+                onPressed: onRetryNextPage,
+                child: const Text('Try again'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+final class _FeedFailure extends StatelessWidget {
+  const _FeedFailure({required this.failure, required this.onRetry});
+
+  final FeedLoadFailure failure;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final message = switch (failure.kind) {
+      FeedFailureKind.connection =>
+        "You're offline. Reconnect to load the feed.",
+      FeedFailureKind.service => 'Feed unavailable. Try again.',
+      FeedFailureKind.unavailable => "Couldn't load the feed.",
+    };
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xxlarge),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: AppSpacing.medium),
+            FilledButton(onPressed: onRetry, child: const Text('Try again')),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _FeedEmpty extends StatelessWidget {
+  const _FeedEmpty({
+    required this.isFiltered,
+    required this.onClear,
+    required this.onNotice,
+  });
+
+  final bool isFiltered;
+  final VoidCallback onClear;
+  final ValueChanged<String> onNotice;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(isFiltered ? 'No posts match these filters.' : 'No posts yet.'),
+          const SizedBox(height: AppSpacing.medium),
+          FilledButton(
+            onPressed: isFiltered
+                ? onClear
+                : () => onNotice(
+                    'Post creation is part of the next preview step.',
+                  ),
+            child: Text(isFiltered ? 'Clear filters' : 'Create a post'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _InlineStatus extends StatelessWidget {
+  const _InlineStatus({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.medium),
+      child: Text(message, textAlign: TextAlign.center),
+    );
+  }
+}

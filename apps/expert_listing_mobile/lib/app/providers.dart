@@ -17,7 +17,14 @@ final appConfigProvider = Provider<AppConfig>(
 /// once when the container disposes.
 final httpClientProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
-  final dio = Dio(BaseOptions(baseUrl: config.apiBaseUri.toString()));
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: config.apiBaseUri.toString(),
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 15),
+      sendTimeout: const Duration(seconds: 15),
+    ),
+  );
   ref.onDispose(dio.close);
   return dio;
 });

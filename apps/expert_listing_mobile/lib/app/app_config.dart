@@ -31,6 +31,12 @@ final class AppConfig {
       );
     }
 
+    if (uri.path != '/functions/v1/api') {
+      throw const AppConfigException(
+        'API_BASE_URL must end with /functions/v1/api.',
+      );
+    }
+
     return AppConfig._(uri);
   }
 

@@ -1,6 +1,7 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/providers.dart';
+import 'package:expert_listing/dashboard/dashboard_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -35,7 +36,7 @@ class ExpertListingApp extends StatelessWidget {
       // selector because the design does not contain one.
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: const Scaffold(body: Center(child: Text('Expert Listing'))),
+      home: const DashboardPage(),
     );
   }
 }

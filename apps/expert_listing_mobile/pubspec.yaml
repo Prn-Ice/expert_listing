@@ -31,23 +31,21 @@ dependencies:
   app_ui:
     path: ../../packages/app_ui
   bloc: ^9.2.1
-  cached_network_image: ^4.0.0
   dio: ^5.11.0
-  dio_cache_interceptor: ^4.0.7
   equatable: ^2.1.0
   flutter:
     sdk: flutter
+  flutter_cache_manager: ^3.4.2
   flutter_riverpod: ^3.4.2
   flutter_svg: ^2.3.0
-  http_cache_file_store: ^2.0.2
   image_picker: ^1.2.3
-  path_provider: ^2.1.6
   riverbloc: ^3.0.0
   share_plus: ^13.3.0
   shared_preferences: ^2.5.5
 
 dev_dependencies:
   bloc_test: ^10.0.0
+  file: ^7.0.1
   flutter_test:
     sdk: flutter
   very_good_analysis: ^10.3.0

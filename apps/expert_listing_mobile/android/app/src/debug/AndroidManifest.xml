@@ -4,4 +4,7 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Local Supabase reaches an Android emulator through adb reverse. Keep
+         this exception in the debug overlay; release builds remain HTTPS-only. -->
+    <application android:usesCleartextTraffic="true"/>
 </manifest>
