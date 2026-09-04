@@ -40,13 +40,19 @@ final class _DashboardNavigation extends StatelessWidget {
     final colors = AppColors.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: colors.border)),
+        // The Figma Nav frame ([private design node removed]) draws a 0.5px --border2 top hairline.
+        border: Border(top: BorderSide(color: colors.border, width: 0.5)),
         color: colors.canvas,
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          height: 72,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xlarge,
+            AppSpacing.large,
+            AppSpacing.xlarge,
+            0,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -115,7 +121,7 @@ final class _NavigationItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final color = selected ? colors.brandText : colors.textTertiary;
+    final color = selected ? colors.brandText : colors.textSecondary;
     return Semantics(
       container: true,
       button: true,
@@ -123,28 +129,32 @@ final class _NavigationItem extends StatelessWidget {
       selected: selected,
       onTap: onPressed,
       excludeSemantics: true,
-      child: SizedBox(
-        height: 72,
-        child: TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(padding: EdgeInsets.zero),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AppIcon(icon, size: AppIconSize.large, color: color),
-              const SizedBox(height: 2),
-              SizedBox(
-                width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: AppTypography.caption(colors, color: color),
-                  ),
+      child: TextButton(
+        onPressed: onPressed,
+        style: TextButton.styleFrom(
+          padding: EdgeInsets.zero,
+          minimumSize: const Size(48, 48),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon(icon, size: AppIconSize.large, color: color),
+            // The Figma Nav containers ([private design node removed]) gap 11px between the
+            // 24px glyph and its 14px label.
+            const SizedBox(height: 11),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: selected
+                      ? AppTypography.navLabelSelected(colors, color: color)
+                      : AppTypography.navLabel(colors, color: color),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -100,7 +100,7 @@ abstract final class AppTypography {
 
   /// Open Runde, 12 logical pixels, 15px line height, weight 500.
   ///
-  /// Used for tags, locations, counts, and navigation labels.
+  /// Used for tags, locations, and counts.
   static TextStyle caption(AppColors colors, {Color? color}) => _role(
     colors,
     size: 12,
@@ -129,5 +129,27 @@ abstract final class AppTypography {
     weight: FontWeight.w400,
     height: 1.25,
     color: color ?? colors.textSecondary,
+  );
+
+  /// Open Runde, 14 logical pixels, 16.8px line height, weight 400.
+  ///
+  /// Used for inactive bottom-navigation labels (Figma Nav, node [private design node removed]).
+  static TextStyle navLabel(AppColors colors, {Color? color}) => _role(
+    colors,
+    size: 14,
+    weight: FontWeight.w400,
+    height: 1.2,
+    color: color ?? colors.textSecondary,
+  );
+
+  /// Open Runde, 14 logical pixels, 16.8px line height, weight 500.
+  ///
+  /// The selected bottom-navigation label role (Figma Nav, node [private design node removed]).
+  static TextStyle navLabelSelected(AppColors colors, {Color? color}) => _role(
+    colors,
+    size: 14,
+    weight: FontWeight.w500,
+    height: 1.2,
+    color: color ?? colors.textPrimary,
   );
 }

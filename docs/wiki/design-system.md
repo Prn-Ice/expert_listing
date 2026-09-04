@@ -141,7 +141,14 @@ available.
 
 Observed roles use Open Runde: caption 12/500 at 1.25, metadata 13/400 at 1.3,
 body 14/400 at 1.45, post body 16/500 at 1.2, and title 16/600 at 1.25. The
-20/600 brand role has a 1.2 line height.
+20/600 brand role has a 1.2 line height. Bottom-navigation labels are 14px at
+1.2 (weight 400 unselected over `text-secondary`, weight 500 selected over
+`primary-text`), measured on the Figma Nav frame.
+
+The dashboard bottom bar follows the Figma Nav frame ([private design node removed]): a 0.5px
+hairline top border, 16px top padding, 20px side insets, 24px glyphs, an 11px
+glyph-to-label gap, and content anchored to the top; the device safe-area
+inset supplies the space the mock reserved for the home indicator.
 
 Define finite spacing, radius, border, icon, and interaction scales from
 repeated measurements. Keep one-off geometry as a named local constant with its
