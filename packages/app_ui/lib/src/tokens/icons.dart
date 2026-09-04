@@ -51,6 +51,9 @@ abstract final class AppIcons {
   /// Profile preview boundary.
   static const String navProfile = '$_dir/nav-profile.svg';
 
+  /// Search preview boundary.
+  static const String search = '$_dir/search.svg';
+
   /// Post overflow menu.
   static const String postOverflow = '$_dir/post-overflow.svg';
 
@@ -60,6 +63,15 @@ abstract final class AppIcons {
   /// Your-story add badge.
   static const String storyAdd = '$_dir/story-add.svg';
 
-  /// Request-type / property-status tag glyph.
+  /// The blue For Sale tag glyph.
   static const String postTag = '$_dir/post-tag.svg';
+
+  /// The purple Looking to Buy tag glyph.
+  static const String lookingToBuyTag = '$_dir/post-tag-looking-to-buy.svg';
+
+  /// The green For Rent key glyph.
+  static const String propertyRentKey = '$_dir/post-key-for-rent.svg';
+
+  /// The amber Looking to Rent key glyph.
+  static const String lookingToRentKey = '$_dir/post-key-looking-to-rent.svg';
 }

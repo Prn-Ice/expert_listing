@@ -1,9 +1,11 @@
 import 'dart:ui' show Tristate;
 
 import 'package:app_ui/app_ui.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Widget harness(Widget child, {ThemeData? theme}) {
@@ -151,6 +153,169 @@ void main() {
     });
   });
 
+  group('AppIcon', () {
+    testWidgets('does not inherit a branded ambient icon colour', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        harness(
+          IconTheme(
+            data: IconThemeData(color: AppColors.light.brand),
+            child: const AppIcon(AppIcons.heart),
+          ),
+        ),
+      );
+
+      final icon = tester.widget<SvgPicture>(find.byType(SvgPicture));
+      expect(
+        icon.colorFilter,
+        ColorFilter.mode(AppColors.light.textPrimary, BlendMode.srcIn),
+      );
+    });
+  });
+
+  group('AppNetworkImage and AppAvatar', () {
+    testWidgets('derives a 40px decode target from finite constraints', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(devicePixelRatio: 2),
+          child: harness(
+            const SizedBox(
+              width: 40,
+              height: 40,
+              child: AppNetworkImage(
+                imageUrl: 'https://images.example/avatar.jpg',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final image = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(image.memCacheWidth, 80);
+      expect(image.memCacheHeight, 80);
+    });
+
+    testWidgets('derives both rectangular decode axes from layout and DPR', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(devicePixelRatio: 2),
+          child: harness(
+            const SizedBox(
+              width: 160,
+              height: 90,
+              child: AppNetworkImage(
+                imageUrl: 'https://images.example/property.jpg',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final image = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(image.memCacheWidth, 320);
+      expect(image.memCacheHeight, 180);
+    });
+
+    testWidgets('uses a 40px initials fallback when no avatar URL exists', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        harness(const AppAvatar(imageUrl: null, displayName: 'Ada Doe')),
+      );
+
+      expect(tester.getSize(find.byType(ClipOval)), const Size(40, 40));
+      expect(find.text('AD'), findsOneWidget);
+    });
+
+    testWidgets('gives an interactive avatar a genuine 48px hit region', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        harness(
+          AppAvatar(
+            imageUrl: null,
+            displayName: 'Ada Doe',
+            onPressed: () => taps++,
+          ),
+        ),
+      );
+
+      final region = tester.getSize(find.byType(TextButton));
+      expect(region, const Size(48, 48));
+      await tester.tapAt(tester.getTopLeft(find.byType(TextButton)));
+      expect(taps, 1);
+    });
+
+    testWidgets('removes image fades when reduced motion is requested', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(disableAnimations: true),
+          child: harness(
+            const SizedBox.square(
+              dimension: 40,
+              child: AppNetworkImage(
+                imageUrl: 'https://images.example/avatar.jpg',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final image = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(image.fadeInDuration, Duration.zero);
+      expect(image.fadeOutDuration, Duration.zero);
+      expect(image.placeholderFadeInDuration, Duration.zero);
+    });
+
+    testWidgets('exposes one image semantic label', (tester) async {
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          harness(
+            const SizedBox.square(
+              dimension: 40,
+              child: AppNetworkImage(
+                imageUrl: 'https://images.example/property.jpg',
+                semanticLabel: 'Property photo 1 of 2',
+              ),
+            ),
+          ),
+        );
+
+        expect(find.bySemanticsLabel('Property photo 1 of 2'), findsOneWidget);
+      } finally {
+        semantics.dispose();
+      }
+    });
+  });
+
+  group('AppBrandWordmark', () {
+    testWidgets('keeps the committed 169 by 22 visual geometry', (
+      tester,
+    ) async {
+      await tester.pumpWidget(harness(const AppBrandWordmark()));
+
+      expect(
+        tester.getSize(find.byType(AppBrandWordmark)),
+        const Size(169, 22),
+      );
+    });
+  });
+
   group('AppSheet', () {
     testWidgets('protects bottom actions from keyboard and device insets', (
       tester,
@@ -219,17 +384,25 @@ void main() {
   });
 
   group('OfflineStatusBar', () {
-    testWidgets('renders provenance text on a themed surface', (tester) async {
+    testWidgets('renders provenance text and an optional retry action', (
+      tester,
+    ) async {
+      var retries = 0;
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.dark(),
-          home: const Scaffold(
-            body: OfflineStatusBar(message: 'Showing saved posts.'),
+          home: Scaffold(
+            body: OfflineStatusBar(
+              message: 'Showing saved posts.',
+              onRetry: () => retries++,
+            ),
           ),
         ),
       );
 
       expect(find.text('Showing saved posts.'), findsOneWidget);
+      await tester.tap(find.text('Retry'));
+      expect(retries, 1);
       final box = tester.widget<ColoredBox>(
         find.descendant(
           of: find.byType(OfflineStatusBar),

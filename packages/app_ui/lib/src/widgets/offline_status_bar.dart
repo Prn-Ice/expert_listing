@@ -9,31 +9,44 @@ import 'package:flutter/material.dart';
 /// owning feature decides visibility.
 class OfflineStatusBar extends StatelessWidget {
   /// Creates the provenance strip.
-  const OfflineStatusBar({required this.message, super.key});
+  const OfflineStatusBar({
+    required this.message,
+    super.key,
+    this.onRetry,
+  });
 
   /// The provenance description, for example "Showing saved posts.".
   final String message;
+
+  /// Retries the active network request without hiding saved provenance.
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return ColoredBox(
-      color: colors.surface,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.large,
-          vertical: AppSpacing.small,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                message,
-                style: AppTypography.meta(colors),
+    return Semantics(
+      container: true,
+      liveRegion: true,
+      child: ColoredBox(
+        color: colors.surface,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.large,
+            vertical: AppSpacing.small,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  message,
+                  style: AppTypography.meta(colors),
+                ),
               ),
-            ),
-          ],
+              if (onRetry != null)
+                TextButton(onPressed: onRetry, child: const Text('Retry')),
+            ],
+          ),
         ),
       ),
     );

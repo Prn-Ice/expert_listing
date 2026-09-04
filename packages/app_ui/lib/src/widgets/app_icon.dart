@@ -24,7 +24,7 @@ class AppIcon extends StatelessWidget {
   /// The visible glyph size in logical pixels.
   final double size;
 
-  /// The semantic colour; defaults to the theme's icon colour.
+  /// The semantic colour; defaults to the neutral primary content colour.
   final Color? color;
 
   /// Accessibility description when the icon conveys meaning alone.
@@ -32,10 +32,7 @@ class AppIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor =
-        color ??
-        IconTheme.of(context).color ??
-        AppColors.of(context).textPrimary;
+    final effectiveColor = color ?? AppColors.of(context).textPrimary;
 
     return Semantics(
       label: semanticLabel,

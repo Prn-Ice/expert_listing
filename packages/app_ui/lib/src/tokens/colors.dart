@@ -26,6 +26,8 @@ final class AppColors extends ThemeExtension<AppColors> {
     required this.brandText,
     required this.brandTint,
     required this.brandDeep,
+    required this.info,
+    required this.infoTint,
     required this.accent,
     required this.accentTint,
     required this.warm,
@@ -68,6 +70,12 @@ final class AppColors extends ThemeExtension<AppColors> {
   /// The deep green of the committed brand mark and wordmark.
   final Color brandDeep;
 
+  /// Blue text and icons for For Sale status.
+  final Color info;
+
+  /// Blue tint behind For Sale status.
+  final Color infoTint;
+
   /// The violet accent used by request-type tags.
   final Color accent;
 
@@ -94,10 +102,12 @@ final class AppColors extends ThemeExtension<AppColors> {
     brandText: Color(0xff4f7a1f),
     brandTint: Color(0xfff6fbef),
     brandDeep: Color(0xff105b48),
+    info: Color(0xff1257b0),
+    infoTint: Color(0xfff3f8ff),
     accent: Color(0xff5b21b6),
     accentTint: Color(0xfff7f3ff),
-    warm: Color(0xff655143),
-    warmTint: Color(0xfff2efe3),
+    warm: Color(0xffb07800),
+    warmTint: Color(0xfffff9e5),
   );
 
   /// The deliberate dark appearance, derived from the same roles.
@@ -118,10 +128,12 @@ final class AppColors extends ThemeExtension<AppColors> {
     brandText: Color(0xffc7ec96),
     brandTint: Color(0xff24311a),
     brandDeep: Color(0xff9ad7ba),
+    info: Color(0xff9dc5ff),
+    infoTint: Color(0xff182b45),
     accent: Color(0xffc9b8f5),
     accentTint: Color(0xff251e3d),
-    warm: Color(0xffd8c4a8),
-    warmTint: Color(0xff33301f),
+    warm: Color(0xffffcf72),
+    warmTint: Color(0xff3e2e0d),
   );
 
   /// Reads the active roles from the nearest theme.
@@ -143,6 +155,8 @@ final class AppColors extends ThemeExtension<AppColors> {
     Color? brandText,
     Color? brandTint,
     Color? brandDeep,
+    Color? info,
+    Color? infoTint,
     Color? accent,
     Color? accentTint,
     Color? warm,
@@ -161,6 +175,8 @@ final class AppColors extends ThemeExtension<AppColors> {
       brandText: brandText ?? this.brandText,
       brandTint: brandTint ?? this.brandTint,
       brandDeep: brandDeep ?? this.brandDeep,
+      info: info ?? this.info,
+      infoTint: infoTint ?? this.infoTint,
       accent: accent ?? this.accent,
       accentTint: accentTint ?? this.accentTint,
       warm: warm ?? this.warm,
@@ -186,6 +202,8 @@ final class AppColors extends ThemeExtension<AppColors> {
       brandText: Color.lerp(brandText, other.brandText, t)!,
       brandTint: Color.lerp(brandTint, other.brandTint, t)!,
       brandDeep: Color.lerp(brandDeep, other.brandDeep, t)!,
+      info: Color.lerp(info, other.info, t)!,
+      infoTint: Color.lerp(infoTint, other.infoTint, t)!,
       accent: Color.lerp(accent, other.accent, t)!,
       accentTint: Color.lerp(accentTint, other.accentTint, t)!,
       warm: Color.lerp(warm, other.warm, t)!,

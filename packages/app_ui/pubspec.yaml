@@ -8,6 +8,7 @@ environment:
   flutter: ">=1.17.0"
 
 dependencies:
+  cached_network_image: ^4.0.0
   flutter:
     sdk: flutter
   flutter_svg: ^2.3.0
@@ -19,6 +20,7 @@ dev_dependencies:
 
 flutter:
   assets:
+    - assets/brand/
     - assets/icons/
   fonts:
     - family: Open Runde

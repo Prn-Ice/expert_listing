@@ -1,9 +1,8 @@
 /// Typography tokens for the Expert Listing design system.
 ///
 /// The family is the committed Open Runde (OFL 1.1, bundled by this package).
-/// Role sizes follow docs/wiki/design-system.md; sizes and heights were first
-/// measured from [private reference removed] and await Figma re-verification (the
-/// MCP was rate-limited on 2026-09-03).
+/// Role sizes follow docs/wiki/design-system.md and the committed design
+/// reference.
 library;
 
 import 'package:app_ui/src/tokens/colors.dart';
@@ -12,7 +11,7 @@ import 'package:flutter/widgets.dart';
 /// The text role scale. Widgets read these through [AppTypography] helpers so
 /// no widget repeats a raw font size or weight.
 abstract final class AppTypography {
-  /// The bundled family, referenced with this package's asset prefix.
+  /// Open Runde, referenced with this package's asset prefix.
   static const String fontFamily = 'packages/app_ui/Open Runde';
 
   static TextStyle _role(
@@ -33,7 +32,9 @@ abstract final class AppTypography {
     );
   }
 
-  /// Brand wordmark and rare 20px headings.
+  /// Open Runde, 20 logical pixels, 24px line height, weight 600.
+  ///
+  /// Used for the brand wordmark and rare headings.
   static TextStyle brand(AppColors colors, {Color? color}) => _role(
     colors,
     size: 20,
@@ -42,7 +43,9 @@ abstract final class AppTypography {
     color: color,
   );
 
-  /// Author names and 16px semibold content.
+  /// Open Runde, 16 logical pixels, 20px line height, weight 600.
+  ///
+  /// Used for author names and semibold content.
   static TextStyle title(AppColors colors, {Color? color}) => _role(
     colors,
     size: 16,
@@ -51,7 +54,20 @@ abstract final class AppTypography {
     color: color,
   );
 
-  /// Post body copy.
+  /// Open Runde, 16 logical pixels, 19.2px line height, weight 500.
+  ///
+  /// Used for primary feed post copy.
+  static TextStyle postBody(AppColors colors, {Color? color}) => _role(
+    colors,
+    size: 16,
+    weight: FontWeight.w500,
+    height: 1.2,
+    color: color,
+  );
+
+  /// Open Runde, 14 logical pixels, 20.3px line height, weight 400.
+  ///
+  /// Used for post body copy.
   static TextStyle body(AppColors colors, {Color? color}) => _role(
     colors,
     size: 14,
@@ -60,7 +76,9 @@ abstract final class AppTypography {
     color: color,
   );
 
-  /// Emphasised 14px rows (for example "View all comments").
+  /// Open Runde, 14 logical pixels, 20.3px line height, weight 600.
+  ///
+  /// Used for emphasized rows, for example "View all comments".
   static TextStyle bodyStrong(AppColors colors, {Color? color}) => _role(
     colors,
     size: 14,
@@ -69,7 +87,9 @@ abstract final class AppTypography {
     color: color,
   );
 
-  /// Secondary metadata: role, timestamps, liked-by.
+  /// Open Runde, 13 logical pixels, 16.9px line height, weight 400.
+  ///
+  /// Used for secondary metadata: role, timestamps, and liked-by.
   static TextStyle meta(AppColors colors, {Color? color}) => _role(
     colors,
     size: 13,
@@ -78,11 +98,35 @@ abstract final class AppTypography {
     color: color ?? colors.textSecondary,
   );
 
-  /// Tags, locations, counts, and navigation labels.
+  /// Open Runde, 12 logical pixels, 15px line height, weight 500.
+  ///
+  /// Used for tags, locations, counts, and navigation labels.
   static TextStyle caption(AppColors colors, {Color? color}) => _role(
     colors,
     size: 12,
     weight: FontWeight.w500,
+    height: 1.25,
+    color: color ?? colors.textSecondary,
+  );
+
+  /// Open Runde, 13 logical pixels, 16.9px line height, weight 500.
+  ///
+  /// Used for concise hint copy in dense controls.
+  static TextStyle hint(AppColors colors, {Color? color}) => _role(
+    colors,
+    size: 13,
+    weight: FontWeight.w500,
+    height: 1.3,
+    color: color ?? colors.textTertiary,
+  );
+
+  /// Open Runde, 12 logical pixels, 15px line height, weight 400.
+  ///
+  /// Used for the labels below story previews.
+  static TextStyle storyLabel(AppColors colors, {Color? color}) => _role(
+    colors,
+    size: 12,
+    weight: FontWeight.w400,
     height: 1.25,
     color: color ?? colors.textSecondary,
   );
