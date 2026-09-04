@@ -127,9 +127,12 @@ app.*.symbols
 # Local project configuration and agent scratch work.
 .direnv/
 .env.local
+.vscode/
+.DS_Store
 supabase/.env
 supabase/.env.*
 supabase/functions/.env
 .agent/plans/
 2026-09-02-expert-listing-assessment-handoff.md
 2026-09-02-expert-listing-assessment-plan.md
+raw_test_images/
