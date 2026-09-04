@@ -130,6 +130,19 @@ flutter analyze
 flutter test
 ~~~
 
+Run the app from the same directory with an explicit public Hono endpoint:
+
+~~~sh
+flutter run --dart-define=API_BASE_URL=http://127.0.0.1:56321/functions/v1/api
+~~~
+
+~~~sh
+flutter run --dart-define=API_BASE_URL=https://chvhwausefhvaceygppc.supabase.co/functions/v1/api
+~~~
+
+The local command requires the local Supabase stack. The hosted command uses
+only the public API URL and contains no credential.
+
 On Android, `127.0.0.1` refers to the device rather than the development
 computer. When testing against local Supabase, forward the app's local port to
 the same port on the computer:

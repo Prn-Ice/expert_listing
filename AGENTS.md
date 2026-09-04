@@ -54,6 +54,9 @@ win. Ask before changing an explicit product decision.
 
 - Treat committed Figma measurements and exact assets as the visual contract.
   Do not approximate an available SVG or scatter repeated design values.
+- Keep canonical Figma references in the specification and agent guidance;
+  user-facing README and wiki pages use semantic asset names and measurements,
+  never Figma IDs or links.
 - app_ui owns repeated semantic colours, spacing, type, radii, icon and tap
   geometry, motion, and genuinely repeated controls—not app data or feature
   state.

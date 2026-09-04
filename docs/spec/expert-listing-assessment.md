@@ -839,7 +839,9 @@ Never expose stack traces, SQL, credentials, or raw exception messages.
 
 ## 16. Offline and cache contract
 
-Dio provides transport. The cache packages provide storage mechanics. The repository owns freshness, fallback, invalidation, and the state shown to users.
+Dio provides transport. `FeedCache`, backed by one dedicated `CacheManager`,
+provides feed-response storage mechanics. The repository owns freshness,
+fallback, invalidation, and the state shown to users.
 
 Do not enable an automatic cache fallback that hides the original failure category.
 
@@ -866,15 +868,17 @@ Rules:
 - the full request URI, including cursor and filters, identifies an entry;
 - cached responses retain saved timestamp, stale provenance, and fallback reason;
 - HTTP service failures are never called offline;
-- entries expire after seven days;
-- startup removes expired entries;
-- keep at most the 32 newest feed-response entries;
-- evict by saved timestamp;
+- `FeedCache` uses a seven-day `CacheManager` stale period and a 32-object
+  response-cache bound;
+- cache-only reads use `CacheManager.getFileFromCache`; they never fetch;
+- cache read, write, removal, clearing, and disposal failures are optional
+  infrastructure failures, never a reason to change correct live content;
 - comments are not persisted for offline use;
 - mutations are never cached;
 - mutations are never silently queued;
-- image caching is separately bounded to 200 objects;
-- cached image objects may be evicted after 30 days.
+- image caching is separately owned by `app_ui` and its
+  `CachedNetworkImage`/`CacheManager` configuration; feed invalidation never
+  removes image bytes.
 
 After a successful create, like, or comment:
 

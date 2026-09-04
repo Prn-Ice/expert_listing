@@ -16,14 +16,18 @@ overlay aid, never an app asset.
 
 Captured SVG icons live under `../../packages/app_ui/assets/icons/`; reference
 imagery remains under `../../apps/expert_listing_mobile/assets/images/`.
-Widgets use semantic asset names, not Figma IDs. Figma MCP reached its
-Starter-plan call limit on 2026-09-03, so the user manually supplied the exact
-brand exports below; do not substitute or redraw them.
+Widgets use semantic asset names, not design-tool identifiers. Do not substitute
+or redraw the committed exports.
 
 | Semantic asset | Source file | Provenance |
 | --- | --- | --- |
 | Brand mark | `../../apps/expert_listing_mobile/assets/brand/brand-mark.svg` | User-supplied header export |
-| Full wordmark | `../../apps/expert_listing_mobile/assets/brand/expert-listing-wordmark.svg` | User-supplied header export |
+| Full wordmark | `../../packages/app_ui/assets/brand/expert-listing-wordmark.svg` | User-supplied header export |
+| Search navigation | `../../packages/app_ui/assets/icons/search.svg` | Figma MagnifyingGlass export retrieved with the feed design context |
+| For Sale tag | `../../packages/app_ui/assets/icons/post-tag.svg` | Figma Tag export |
+| Looking to Buy tag | `../../packages/app_ui/assets/icons/post-tag-looking-to-buy.svg` | Figma Tag export |
+| For Rent tag | `../../packages/app_ui/assets/icons/post-key-for-rent.svg` | Figma Key export |
+| Looking to Rent tag | `../../packages/app_ui/assets/icons/post-key-looking-to-rent.svg` | Figma Key export |
 
 Open Runde weights 400, 500, 600, and 700 plus its OFL 1.1 licence are bundled
 at `../../packages/app_ui/assets/fonts/open_runde/`. `app_ui` registers them as
@@ -97,13 +101,17 @@ The observed light reference currently establishes these roles:
 | Brand | #a8dc66 |
 | Brand text | #4f7a1f |
 | Brand tint | #f6fbef |
+| Info text | #1257b0 |
+| Info tint | #f3f8ff |
 | Accent text | #5b21b6 |
 | Accent tint | #f7f3ff |
+| Warm text | #b07800 |
+| Warm tint | #fff9e5 |
 
-Additional shared roles are border `#e8e8e8`, brand deep `#105b48`, warm text
-`#655143`, and warm tint `#f2efe3`. `#7c7c7c` is the observed light Figma
-tertiary colour; reserve it for non-essential hints rather than normal small
-copy because it is below 4.5:1 on white.
+Additional shared roles are border `#e8e8e8` and brand deep `#105b48`.
+`#7c7c7c` is the observed light Figma tertiary colour; reserve it for
+non-essential hints rather than normal small copy because it is below 4.5:1 on
+white.
 
 These values become named theme roles in app_ui; widgets do not repeat raw
 colour literals.
@@ -132,9 +140,8 @@ available.
 ## Spacing, type, shape, and motion
 
 Observed roles use Open Runde: caption 12/500 at 1.25, metadata 13/400 at 1.3,
-body 14/400 at 1.45, and title 16/600 at 1.25. The 20/600 brand role has a 1.2
-line height. These measurements came from the committed 428-pixel overlay aid
-and need Figma re-verification when access returns.
+body 14/400 at 1.45, post body 16/500 at 1.2, and title 16/600 at 1.25. The
+20/600 brand role has a 1.2 line height.
 
 Define finite spacing, radius, border, icon, and interaction scales from
 repeated measurements. Keep one-off geometry as a named local constant with its
@@ -152,9 +159,17 @@ Implement these only where the repeated contract is used:
 - AppIconButton preserves the Figma glyph size inside at least a 48 by 48
   logical-pixel hit region, including focus, tooltip, semantics, platform press
   feedback, and optional restrained haptic feedback.
+- AppBrandWordmark owns the exact 169 by 22 Expert Listing wordmark asset;
+  feature widgets own its surrounding hit target and action.
 - AppSheet applies the shared design identity with current platform mechanics.
 - AppNotice provides one safe-area-aware transient message and prevents queues.
 - OfflineStatusBar persistently describes saved-feed provenance.
+- AppNetworkImage is the only production owner of `CachedNetworkImage`; it
+  derives decode dimensions from finite layout constraints and device pixel
+  ratio, supports stable loading/error surfaces, reduced-motion fades, and one
+  optional image semantic label.
+- AppAvatar renders a 40px circular public image or initials fallback, and wraps
+  an interactive avatar in a 48px semantic hit target.
 
 Ordinary buttons and fields use themed semantic Flutter controls. The product
 feature is create_post: the feed row is CreatePostPrompt and the opened surface
