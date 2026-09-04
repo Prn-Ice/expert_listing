@@ -18,28 +18,23 @@ class StoryStrip extends StatelessWidget {
         isCurrentUser: true,
       ),
       (
-        label: 'RamosRealty',
-        asset: 'assets/images/story-ramos-realty.png',
+        label: 'Abba',
+        asset: 'assets/images/abba.jpg',
         isCurrentUser: false,
       ),
       (
-        label: 'Jordan',
-        asset: 'assets/images/jordan.jpg',
+        label: 'Bizzaro',
+        asset: 'assets/images/bizzaro.jpg',
         isCurrentUser: false,
       ),
       (
-        label: 'Taylor',
-        asset: 'assets/images/taylor.jpg',
+        label: 'Ifeoma',
+        asset: 'assets/images/ifeoma.jpg',
         isCurrentUser: false,
       ),
       (
-        label: 'Jamie',
-        asset: 'assets/images/jamie.jpg',
-        isCurrentUser: false,
-      ),
-      (
-        label: 'Felix',
-        asset: 'assets/images/felix.jpg',
+        label: 'Ayo',
+        asset: 'assets/images/ayo.jpg',
         isCurrentUser: false,
       ),
     ];

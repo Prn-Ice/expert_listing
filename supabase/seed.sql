@@ -1,9 +1,9 @@
 insert into public.users (id, handle, display_name, role, avatar_path, created_at)
 values
   ('00000000-0000-0000-0000-000000000001', 'prince', 'Prince Adeyemi', 'Realtor', 'avatars/current-user.jpg', '2026-09-01T08:00:00Z'),
-  ('00000000-0000-0000-0000-000000000002', 'felix', 'Felix Okafor', 'Property Consultant', 'avatars/felix.jpg', '2026-09-01T08:01:00Z'),
-  ('00000000-0000-0000-0000-000000000003', 'jamie', 'Jamie Williams', 'Architect', 'avatars/jamie.jpg', '2026-09-01T08:02:00Z'),
-  ('00000000-0000-0000-0000-000000000004', 'taylor', 'Taylor Moore', 'Homeowner', 'avatars/taylor.jpg', '2026-09-01T08:03:00Z')
+  ('00000000-0000-0000-0000-000000000002', 'ayo', 'Ayo Balogun', 'Property Consultant', 'avatars/ayo.jpg', '2026-09-01T08:01:00Z'),
+  ('00000000-0000-0000-0000-000000000003', 'ifeoma', 'Ifeoma Nwosu', 'Architect', 'avatars/ifeoma.jpg', '2026-09-01T08:02:00Z'),
+  ('00000000-0000-0000-0000-000000000004', 'bizzaro', 'Bizzaro Cole', 'Homeowner', 'avatars/bizzaro.jpg', '2026-09-01T08:03:00Z')
 on conflict (id) do update
 set
   handle = excluded.handle,
