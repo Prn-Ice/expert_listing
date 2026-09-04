@@ -109,7 +109,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$insert into public.property_images (property_id, storage_path, position) values (5002, 'properties/property-5001.png', 1)$$,
+  $$insert into public.property_images (property_id, storage_path, position) values (5002, 'properties/lekki-kitchen-01.jpg', 1)$$,
   '23505',
   null,
   'property images require globally unique storage paths'
@@ -219,7 +219,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$select public.create_post('00000000-0000-0000-0000-000000000001', 'A rollback check', 'property', 'Rollback, Lagos', null, 'for_sale', array['properties/property-5001.png'])$$,
+  $$select public.create_post('00000000-0000-0000-0000-000000000001', 'A rollback check', 'property', 'Rollback, Lagos', null, 'for_sale', array['properties/lekki-kitchen-01.jpg'])$$,
   '23505',
   null,
   'duplicate property image paths fail the post creation RPC'

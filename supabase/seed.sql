@@ -1,9 +1,9 @@
 insert into public.users (id, handle, display_name, role, avatar_path, created_at)
 values
-  ('00000000-0000-0000-0000-000000000001', 'prince', 'Prince Adeyemi', 'Realtor', 'avatars/current-user.png', '2026-09-01T08:00:00Z'),
-  ('00000000-0000-0000-0000-000000000002', 'felix', 'Felix Okafor', 'Property Consultant', 'avatars/felix.png', '2026-09-01T08:01:00Z'),
-  ('00000000-0000-0000-0000-000000000003', 'jamie', 'Jamie Williams', 'Architect', 'avatars/jamie.png', '2026-09-01T08:02:00Z'),
-  ('00000000-0000-0000-0000-000000000004', 'taylor', 'Taylor Moore', 'Homeowner', 'avatars/taylor.png', '2026-09-01T08:03:00Z')
+  ('00000000-0000-0000-0000-000000000001', 'prince', 'Prince Adeyemi', 'Realtor', 'avatars/current-user.jpg', '2026-09-01T08:00:00Z'),
+  ('00000000-0000-0000-0000-000000000002', 'felix', 'Felix Okafor', 'Property Consultant', 'avatars/felix.jpg', '2026-09-01T08:01:00Z'),
+  ('00000000-0000-0000-0000-000000000003', 'jamie', 'Jamie Williams', 'Architect', 'avatars/jamie.jpg', '2026-09-01T08:02:00Z'),
+  ('00000000-0000-0000-0000-000000000004', 'taylor', 'Taylor Moore', 'Homeowner', 'avatars/taylor.jpg', '2026-09-01T08:03:00Z')
 on conflict (id) do update
 set
   handle = excluded.handle,
@@ -80,11 +80,11 @@ set
 insert into public.property_images (id, property_id, storage_path, position, created_at)
 overriding system value
 values
-  (2001, 5001, 'properties/property-5001.png', 0, '2026-09-02T12:00:00Z'),
-  (2002, 5001, 'properties/property-5001-detail.png', 1, '2026-09-02T12:00:00Z'),
-  (2003, 5002, 'properties/property-5002.png', 0, '2026-09-02T11:30:00Z'),
-  (2004, 5004, 'properties/property-5004.png', 0, '2026-09-02T10:30:00Z'),
-  (2005, 5006, 'properties/property-5006.png', 0, '2026-09-02T09:30:00Z')
+  (2001, 5001, 'properties/lekki-kitchen-01.jpg', 0, '2026-09-02T12:00:00Z'),
+  (2002, 5001, 'properties/lekki-kitchen-02.jpg', 1, '2026-09-02T12:00:00Z'),
+  (2003, 5002, 'properties/ikeja-gra-apartment-compound.jpg', 0, '2026-09-02T11:30:00Z'),
+  (2004, 5004, 'properties/magodo-garden-home.jpg', 0, '2026-09-02T10:30:00Z'),
+  (2005, 5006, 'properties/chevron-family-home.jpg', 0, '2026-09-02T09:30:00Z')
 on conflict (id) do update
 set
   property_id = excluded.property_id,
