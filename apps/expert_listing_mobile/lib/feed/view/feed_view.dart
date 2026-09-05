@@ -12,6 +12,7 @@ import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/feed/view/story_strip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The network-first Expert Listing feed body.
@@ -53,8 +54,7 @@ class FeedViewState extends ConsumerState<FeedView> {
   Widget build(BuildContext context) {
     ref.listen<FeedState>(feedBlocProvider, _showSavedFeedTransition);
     final state = ref.watch(feedBlocProvider);
-    final usesCupertinoRefresh =
-        Theme.of(context).platform == TargetPlatform.iOS;
+    final usesCupertinoRefresh = context.isIos;
     final feed = CustomScrollView(
       controller: widget.scrollController,
       key: const PageStorageKey<String>('feed-scroll'),
@@ -87,6 +87,7 @@ class FeedViewState extends ConsumerState<FeedView> {
           SliverPersistentHeader(
             pinned: true,
             delegate: _OfflineBarDelegate(
+              height: OfflineStatusBar.heightFor(context),
               message: state.fallbackReason == FeedFallbackReason.connection
                   ? 'Offline · Showing saved posts'
                   : 'Showing saved posts',
@@ -131,11 +132,7 @@ class FeedViewState extends ConsumerState<FeedView> {
   void scrollToTop() {
     final controller = widget.scrollController;
     if (!controller.hasClients || controller.offset <= 0) return;
-    controller.animateTo(
-      0,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-    );
+    _moveToTop(controller);
   }
 
   Future<void> _refresh() async {
@@ -172,11 +169,7 @@ class FeedViewState extends ConsumerState<FeedView> {
               : FeedFiltersApplied(filter),
         );
     if (widget.scrollController.hasClients) {
-      widget.scrollController.animateTo(
-        0,
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOut,
-      );
+      _moveToTop(widget.scrollController);
     }
   }
 
@@ -185,6 +178,15 @@ class FeedViewState extends ConsumerState<FeedView> {
 
   void _showSavedFeedTransition(FeedState? previous, FeedState next) {
     if (previous == null) return;
+    if (context.isIos && !previous.refreshFailed && next.refreshFailed) {
+      unawaited(
+        SemanticsService.sendAnnouncement(
+          View.of(context),
+          "Couldn't refresh. Showing the posts already loaded.",
+          Directionality.of(context),
+        ),
+      );
+    }
     if (!previous.isShowingSavedPosts &&
         next.isShowingSavedPosts &&
         next.fallbackReason == FeedFallbackReason.service) {
@@ -199,19 +201,36 @@ class FeedViewState extends ConsumerState<FeedView> {
   }
 
   void _showNotice(String message) => AppNotice.show(context, message);
+
+  void _moveToTop(ScrollController controller) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      controller.jumpTo(0);
+      return;
+    }
+    controller.animateTo(
+      0,
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+    );
+  }
 }
 
 final class _OfflineBarDelegate extends SliverPersistentHeaderDelegate {
-  const _OfflineBarDelegate({required this.message, required this.onRetry});
+  const _OfflineBarDelegate({
+    required this.height,
+    required this.message,
+    required this.onRetry,
+  });
 
+  final double height;
   final String message;
   final VoidCallback onRetry;
 
   @override
-  double get maxExtent => OfflineStatusBar.height;
+  double get maxExtent => height;
 
   @override
-  double get minExtent => OfflineStatusBar.height;
+  double get minExtent => height;
 
   @override
   Widget build(
@@ -222,7 +241,9 @@ final class _OfflineBarDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_OfflineBarDelegate oldDelegate) =>
-      oldDelegate.message != message || oldDelegate.onRetry != onRetry;
+      oldDelegate.height != height ||
+      oldDelegate.message != message ||
+      oldDelegate.onRetry != onRetry;
 }
 
 final class _FilterControl extends StatelessWidget {
@@ -248,7 +269,9 @@ final class _FilterControl extends StatelessWidget {
         child: AppPressable(
           key: const ValueKey<String>('feed-filters'),
           onPressed: onPressed,
-          semanticLabel: 'Filters',
+          semanticLabel: activeCount == 0
+              ? 'Filters'
+              : 'Filters, $activeCount active',
           borderRadius: BorderRadius.circular(AppIconSize.tapTarget / 2),
           child: Container(
             // The genuine 48px activation region surrounds the measured
@@ -441,9 +464,12 @@ final class _InlineStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.medium),
-      child: Text(message, textAlign: TextAlign.center),
+    return Semantics(
+      liveRegion: true,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.medium),
+        child: Text(message, textAlign: TextAlign.center),
+      ),
     );
   }
 }

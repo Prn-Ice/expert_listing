@@ -59,6 +59,10 @@ win. Ask before changing an explicit product decision.
 - Keep canonical Figma references in the specification and agent guidance;
   user-facing README and wiki pages use semantic asset names and measurements,
   never Figma IDs or links.
+- Choose controls in this order: reuse a suitable app_ui component; otherwise
+  use the platform's standard or adaptive Flutter control; build a custom
+  control only when the branded design or required behaviour cannot be
+  expressed by either. Custom controls keep native semantics and feedback.
 - app_ui owns repeated semantic colours, spacing, type, radii, icon and tap
   geometry, motion, and genuinely repeated controls—not app data or feature
   state.

@@ -88,8 +88,10 @@ class PostCard extends StatelessWidget {
               left: _postContentInset - AppSpacing.small,
               right: _postInset,
             ),
-            child: SizedBox(
-              height: AppIconSize.textButtonTapTarget,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                minHeight: AppIconSize.textButtonTapTarget,
+              ),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: AppButton(
@@ -133,8 +135,8 @@ final class _PostHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    return SizedBox(
-      height: AppIconSize.tapTarget,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: AppIconSize.tapTarget),
       child: Row(
         children: [
           Expanded(

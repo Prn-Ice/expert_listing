@@ -95,8 +95,8 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
         AppSpacing.large,
         AppSpacing.medium,
       ),
-      child: SizedBox(
-        height: 56,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 56),
         child: AnimatedBuilder(
           animation: _outlineOpacity,
           builder: (context, child) => DecoratedBox(

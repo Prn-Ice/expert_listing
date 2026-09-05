@@ -8,6 +8,8 @@ import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/search/recent_search_store.dart';
+import 'package:expert_listing/search/search_providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -25,6 +27,7 @@ void main() {
           ),
         ),
         feedRepositoryProvider.overrideWithValue(_ThemeFeedRepository()),
+        recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
       ],
       child: ExpertListingApp(platformOverride: platformOverride),
     );
@@ -176,6 +179,20 @@ void main() {
     context = tester.element(find.byType(Scaffold));
     expect(AppColors.of(context), AppColors.dark);
   });
+}
+
+final class _RecentSearchStore implements RecentSearchStore {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<List<String>> load() async => const [];
+
+  @override
+  Future<List<String>> remove(String query) async => const [];
+
+  @override
+  Future<List<String>> save(String query) async => [query];
 }
 
 final class _ThemeFeedRepository extends FeedRepository {

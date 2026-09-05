@@ -1,3 +1,4 @@
+import 'package:app_ui/src/extensions/build_context_platform.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -20,7 +21,7 @@ class AppScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bar = bottomNavigationBar;
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (context.isIos) {
       return CupertinoPageScaffold(
         child: bar == null
             ? body

@@ -1,7 +1,9 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/feed/view/property_media.dart';
+import 'package:expert_listing/feed/view/story_strip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -578,7 +580,7 @@ void main() {
     }
   });
 
-  testWidgets('the full-screen viewer starts tapped and swipes in order', (
+  testWidgets('the full-screen viewer starts tapped and pages in order', (
     tester,
   ) async {
     await tester.pumpWidget(
@@ -616,12 +618,63 @@ void main() {
     );
     expect(viewer.controller!.page, 1);
 
-    await tester.drag(
-      find.byKey(const ValueKey<String>('full-screen-property-images')),
-      const Offset(700, 0),
-    );
+    await tester.tap(find.bySemanticsLabel('Previous photo'));
     await tester.pumpAndSettle();
     expect(viewer.controller!.page, 0);
+
+    await tester.tap(find.bySemanticsLabel('Next photo'));
+    await tester.pumpAndSettle();
+    expect(viewer.controller!.page, 1);
+  });
+
+  testWidgets('feed rows grow and wrap at platform accessibility text sizes', (
+    tester,
+  ) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 8),
+      'likeCount': 120,
+      'commentCount': 32,
+      'viewCount': 2400,
+      'bookmarkCount': 17,
+      'author': {
+        ...(_commonPost(id: 8)['author']! as Map<String, dynamic>),
+        'displayName': 'Prince Adeyemi with a long profile name',
+      },
+    });
+
+    for (final textScale in [2.0, 3.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey<double>(textScale),
+          theme: AppTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: Column(
+                children: [
+                  StoryStrip(onNotice: (_) {}),
+                  CreatePostPrompt(
+                    onNotice: (_) {},
+                    showInvitation: false,
+                  ),
+                  PostCard(post: post, onNotice: (_) {}),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.takeException(), isNull, reason: 'text scale $textScale');
+    }
+
+    expect(tester.getSize(find.text('Your Story')).height, greaterThan(30));
   });
 
   testWidgets('a property carousel restores its page after reconstruction', (

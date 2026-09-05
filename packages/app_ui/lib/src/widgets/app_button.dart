@@ -1,3 +1,4 @@
+import 'package:app_ui/src/extensions/build_context_platform.dart';
 import 'package:app_ui/src/tokens/icons.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -54,7 +55,7 @@ class AppButton extends StatelessWidget {
         this.minimumSize ?? const Size.square(AppIconSize.textButtonTapTarget);
     final padding = this.padding ?? EdgeInsets.zero;
 
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (context.isIos) {
       return CupertinoButton(
         padding: padding,
         minimumSize: minimumSize,

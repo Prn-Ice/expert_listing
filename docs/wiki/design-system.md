@@ -171,7 +171,50 @@ Cupertino controls into Material controls.
 Branded feed content keeps the committed Open Runde family and supplied
 tokens under either root; genuinely native platform surfaces may use platform
 typography unless the design explicitly fixes it. Subtrees below the roots
-select behaviour with `Theme.of(context).platform`, never `Platform.isIOS`.
+select behaviour with `context.isIos`. That app_ui extension resolves the
+active `ThemeData.platform`, so tests can override the platform without using
+`dart:io`; feature widgets never call `Platform.isIOS`.
+
+## Platform behavior
+
+The branded feed keeps the same content order and measured geometry on iOS and
+Android. Platform differences are limited to interaction mechanics and native
+surfaces:
+
+| Interaction | iOS | Android |
+| --- | --- | --- |
+| Pull to refresh | `CupertinoSliverRefreshControl` | `RefreshIndicator` |
+| Filter surface | Dismissible `CupertinoSheetRoute` | Modal Material bottom sheet |
+| Filters and location | Cupertino choices and field | Material choices and field |
+| Boundary notice | Replacing dismissible Cupertino alert | Replacing SnackBar |
+| Full-screen media route | `CupertinoPageRoute` with edge swipe-back | `MaterialPageRoute` with system back |
+| Feed return to top | Primary scroll view supports the iOS status-bar gesture | Selecting the active Feed destination returns to top |
+
+System back, keyboard dismissal, safe areas, focus, text scaling, dark mode,
+screen-reader semantics, and reduced-motion preferences remain native. Media
+carousels support swiping; full-screen property media also exposes visible
+Previous and Next actions so paging never requires a drag gesture.
+
+Two deliberate exceptions preserve the product reference. The iOS filter sheet
+occupies the bottom 40% rather than Cupertino's taller default because the fixed
+filter set otherwise leaves excessive empty space; compressed keyboard states
+scroll. Compact labelled controls retain their measured 32px minimum where the
+WCAG 2.2 AA 24px target requirement is met; icon-only controls retain at least a
+48 by 48 logical-pixel target. Revisit either exception if content grows, device
+testing finds clipping, or a platform review requires its larger recommended
+target.
+
+The bottom navigation retains its custom measured arrangement because neither
+native bar reproduces the reference's icon, label, spacing, and safe-area
+geometry; each destination still exposes native button, selection, focus, and
+activation semantics. The iOS notice intentionally uses a replacing Cupertino
+alert because iOS has no direct SnackBar equivalent and deferred destinations
+need a short, dismissible response rather than silent failure.
+
+Keep platform adaptation at the call site until a second independent feature
+needs the same presentation, dismissal, semantics, and geometry. Only then move
+that complete repeated contract into app_ui; visual similarity alone is not a
+reason to add another shared component.
 
 ## Spacing, type, shape, and motion
 

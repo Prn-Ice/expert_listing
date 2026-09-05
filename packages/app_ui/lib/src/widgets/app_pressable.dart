@@ -1,3 +1,4 @@
+import 'package:app_ui/src/extensions/build_context_platform.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -51,7 +52,7 @@ class AppPressable extends StatelessWidget {
         ? child
         : Semantics(label: label, excludeSemantics: true, child: child);
 
-    final pressable = Theme.of(context).platform == TargetPlatform.iOS
+    final pressable = context.isIos
         ? CupertinoButton(
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,

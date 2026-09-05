@@ -16,12 +16,15 @@ Future<FeedFilter?> showFeedFilterSheet(
   return AppSheet.show<FeedFilter>(
     context,
     cupertinoTopGap: cupertinoTopGap,
-    child: _FeedFilterSheet(filter: filter),
+    child: _FeedFilterSheet(
+      key: const ValueKey<String>('feed-filter-sheet'),
+      filter: filter,
+    ),
   );
 }
 
 final class _FeedFilterSheet extends StatefulWidget {
-  const _FeedFilterSheet({required this.filter});
+  const _FeedFilterSheet({required this.filter, super.key});
 
   final FeedFilter filter;
 
@@ -50,6 +53,7 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
     // The single-child scroll view keeps every control reachable when the
     // keyboard compresses the sheet on small screens.
     return SingleChildScrollView(
+      key: const ValueKey<String>('feed-filter-sheet'),
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xlarge,
         AppSpacing.large,
@@ -225,29 +229,52 @@ final class _FilterChoice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
-      return CupertinoButton(
-        padding: EdgeInsets.zero,
-        minimumSize: const Size.square(AppIconSize.textButtonTapTarget),
-        pressedOpacity: 0.6,
-        onPressed: onSelected,
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.small,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: selected ? colors.brandTint : null,
-            border: selected
-                ? null
-                : Border.all(color: colors.textPrimary.withValues(alpha: 0.1)),
-            borderRadius: AppRadii.pill,
-          ),
-          child: Text(
-            label,
-            style: AppTypography.caption(
-              colors,
-              color: selected ? colors.brandText : colors.textPrimary,
+    if (context.isIos) {
+      return Semantics(
+        button: true,
+        selected: selected,
+        enabled: true,
+        label: label,
+        onTap: onSelected,
+        excludeSemantics: true,
+        child: CupertinoButton(
+          padding: EdgeInsets.zero,
+          minimumSize: const Size.square(AppIconSize.textButtonTapTarget),
+          pressedOpacity: 0.6,
+          onPressed: onSelected,
+          child: Container(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.small,
+              vertical: 6,
+            ),
+            decoration: BoxDecoration(
+              color: selected ? colors.brandTint : null,
+              border: selected
+                  ? null
+                  : Border.all(
+                      color: colors.textPrimary.withValues(alpha: 0.1),
+                    ),
+              borderRadius: AppRadii.pill,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (selected) ...[
+                  Icon(
+                    CupertinoIcons.check_mark,
+                    size: 12,
+                    color: colors.brandText,
+                  ),
+                  const SizedBox(width: AppSpacing.xsmall),
+                ],
+                Text(
+                  label,
+                  style: AppTypography.caption(
+                    colors,
+                    color: selected ? colors.brandText : colors.textPrimary,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -271,28 +298,30 @@ final class _FilterField extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     // The API accepts a trimmed location of 1 through 120 characters.
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
-      return CupertinoTextField(
-        controller: controller,
-        maxLength: 120,
-        textInputAction: TextInputAction.done,
-        placeholder: 'Search locations',
-        style: AppTypography.body(colors),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.small,
-          vertical: AppSpacing.small,
-        ),
-      );
-    }
-    return TextField(
-      controller: controller,
-      maxLength: 120,
-      textInputAction: TextInputAction.done,
-      decoration: const InputDecoration(
-        hintText: 'Search locations',
-        counterText: '',
-        border: OutlineInputBorder(),
-      ),
+    return Semantics(
+      label: 'Location',
+      child: context.isIos
+          ? CupertinoTextField(
+              controller: controller,
+              maxLength: 120,
+              textInputAction: TextInputAction.done,
+              placeholder: 'Search locations',
+              style: AppTypography.body(colors),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.small,
+                vertical: AppSpacing.small,
+              ),
+            )
+          : TextField(
+              controller: controller,
+              maxLength: 120,
+              textInputAction: TextInputAction.done,
+              decoration: const InputDecoration(
+                hintText: 'Search locations',
+                counterText: '',
+                border: OutlineInputBorder(),
+              ),
+            ),
     );
   }
 }
@@ -305,7 +334,7 @@ final class _ClearAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (context.isIos) {
       return CupertinoButton(
         padding: EdgeInsets.zero,
         minimumSize: const Size.square(AppIconSize.textButtonTapTarget),
@@ -314,7 +343,7 @@ final class _ClearAction extends StatelessWidget {
           'Clear',
           style: AppTypography.bodyMedium(
             AppColors.of(context),
-            color: AppColors.of(context).textTertiary,
+            color: AppColors.of(context).textSecondary,
           ),
         ),
       );
@@ -331,7 +360,7 @@ final class _ApplyAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (context.isIos) {
       return CupertinoButton(
         color: AppColors.of(context).brand,
         padding: const EdgeInsets.symmetric(

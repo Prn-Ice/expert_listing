@@ -16,57 +16,73 @@ class PostActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final like = AppIconButton(
+      icon: AppIcons.heart,
+      iconSize: AppIconSize.small,
+      color: colors.textSecondary,
+      label: post.likeCount == 0 ? null : '${post.likeCount}',
+      tooltip: 'Like',
+      onPressed: () => onNotice('Likes are part of the next preview step.'),
+    );
+    final comments = AppIconButton(
+      icon: AppIcons.comment,
+      iconSize: AppIconSize.small,
+      color: colors.textSecondary,
+      label: post.commentCount == 0 ? null : '${post.commentCount}',
+      tooltip: 'Comments',
+      onPressed: () => onNotice('Comments are part of the next preview step.'),
+    );
+    final share = AppIconButton(
+      icon: AppIcons.share,
+      iconSize: AppIconSize.small,
+      color: colors.textSecondary,
+      tooltip: 'Share',
+      onPressed: () => onNotice('Sharing is not available right now.'),
+    );
+    final bookmark = AppIconButton(
+      icon: AppIcons.bookmark,
+      iconSize: AppIconSize.small,
+      color: colors.textSecondary,
+      label: post.bookmarkCount == 0 ? null : '${post.bookmarkCount}',
+      tooltip: 'Bookmark',
+      onPressed: () => onNotice('Bookmarks are part of the next preview step.'),
+    );
+    final views = Text(
+      '${_viewCount(post.viewCount)} Views',
+      key: ValueKey<String>('post-views-${post.id}'),
+      style: AppTypography.caption(colors),
+    );
+
+    if (MediaQuery.textScalerOf(context).scale(1) > 1.5) {
+      return Wrap(
+        spacing: AppSpacing.small,
+        runSpacing: AppSpacing.xsmall,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          like,
+          comments,
+          share,
+          if (post.viewCount > 0) views,
+          bookmark,
+        ],
+      );
+    }
+
     return Row(
       children: [
-        AppIconButton(
-          icon: AppIcons.heart,
-          iconSize: AppIconSize.small,
-          color: colors.textSecondary,
-          label: post.likeCount == 0 ? null : '${post.likeCount}',
-          tooltip: 'Like',
-          onPressed: () => onNotice('Likes are part of the next preview step.'),
-        ),
-        AppIconButton(
-          icon: AppIcons.comment,
-          iconSize: AppIconSize.small,
-          color: colors.textSecondary,
-          label: post.commentCount == 0 ? null : '${post.commentCount}',
-          tooltip: 'Comments',
-          onPressed: () =>
-              onNotice('Comments are part of the next preview step.'),
-        ),
-        AppIconButton(
-          icon: AppIcons.share,
-          iconSize: AppIconSize.small,
-          color: colors.textSecondary,
-          tooltip: 'Share',
-          onPressed: () => onNotice('Sharing is not available right now.'),
-        ),
+        like,
+        comments,
+        share,
         if (post.viewCount > 0)
           Expanded(
             child: Align(
               alignment: Alignment.centerLeft,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '${_viewCount(post.viewCount)} Views',
-                  key: ValueKey<String>('post-views-${post.id}'),
-                  style: AppTypography.caption(colors),
-                ),
-              ),
+              child: views,
             ),
           )
         else
           const Spacer(),
-        AppIconButton(
-          icon: AppIcons.bookmark,
-          iconSize: AppIconSize.small,
-          color: colors.textSecondary,
-          label: post.bookmarkCount == 0 ? null : '${post.bookmarkCount}',
-          tooltip: 'Bookmark',
-          onPressed: () =>
-              onNotice('Bookmarks are part of the next preview step.'),
-        ),
+        bookmark,
       ],
     );
   }

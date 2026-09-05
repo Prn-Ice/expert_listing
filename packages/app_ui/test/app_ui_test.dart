@@ -565,7 +565,7 @@ void main() {
   });
 
   group('AppNotice', () {
-    testWidgets('a second notice replaces the first instead of stacking', (
+    testWidgets('an Android notice replaces the first instead of stacking', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -621,6 +621,7 @@ void main() {
           ),
         );
 
+        final context = tester.element(find.text('show'));
         await tester.tap(find.text('show'));
         await tester.pumpAndSettle();
         expect(
@@ -628,12 +629,17 @@ void main() {
           findsOneWidget,
         );
 
-        await tester.tap(find.text('OK'));
+        AppNotice.show(context, 'Second notice.');
         await tester.pumpAndSettle();
         expect(
           find.text('Search is not part of this preview.'),
           findsNothing,
         );
+        expect(find.text('Second notice.'), findsOneWidget);
+
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+        expect(find.text('Second notice.'), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
@@ -691,6 +697,34 @@ void main() {
         tester.getSize(find.byType(TextButton)).height,
         AppIconSize.textButtonTapTarget,
       );
+    });
+
+    testWidgets('the strip grows instead of clipping enlarged text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(3)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: OfflineStatusBar(
+              message: 'Offline · Showing saved posts',
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        tester.getSize(find.byType(OfflineStatusBar)).height,
+        greaterThan(40),
+      );
+      expect(tester.takeException(), isNull);
     });
   });
 

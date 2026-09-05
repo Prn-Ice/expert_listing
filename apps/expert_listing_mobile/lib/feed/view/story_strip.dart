@@ -11,6 +11,9 @@ class StoryStrip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final scaleDelta = (textScale - 1).clamp(0, 2).toDouble();
+    final scaledTextAllowance = scaleDelta > 0 ? 16.0 : 0.0;
     const stories = <({String label, String asset, bool isCurrentUser})>[
       (
         label: 'Your Story',
@@ -42,7 +45,7 @@ class StoryStrip extends StatelessWidget {
     return SizedBox(
       // Figma [private design node removed] uses a 60px avatar, 1px inner gap, 2px ring,
       // 4px label gap, and 12px label.
-      height: 87,
+      height: 87 + scaledTextAllowance + (46 * scaleDelta),
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(
           AppSpacing.xlarge,
@@ -59,6 +62,7 @@ class StoryStrip extends StatelessWidget {
             label: story.label,
             asset: story.asset,
             isCurrentUser: story.isCurrentUser,
+            width: 66 + (32 * scaleDelta),
             onPressed: () => onNotice(
               story.isCurrentUser
                   ? 'Story posting is not part of this preview.'
@@ -76,12 +80,14 @@ final class _Story extends StatelessWidget {
     required this.label,
     required this.asset,
     required this.isCurrentUser,
+    required this.width,
     required this.onPressed,
   });
 
   final String label;
   final String asset;
   final bool isCurrentUser;
+  final double width;
   final VoidCallback onPressed;
 
   @override
@@ -90,7 +96,7 @@ final class _Story extends StatelessWidget {
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final cacheDimension = (60 * devicePixelRatio).round();
     return SizedBox(
-      width: 66,
+      width: width,
       child: AppPressable(
         onPressed: onPressed,
         child: Center(
@@ -161,16 +167,24 @@ final class _Story extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.xsmall),
-              SizedBox(
-                width: double.infinity,
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Text(
-                    label,
-                    style: AppTypography.storyLabel(colors),
+              if (MediaQuery.textScalerOf(context).scale(1) <= 1)
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      style: AppTypography.storyLabel(colors),
+                    ),
                   ),
+                )
+              else
+                Text(
+                  label,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                  style: AppTypography.storyLabel(colors),
                 ),
-              ),
             ],
           ),
         ),

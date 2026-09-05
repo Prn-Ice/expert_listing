@@ -1,3 +1,4 @@
+import 'package:app_ui/src/extensions/build_context_platform.dart';
 import 'package:app_ui/src/tokens/colors.dart';
 import 'package:app_ui/src/tokens/icons.dart';
 import 'package:app_ui/src/tokens/spacing.dart';
@@ -63,7 +64,7 @@ class AppIconButton extends StatelessWidget {
           );
     final semanticLabel = count == null ? tooltip : '$tooltip, $count';
 
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (context.isIos) {
       return Tooltip(
         message: tooltip,
         child: Semantics(
@@ -88,9 +89,9 @@ class AppIconButton extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
-      constraints: const BoxConstraints.tightFor(
-        width: AppIconSize.tapTarget,
-        height: AppIconSize.tapTarget,
+      constraints: const BoxConstraints(
+        minWidth: AppIconSize.tapTarget,
+        minHeight: AppIconSize.tapTarget,
       ),
       padding: EdgeInsets.zero,
       icon: Semantics(

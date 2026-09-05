@@ -41,7 +41,7 @@ void main() {
       await tester.runAsync(
         () => refreshCompleted.timeout(const Duration(seconds: 15)),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
       expect(_firstVisiblePostId(tester), identity);
       expect(_scrollOffset(tester), 0);
 
@@ -81,7 +81,7 @@ void main() {
       await _openSheet(tester);
       await tester.tap(
         find.descendant(
-          of: find.byType(BottomSheet),
+          of: find.byKey(const ValueKey<String>('feed-filter-sheet')),
           matching: find.text('All'),
         ),
       );
@@ -166,8 +166,8 @@ double _scrollOffset(WidgetTester tester) {
 }
 
 Finder _sheetField(WidgetTester tester) => find.descendant(
-  of: find.byType(BottomSheet),
-  matching: find.byType(TextField),
+  of: find.byKey(const ValueKey<String>('feed-filter-sheet')),
+  matching: find.byType(EditableText),
 );
 
 Future<void> _openSheet(WidgetTester tester) async {
@@ -177,7 +177,10 @@ Future<void> _openSheet(WidgetTester tester) async {
     await tester.pumpAndSettle();
   }
   await tester.tap(find.byKey(const ValueKey<String>('feed-filters')));
-  await _pumpUntilFound(tester, find.text('Post type'));
+  await _pumpUntilFound(
+    tester,
+    find.byKey(const ValueKey<String>('feed-filter-sheet')),
+  );
 }
 
 Future<void> _apply(WidgetTester tester) async {
@@ -192,7 +195,10 @@ Future<void> _applySheetFilter(
   await _openSheet(tester);
   for (final label in labels) {
     await tester.tap(
-      find.descendant(of: find.byType(BottomSheet), matching: find.text(label)),
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('feed-filter-sheet')),
+        matching: find.text(label),
+      ),
     );
     await tester.pumpAndSettle();
   }

@@ -1,3 +1,4 @@
+import 'package:app_ui/src/extensions/build_context_platform.dart';
 import 'package:app_ui/src/tokens/colors.dart';
 import 'package:app_ui/src/tokens/radii.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,7 +23,7 @@ abstract final class AppSheet {
   }) {
     final colors = AppColors.of(context);
 
-    if (Theme.of(context).platform == TargetPlatform.iOS) {
+    if (context.isIos) {
       return showCupertinoSheet<T>(
         context: context,
         showDragHandle: true,

@@ -2,6 +2,7 @@
 /// and the shared control contract.
 library;
 
+export 'src/extensions/build_context_platform.dart';
 export 'src/theme/app_theme.dart';
 export 'src/tokens/colors.dart';
 export 'src/tokens/icons.dart';

@@ -12,6 +12,8 @@ import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/post_actions.dart';
 import 'package:expert_listing/feed/view/property_media.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/search/recent_search_store.dart';
+import 'package:expert_listing/search/search_providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -59,6 +61,17 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoTextField), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
+
+      await tester.tap(find.text('General'));
+      await tester.pump();
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('General'))
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
+      );
+      expect(find.byIcon(CupertinoIcons.check_mark), findsOneWidget);
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
@@ -482,9 +495,24 @@ Widget _harnessWith(FeedRepository repository, {TargetPlatform? platform}) {
         ),
       ),
       feedRepositoryProvider.overrideWithValue(repository),
+      recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
     ],
     child: ExpertListingApp(platformOverride: platform),
   );
+}
+
+final class _RecentSearchStore implements RecentSearchStore {
+  @override
+  Future<void> clear() async {}
+
+  @override
+  Future<List<String>> load() async => const [];
+
+  @override
+  Future<List<String>> remove(String query) async => const [];
+
+  @override
+  Future<List<String>> save(String query) async => [query];
 }
 
 final class _PageRepository extends FeedRepository {

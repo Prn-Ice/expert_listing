@@ -152,7 +152,7 @@ final class _PropertyMediaState extends State<PropertyMedia> {
       initialIndex: initialIndex,
     );
 
-    final route = Theme.of(context).platform == TargetPlatform.iOS
+    final route = context.isIos
         ? CupertinoPageRoute<void>(builder: buildViewer)
         : MaterialPageRoute<void>(builder: buildViewer);
     Navigator.of(context).push<void>(route);
@@ -176,6 +176,7 @@ final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   late final PageController _controller = PageController(
     initialPage: widget.initialIndex,
   );
+  late int _page = widget.initialIndex;
 
   @override
   void dispose() {
@@ -202,28 +203,88 @@ final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
           foregroundColor: Colors.white,
           systemOverlayStyle: overlayStyle,
         ),
-        body: PageView.builder(
-          key: const ValueKey<String>('full-screen-property-images'),
-          controller: _controller,
-          itemCount: imageCount,
-          itemBuilder: (context, index) {
-            final image = widget.images[index];
-            return SizedBox.expand(
-              child: AppNetworkImage(
-                imageUrl: image.url!,
-                fit: BoxFit.contain,
-                semanticLabel: 'Property photo ${index + 1} of $imageCount',
-                fallback: const Center(
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: Colors.white,
+        body: Stack(
+          children: [
+            PageView.builder(
+              key: const ValueKey<String>('full-screen-property-images'),
+              controller: _controller,
+              itemCount: imageCount,
+              onPageChanged: (page) => setState(() => _page = page),
+              itemBuilder: (context, index) {
+                final image = widget.images[index];
+                return SizedBox.expand(
+                  child: AppNetworkImage(
+                    imageUrl: image.url!,
+                    fit: BoxFit.contain,
+                    semanticLabel: 'Property photo ${index + 1} of $imageCount',
+                    fallback: const Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
-                ),
+                );
+              },
+            ),
+            if (imageCount > 1) ...[
+              _pageControl(
+                alignment: Alignment.centerLeft,
+                label: 'Previous photo',
+                icon: Icons.chevron_left,
+                onPressed: _page == 0 ? null : () => _showPage(_page - 1),
               ),
-            );
-          },
+              _pageControl(
+                alignment: Alignment.centerRight,
+                label: 'Next photo',
+                icon: Icons.chevron_right,
+                onPressed: _page == imageCount - 1
+                    ? null
+                    : () => _showPage(_page + 1),
+              ),
+            ],
+          ],
         ),
       ),
+    );
+  }
+
+  Widget _pageControl({
+    required Alignment alignment,
+    required String label,
+    required IconData icon,
+    required VoidCallback? onPressed,
+  }) {
+    return Align(
+      alignment: alignment,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.small),
+        child: AppPressable(
+          semanticLabel: label,
+          color: Colors.black54,
+          borderRadius: AppRadii.pill,
+          onPressed: onPressed,
+          child: SizedBox.square(
+            dimension: AppIconSize.tapTarget,
+            child: Icon(
+              icon,
+              color: onPressed == null ? Colors.white38 : Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showPage(int page) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
+      _controller.jumpToPage(page);
+      return;
+    }
+    _controller.animateToPage(
+      page,
+      duration: AppMotion.medium,
+      curve: AppMotion.curve,
     );
   }
 }
