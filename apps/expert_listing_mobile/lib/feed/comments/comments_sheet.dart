@@ -220,6 +220,11 @@ final class _CommentInput extends StatelessWidget {
         ),
       );
     }
+    final colors = AppColors.of(context);
+    final border = OutlineInputBorder(
+      borderRadius: AppRadii.image,
+      borderSide: BorderSide(color: colors.border),
+    );
     return TextField(
       key: const ValueKey<String>('comment-input'),
       controller: controller,
@@ -228,9 +233,24 @@ final class _CommentInput extends StatelessWidget {
       maxLines: 4,
       maxLength: 1000,
       textCapitalization: TextCapitalization.sentences,
-      decoration: const InputDecoration(
+      style: AppTypography.body(colors),
+      decoration: InputDecoration(
         hintText: 'Add a comment',
+        hintStyle: AppTypography.body(colors, color: colors.textTertiary),
         counterText: '',
+        filled: true,
+        fillColor: colors.surface,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.medium,
+          vertical: AppSpacing.small,
+        ),
+        border: border,
+        enabledBorder: border,
+        disabledBorder: border,
+        focusedBorder: OutlineInputBorder(
+          borderRadius: AppRadii.image,
+          borderSide: BorderSide(color: colors.brand, width: 2),
+        ),
       ),
       onChanged: onChanged,
       onSubmitted: (_) => onSubmitted(),

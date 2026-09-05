@@ -62,6 +62,12 @@ void main() {
     expect(find.byType(CommentsSheet), findsOneWidget);
     expect(find.byKey(const ValueKey<String>('comment-input')), findsOneWidget);
     expect(find.text('No comments yet.'), findsOneWidget);
+    final input = tester.widget<TextField>(
+      find.byKey(const ValueKey<String>('comment-input')),
+    );
+    expect(input.decoration?.filled, isTrue);
+    expect(input.decoration?.border, isA<OutlineInputBorder>());
+    expect(input.decoration?.enabledBorder, isA<OutlineInputBorder>());
   });
 
   testWidgets('iOS comments composer stays reachable above the keyboard', (
