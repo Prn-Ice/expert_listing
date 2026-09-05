@@ -22,7 +22,6 @@ void main() {
           profileRepositoryProvider.overrideWithValue(
             _ProfileRepository(() async => _result),
           ),
-          previewActorUiEnabledProvider.overrideWithValue(false),
         ],
         child: MaterialApp(
           theme: AppTheme.dark(platform: TargetPlatform.android),
@@ -35,7 +34,8 @@ void main() {
     expect(find.text('Prince Adeyemi'), findsOneWidget);
     expect(find.text('@prince'), findsOneWidget);
     expect(find.text('Realtor'), findsOneWidget);
-    expect(find.text('Local preview tools'), findsNothing);
+    expect(find.text('Demo personas'), findsOneWidget);
+    expect(find.text('Previewing @prince'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -62,7 +62,6 @@ void main() {
                 return Future.value(_result);
               }),
             ),
-            previewActorUiEnabledProvider.overrideWithValue(true),
           ],
         ),
         child: MaterialApp(

@@ -64,7 +64,8 @@ void main() {
     });
 
     test(
-      'actor aliases recreate sensitive lifecycles but retain local stores',
+      'public actor aliases recreate sensitive lifecycles '
+      'but retain local stores',
       () {
         final container = ProviderContainer(
           overrides: [

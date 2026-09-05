@@ -49,7 +49,7 @@ final class Profile extends Equatable {
   List<Object?> get props => [handle, displayName, role, avatarUrl];
 }
 
-/// A loaded profile and the aliases advertised by a local debug backend.
+/// A loaded profile and the fixed demo aliases advertised by the API.
 final class ProfileResult extends Equatable {
   /// Creates one profile response.
   const ProfileResult({required this.profile, required this.previewActors});

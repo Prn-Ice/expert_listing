@@ -34,9 +34,10 @@ Configuration is environment-based:
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the Edge
   runtime and are the only credentials; they never appear in responses.
 - `CURRENT_USER_ID` optionally overrides the deterministic seeded current user.
-- `ALLOW_PREVIEW_ACTORS=true` enables fixture aliases only when `SUPABASE_URL`
-  identifies the local stack. Hosted URLs ignore it. Debug clients send an
-  advertised alias through `X-Preview-Actor`; UUIDs are never a client input.
+- Local and hosted APIs advertise four fixed public demo aliases. Any app build
+  may send one through `X-Preview-Actor`; UUIDs and arbitrary aliases are never
+  accepted as client input. This intentionally permits unauthenticated fixture
+  impersonation for the assessment demo and is not a production identity model.
 - `PUBLIC_API_ORIGIN` optionally overrides the media-URL origin (it cannot start
   with `SUPABASE_`; the runtime strips those from custom configuration); see
   [decisions.md](decisions.md#why-do-media-urls-derive-from-the-forwarded-request-origin).

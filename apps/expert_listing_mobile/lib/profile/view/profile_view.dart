@@ -50,7 +50,6 @@ final class _ProfileViewState extends ConsumerState<ProfileView> {
             hasScrollBody: false,
             child: _ProfileContent(
               state: state,
-              previewUiEnabled: ref.watch(previewActorUiEnabledProvider),
               onRetry: _retry,
               onChooseActor: _chooseActor,
             ),
@@ -102,13 +101,11 @@ final class _ProfileHeader extends StatelessWidget {
 final class _ProfileContent extends StatelessWidget {
   const _ProfileContent({
     required this.state,
-    required this.previewUiEnabled,
     required this.onRetry,
     required this.onChooseActor,
   });
 
   final ProfileState state;
-  final bool previewUiEnabled;
   final VoidCallback onRetry;
   final void Function(List<String>, String) onChooseActor;
 
@@ -131,7 +128,7 @@ final class _ProfileContent extends StatelessWidget {
     if (profile == null) return const SizedBox.shrink();
     return _ProfileDetails(
       profile: profile,
-      previewActors: previewUiEnabled ? state.previewActors : const [],
+      previewActors: state.previewActors,
       onChooseActor: onChooseActor,
     );
   }
@@ -205,12 +202,12 @@ final class _ProfileDetails extends StatelessWidget {
             Divider(color: colors.border, height: 1),
             const SizedBox(height: AppSpacing.large),
             Text(
-              'Local preview tools',
+              'Demo personas',
               style: AppTypography.bodyStrong(colors),
             ),
             const SizedBox(height: AppSpacing.xsmall),
             Text(
-              'Switch persona to verify current-user states on this device.',
+              'Switch persona to explore current-user states.',
               textAlign: TextAlign.center,
               style: AppTypography.body(
                 colors,

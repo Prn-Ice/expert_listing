@@ -70,7 +70,7 @@ export async function getProfile(context: Context): Promise<Response> {
         role: profile.role,
         avatarUrl: avatarUrl(origin, profile.avatar_path),
       },
-      previewActors: availablePreviewAliases(env),
+      previewActors: availablePreviewAliases(),
     },
     200,
     { "Cache-Control": "private, max-age=0" },

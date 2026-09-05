@@ -32,8 +32,12 @@ Deno.test("GET /api/profile returns the configured user without identifiers", as
   ) {
     throw new Error(`Unexpected profile avatar: ${result.rawBody}`);
   }
-  if (JSON.stringify(result.body.previewActors) !== "[]") {
-    throw new Error("Disabled preview actors must not be advertised.");
+  const expectedAliases = ["prince", "ayo", "ifeoma", "bizzaro"];
+  if (
+    JSON.stringify(result.body.previewActors) !==
+      JSON.stringify(expectedAliases)
+  ) {
+    throw new Error("The fixed public demo aliases must be advertised.");
   }
   if (result.rawBody.includes("00000000-")) {
     throw new Error("Profile responses must not expose fixture UUIDs.");
@@ -43,17 +47,33 @@ Deno.test("GET /api/profile returns the configured user without identifiers", as
   }
 });
 
-Deno.test("GET /api/profile rejects actor overrides when disabled", async () => {
+Deno.test("GET /api/profile accepts a fixed public demo alias", async () => {
   const result = await api({ "X-Preview-Actor": "ayo" });
-  if (
-    result.response.status !== 403 || result.body.error?.code !== "FORBIDDEN"
-  ) {
+  if (result.response.status !== 200 || result.body.profile?.handle !== "ayo") {
     throw new Error(
-      `Expected a forbidden response, received ${result.rawBody}`,
+      `Expected Ayo's profile, received ${result.rawBody}`,
     );
   }
-  if (result.response.headers.get("cache-control") !== "no-store") {
-    throw new Error("Rejected actor overrides must not be cacheable.");
+  if (result.rawBody.includes("00000000-")) {
+    throw new Error("Profile responses must not expose fixture UUIDs.");
+  }
+});
+
+Deno.test("GET /api/profile rejects unknown aliases and raw UUIDs", async () => {
+  for (
+    const alias of [
+      "unknown",
+      "00000000-0000-0000-0000-000000000002",
+      "AYO",
+    ]
+  ) {
+    const result = await api({ "X-Preview-Actor": alias });
+    if (
+      result.response.status !== 400 ||
+      result.body.error?.code !== "VALIDATION_ERROR"
+    ) {
+      throw new Error(`Expected ${alias} to be rejected: ${result.rawBody}`);
+    }
   }
 });
 

@@ -1,6 +1,6 @@
 import type { Context } from "hono";
 import type { AppEnv } from "./env.ts";
-import { forbiddenError, validationError } from "./errors.ts";
+import { validationError } from "./errors.ts";
 
 export const PREVIEW_ACTORS = [
   { alias: "prince", userId: "00000000-0000-0000-0000-000000000001" },
@@ -27,10 +27,6 @@ export function resolveRequestActor(
     };
   }
 
-  if (!env.previewActorsEnabled) {
-    throw forbiddenError("Preview actors are not available on this server.");
-  }
-
   const actor = PREVIEW_ACTORS.find(({ alias }) => alias === requestedAlias);
   if (!actor) {
     throw validationError("Choose a known preview actor alias.");
@@ -38,8 +34,6 @@ export function resolveRequestActor(
   return actor;
 }
 
-export function availablePreviewAliases(env: AppEnv): string[] {
-  return env.previewActorsEnabled
-    ? PREVIEW_ACTORS.map(({ alias }) => alias)
-    : [];
+export function availablePreviewAliases(): string[] {
+  return PREVIEW_ACTORS.map(({ alias }) => alias);
 }

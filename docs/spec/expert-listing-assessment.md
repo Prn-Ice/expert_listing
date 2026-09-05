@@ -74,7 +74,10 @@ The required backend surface is:
 
 The original assessment explicitly requires relational Users, Posts, Comments, and Likes. This implementation also includes property requests, properties, and `property_images`, because requests and properties own different data and only properties can own ordered images.
 
-The current user is deterministic and selected on the server. Full authentication is outside scope.
+The current persona is one of four deterministic fixtures selected through a
+public alias that Hono maps to a server-owned UUID. Full authentication is
+outside scope, so this is explicitly demo impersonation rather than a production
+identity model.
 
 ## 4. Required submission package
 
@@ -164,8 +167,7 @@ Do not implement:
 - full story viewing or creation;
 - unbounded or map-backed search beyond the approved property autocomplete;
 - messages;
-- notifications;
-- profiles;
+- authenticated accounts or arbitrary user profiles;
 - App Store publication;
 - tablet or desktop layouts.
 
@@ -386,7 +388,10 @@ Supabase includes the function-name segment in the incoming URL. Configure Hono 
 
 The assessment API is public because authentication is out of scope. Disable JWT verification for this function through checked-in Supabase configuration and document that production authentication must be revisited.
 
-Only the Edge Function receives the service credential. It resolves the deterministic current user itself. It must never trust a client-supplied user ID.
+Only the Edge Function receives the service credential. It resolves a fixed
+public demo alias to a server-owned user UUID and never trusts a client-supplied
+user ID or arbitrary alias. This permits unauthenticated fixture impersonation
+only for the assessment demo and must be replaced before real user data exists.
 
 Flutter:
 
@@ -571,7 +576,8 @@ Serialize `postType` and its matching discriminated payload. Dart uses simple
 sealed or discriminated models so a general post cannot be mistaken for a
 property.
 
-The current-user UUID is fixed in server configuration and seed data. Flutter does not submit a pretend `userId`.
+The four persona UUIDs are fixed in server code and seed data. Flutter may submit
+only an advertised alias; it never submits a pretend `userId`.
 
 Seed operations must be safe to repeat against the dedicated assessment project:
 
@@ -1142,7 +1148,7 @@ Every visually interactive element must respond. Static labels such as location,
 | Property catalog card | `Property details aren’t part of this preview.` |
 | Notifications | `Notifications aren’t part of this preview.` without selecting it |
 | Profile | Select Profile and load the server-resolved current user's public details |
-| Local preview actor | In debug builds only, switch to an advertised alias and recreate actor-sensitive feature state |
+| Demo persona | In any build, switch to one of four advertised aliases and recreate actor-sensitive feature state |
 
 The backend `bookmarkCount` excludes this device. A local bookmark overlays the aggregate by zero or one and never implies server synchronization.
 
@@ -1329,7 +1335,7 @@ boundary evidence where mocks could drift from the implementation.
 | Bounded recent searches survive reconstruction | Real preference-store integration test |
 | Independent property catalog pagination | Listings Bloc and widget tests through the real feed repository contract |
 | Durable like activity, read state, and recipient isolation | Real pgTAP and Hono/Postgres tests |
-| Local debug actor gating and state reset | Hono boundary, provider lifecycle, and dashboard widget tests |
+| Public demo alias validation and state reset | Hono boundary, provider lifecycle, and dashboard widget tests |
 | Native picker, share, back, splash, icon, keyboard | Named-device manual checks |
 | Light-mode Figma fidelity | 428-pixel screenshot overlay |
 | Dark-mode coherence | Named-width screenshots and system-theme transition check |
@@ -1370,10 +1376,10 @@ Like a post and add a comment; refresh or relaunch; prove both persist.
 #### Discovery and identity journey
 
 Autocomplete a seeded property location, revisit it from recent searches,
-browse the separately paginated property catalog, switch to another approved
-user against an explicitly enabled local debug backend, like the first user's
-post, switch back, observe the durable notification, mark it read, and prove an
-unlike does not remove the activity history.
+browse the separately paginated property catalog, switch to another advertised
+demo persona against the local or hosted backend, like the first persona's post,
+switch back, observe the durable notification, mark it read, and prove an unlike
+does not remove the activity history.
 
 ### Additional required proofs
 

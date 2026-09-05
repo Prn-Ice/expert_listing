@@ -15,7 +15,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets(
-    'searches a seeded location, restores it, and browses the catalog',
+    'searches a seeded location, browses the catalog, and switches persona',
     (tester) async {
       final config = AppConfig.fromEnvironment();
       final recentSearches = SharedPreferencesRecentSearchStore();
@@ -100,6 +100,14 @@ void main() {
       await _pumpUntilFound(tester, find.text('Prince Adeyemi'));
       expect(find.text('@prince'), findsOneWidget);
       expect(find.text('Realtor'), findsOneWidget);
+
+      await tester.tap(find.text('Previewing @prince'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('@ayo'));
+      await tester.pumpAndSettle();
+      await _pumpUntilFound(tester, find.text('Ayo Balogun'));
+      expect(find.text('@ayo'), findsOneWidget);
+      expect(find.text('Property Consultant'), findsOneWidget);
     },
   );
 }

@@ -100,20 +100,20 @@ the definer context cannot be hijacked. Revisit if per-caller RLS policies are
 introduced; then selective grants with security-invoker functions may express
 the contract more directly.
 
-## Why are preview actors aliases and local-only?
+## Why are demo personas fixed public aliases?
 
 Authentication is outside this assessment, but current-user feed and activity
-states still need realistic verification. Debug Flutter builds may therefore
-send a bounded alias advertised by the local API. Hono maps it to a known
-fixture UUID for that request only, and Riverpod recreates actor-sensitive
+states still need realistic verification. All Flutter builds may therefore send
+one of four aliases advertised by the local and hosted APIs. Hono maps it to a
+known fixture UUID for that request only, and Riverpod recreates actor-sensitive
 clients, repositories, and state. Feed cache keys include the alias so saved
-viewer state cannot cross personas.
+viewer state cannot cross personas. The client never receives or submits a
+fixture UUID, and unknown aliases are rejected.
 
-The backend requires both an explicit `ALLOW_PREVIEW_ACTORS=true` opt-in and a
-known local Supabase URL. Hosted URLs reject overrides, release builds hide the
-tool, and the client never receives or submits a fixture UUID. Revisit this
-boundary only when real authentication supplies request identity; then remove
-the preview header rather than broadening it.
+This intentionally lets any assessor impersonate any fixture persona and make
+mutations as that persona. It is acceptable only for the public assessment demo
+with deterministic non-user accounts. Replace the header with authenticated
+request identity before introducing real accounts or user-owned data.
 
 ## Why do media URLs derive from the forwarded request origin?
 
