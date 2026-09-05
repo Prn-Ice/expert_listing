@@ -13,11 +13,14 @@ class FeedRepository {
   FeedRepository({
     required Dio client,
     FeedCache? feedCache,
+    String? cacheNamespace,
   }) : _client = client,
-       _feedCache = feedCache;
+       _feedCache = feedCache,
+       _cacheNamespace = cacheNamespace;
 
   final Dio _client;
   final FeedCache? _feedCache;
+  final String? _cacheNamespace;
 
   /// One entry per full feed URI holding the latest active request token, so
   /// a superseded response cannot reach the cache. Tokens retire with their
@@ -29,8 +32,10 @@ class FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) async {
-    final uri = _feedUri(filter: filter, cursor: cursor);
+    final uri = _feedUri(filter: filter, cursor: cursor, limit: limit);
+    final cacheUri = _cacheUri(uri);
     final requestToken = ++_nextRequestToken;
     _activeRequests[uri] = requestToken;
 
@@ -44,7 +49,7 @@ class FeedRepository {
       // A superseded response for this URI must never reach the cache; the
       // newest accepted response for one full URI is the final saved value.
       if (_activeRequests[uri] == requestToken) {
-        await _feedCache?.write(uri, data);
+        await _feedCache?.write(cacheUri, data);
       }
       return page;
     } on DioException catch (error) {
@@ -53,7 +58,7 @@ class FeedRepository {
         throw const FeedLoadFailure(FeedFailureKind.unavailable);
       }
 
-      final saved = await _readSavedEntry(uri);
+      final saved = await _readSavedEntry(cacheUri);
       if (saved == null) {
         throw FeedLoadFailure(
           fallbackReason == FeedFallbackReason.connection
@@ -106,14 +111,25 @@ class FeedRepository {
   Future<SavedFeedEntry?> _readSavedEntry(Uri uri) async =>
       _feedCache?.read(uri);
 
-  Uri _feedUri({required FeedFilter filter, String? cursor}) {
+  Uri _feedUri({
+    required FeedFilter filter,
+    required int limit,
+    String? cursor,
+  }) {
     final base = Uri.parse(_client.options.baseUrl);
     final query = <String, String>{
-      'limit': '10',
+      'limit': '$limit',
       ...filter.toQueryParameters(),
     };
     if (cursor != null) query['cursor'] = cursor;
     return base.replace(path: '${base.path}/posts', queryParameters: query);
+  }
+
+  Uri _cacheUri(Uri requestUri) {
+    final namespace = _cacheNamespace;
+    return namespace == null
+        ? requestUri
+        : requestUri.replace(fragment: 'preview-actor=$namespace');
   }
 
   FeedFallbackReason? _fallbackReasonFor(DioException error) {

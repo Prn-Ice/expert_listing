@@ -34,7 +34,7 @@ as $$
     from public.properties prop
     join public.posts post on post.property_id = prop.id
     cross join input
-    where char_length(input.raw_query) >= 3
+    where char_length(input.raw_query) between 3 and 120
       and prop.location ilike '%' || input.literal_query || '%' escape '\'
     group by prop.location
   ),
@@ -46,6 +46,37 @@ as $$
       ) as location_rank
     from location_matches location_match
   ),
+  location_property_matches as (
+    select
+      post.id as post_id,
+      case
+        when prop.location ilike input.literal_query || '%' escape '\' then 1
+        else 2
+      end as match_rank
+    from public.posts post
+    join public.properties prop on prop.id = post.property_id
+    cross join input
+    where post.post_type = 'property'
+      and char_length(input.raw_query) between 3 and 120
+      and prop.location ilike '%' || input.literal_query || '%' escape '\'
+  ),
+  body_property_matches as (
+    select post.id as post_id, 3 as match_rank
+    from public.posts post
+    cross join input
+    where post.post_type = 'property'
+      and char_length(input.raw_query) between 3 and 120
+      and post.body ilike '%' || input.literal_query || '%' escape '\'
+  ),
+  matched_properties as (
+    select match.post_id, min(match.match_rank) as match_rank
+    from (
+      select * from location_property_matches
+      union all
+      select * from body_property_matches
+    ) match
+    group by match.post_id
+  ),
   property_matches as (
     select
       post.id as post_id,
@@ -55,14 +86,10 @@ as $$
       post.body,
       image.storage_path as image_storage_path,
       post.created_at,
-      case
-        when prop.location ilike input.literal_query || '%' escape '\' then 1
-        when prop.location ilike '%' || input.literal_query || '%' escape '\' then 2
-        else 3
-      end as match_rank
-    from public.posts post
+      matched_property.match_rank
+    from matched_properties matched_property
+    join public.posts post on post.id = matched_property.post_id
     join public.properties prop on prop.id = post.property_id
-    cross join input
     left join lateral (
       select property_image.storage_path
       from public.property_images property_image
@@ -70,12 +97,6 @@ as $$
       order by property_image.position
       limit 1
     ) image on true
-    where post.post_type = 'property'
-      and char_length(input.raw_query) >= 3
-      and (
-        prop.location ilike '%' || input.literal_query || '%' escape '\'
-        or post.body ilike '%' || input.literal_query || '%' escape '\'
-      )
   ),
   suggestions as (
     select

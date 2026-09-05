@@ -80,16 +80,43 @@ void main() {
         find.byKey(const ValueKey<String>('listing-5001')),
       );
       expect(find.byType(ListingCard), findsWidgets);
+      expect(
+        find.byKey(const ValueKey<String>('listing-5005')),
+        findsNothing,
+      );
 
       final catalog = find.descendant(
         of: find.byType(ListingsView),
         matching: find.byType(CustomScrollView),
       );
-      await tester.drag(catalog, const Offset(0, -500));
-      await tester.pumpAndSettle();
-      expect(find.byType(ListingCard), findsWidgets);
+      await _dragUntilFound(
+        tester,
+        catalog,
+        find.byKey(const ValueKey<String>('listing-5005')),
+      );
+
+      await tester.tap(find.bySemanticsLabel('Profile'));
+      await tester.pump();
+      await _pumpUntilFound(tester, find.text('Prince Adeyemi'));
+      expect(find.text('@prince'), findsOneWidget);
+      expect(find.text('Realtor'), findsOneWidget);
     },
   );
+}
+
+Future<void> _dragUntilFound(
+  WidgetTester tester,
+  Finder scrollable,
+  Finder finder, {
+  Duration timeout = const Duration(seconds: 15),
+}) async {
+  final end = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(end)) {
+    if (finder.evaluate().isNotEmpty) return;
+    await tester.drag(scrollable, const Offset(0, -400));
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+  fail('Timed out scrolling to $finder');
 }
 
 Future<void> _waitForRecentSearch(

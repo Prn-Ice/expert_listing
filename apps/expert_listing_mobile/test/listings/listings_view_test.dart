@@ -132,6 +132,7 @@ final class _Repository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     final load = _load;
     if (load != null) return load(filter, cursor);

@@ -489,7 +489,8 @@ final class _PropertySuggestionCard extends StatelessWidget {
       onPressed: onPressed,
       color: colors.surface,
       borderRadius: AppRadii.card,
-      semanticLabel: '$status property in ${suggestion.location}',
+      semanticLabel:
+          '$status property in ${suggestion.location}. ${suggestion.summary}',
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.small),
         child: Row(

@@ -25,6 +25,7 @@ final class ListingsBloc extends Bloc<ListingsEvent, ListingsState> {
   }
 
   static const _propertyFilter = FeedFilter(postType: PostType.property);
+  static const _pageSize = 4;
 
   final FeedRepository _repository;
   var _generation = 0;
@@ -50,7 +51,10 @@ final class ListingsBloc extends Bloc<ListingsEvent, ListingsState> {
     );
 
     try {
-      final page = await _repository.loadPage(filter: _propertyFilter);
+      final page = await _repository.loadPage(
+        filter: _propertyFilter,
+        limit: _pageSize,
+      );
       if (generation != _generation) return;
       emit(
         state.copyWith(
@@ -101,6 +105,7 @@ final class ListingsBloc extends Bloc<ListingsEvent, ListingsState> {
       final page = await _repository.loadPage(
         filter: _propertyFilter,
         cursor: cursor,
+        limit: _pageSize,
       );
       if (generation != _generation) return;
       final incoming = _propertyPosts(page.posts);

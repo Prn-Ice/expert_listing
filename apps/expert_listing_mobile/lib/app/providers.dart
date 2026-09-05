@@ -1,5 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:expert_listing/app/app_config.dart';
+import 'package:expert_listing/app/preview_actor.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The validated application configuration, supplied once at startup.
@@ -17,12 +19,16 @@ final appConfigProvider = Provider<AppConfig>(
 /// once when the container disposes.
 final httpClientProvider = Provider<Dio>((ref) {
   final config = ref.watch(appConfigProvider);
+  final previewActor = ref.watch(previewActorProvider);
   final dio = Dio(
     BaseOptions(
       baseUrl: config.apiBaseUri.toString(),
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 15),
       sendTimeout: const Duration(seconds: 15),
+      headers: {
+        if (kDebugMode && previewActor != null) 'X-Preview-Actor': previewActor,
+      },
     ),
   );
   ref.onDispose(dio.close);

@@ -4,13 +4,14 @@ import 'package:app_ui/src/tokens/typography.dart';
 import 'package:app_ui/src/widgets/app_network_image.dart';
 import 'package:flutter/material.dart';
 
-/// A 40px circular avatar with a stable initials fallback.
+/// A circular avatar with a stable initials fallback.
 class AppAvatar extends StatelessWidget {
   /// Creates a shared avatar surface.
   const AppAvatar({
     required this.imageUrl,
     required this.displayName,
     this.onPressed,
+    this.size = 40,
     super.key,
   }) : assetName = null;
 
@@ -19,6 +20,7 @@ class AppAvatar extends StatelessWidget {
     required this.assetName,
     required this.displayName,
     this.onPressed,
+    this.size = 40,
     super.key,
   }) : imageUrl = null;
 
@@ -34,6 +36,9 @@ class AppAvatar extends StatelessWidget {
   /// An optional feature-owned avatar action.
   final VoidCallback? onPressed;
 
+  /// The visible avatar diameter.
+  final double size;
+
   @override
   Widget build(BuildContext context) {
     final initials = _InitialsAvatar(displayName: displayName);
@@ -43,7 +48,7 @@ class AppAvatar extends StatelessWidget {
       // Bundled avatars are square; decoding at the rendered physical size
       // keeps large source files out of the image cache.
       final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-      final cacheDimension = (40 * devicePixelRatio).round();
+      final cacheDimension = (size * devicePixelRatio).round();
       image = Image.asset(
         assetName!,
         fit: BoxFit.cover,
@@ -53,14 +58,14 @@ class AppAvatar extends StatelessWidget {
     } else if (url != null && url.isNotEmpty) {
       image = AppNetworkImage(
         imageUrl: url,
-        width: 40,
-        height: 40,
+        width: size,
+        height: size,
         placeholder: initials,
         fallback: initials,
       );
     }
     final visual = SizedBox.square(
-      dimension: 40,
+      dimension: size,
       child: ClipOval(
         child: image,
       ),
@@ -82,7 +87,7 @@ class AppAvatar extends StatelessWidget {
       onTap: onPressed,
       excludeSemantics: true,
       child: SizedBox.square(
-        dimension: AppIconSize.tapTarget,
+        dimension: size < AppIconSize.tapTarget ? AppIconSize.tapTarget : size,
         child: TextButton(
           onPressed: onPressed,
           style: TextButton.styleFrom(

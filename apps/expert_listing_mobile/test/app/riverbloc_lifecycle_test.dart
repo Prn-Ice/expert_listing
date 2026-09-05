@@ -89,6 +89,7 @@ final class _LifecycleFeedRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) => Future.value(
     const FeedLoadResult(
       posts: [],

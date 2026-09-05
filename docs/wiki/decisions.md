@@ -100,6 +100,21 @@ the definer context cannot be hijacked. Revisit if per-caller RLS policies are
 introduced; then selective grants with security-invoker functions may express
 the contract more directly.
 
+## Why are preview actors aliases and local-only?
+
+Authentication is outside this assessment, but current-user feed and activity
+states still need realistic verification. Debug Flutter builds may therefore
+send a bounded alias advertised by the local API. Hono maps it to a known
+fixture UUID for that request only, and Riverpod recreates actor-sensitive
+clients, repositories, and state. Feed cache keys include the alias so saved
+viewer state cannot cross personas.
+
+The backend requires both an explicit `ALLOW_PREVIEW_ACTORS=true` opt-in and a
+known local Supabase URL. Hosted URLs reject overrides, release builds hide the
+tool, and the client never receives or submits a fixture UUID. Revisit this
+boundary only when real authentication supplies request identity; then remove
+the preview header rather than broadening it.
+
 ## Why do media URLs derive from the forwarded request origin?
 
 DTOs must carry client-reachable public URLs, but the local Edge runtime

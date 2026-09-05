@@ -1,6 +1,7 @@
 export type ErrorCode =
   | "VALIDATION_ERROR"
   | "NOT_FOUND"
+  | "FORBIDDEN"
   | "STORAGE_ERROR"
   | "INTERNAL_ERROR"
   | "PAYLOAD_TOO_LARGE"
@@ -19,6 +20,10 @@ export class ApiError extends Error {
 
 export function validationError(message: string): ApiError {
   return new ApiError(400, "VALIDATION_ERROR", message);
+}
+
+export function forbiddenError(message: string): ApiError {
+  return new ApiError(403, "FORBIDDEN", message);
 }
 
 export function internalError(): ApiError {

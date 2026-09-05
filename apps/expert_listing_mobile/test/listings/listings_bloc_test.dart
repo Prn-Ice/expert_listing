@@ -16,9 +16,9 @@ void main() {
       'requests only properties and suppresses duplicate pagination',
       () async {
         final nextPage = Completer<FeedLoadResult>();
-        final calls = <({FeedFilter filter, String? cursor})>[];
-        final repository = _ListingsRepository((filter, cursor) {
-          calls.add((filter: filter, cursor: cursor));
+        final calls = <({FeedFilter filter, String? cursor, int limit})>[];
+        final repository = _ListingsRepository((filter, cursor, limit) {
+          calls.add((filter: filter, cursor: cursor, limit: limit));
           return cursor == null
               ? Future.value(_page([_property(1)], nextCursor: 'next'))
               : nextPage.future;
@@ -33,6 +33,7 @@ void main() {
           calls.single.filter,
           const FeedFilter(postType: PostType.property),
         );
+        expect(calls.single.limit, 4);
 
         bloc
           ..add(const ListingsNextPageRequested())
@@ -49,7 +50,7 @@ void main() {
 
     test('rejects a non-property response from the repository', () async {
       final repository = _ListingsRepository(
-        (_, _) => Future.value(_page([_generalPost()])),
+        (_, _, _) => Future.value(_page([_generalPost()])),
       );
       final bloc = ListingsBloc(repository: repository);
       addTearDown(bloc.close);
@@ -67,14 +68,19 @@ void main() {
 final class _ListingsRepository extends FeedRepository {
   _ListingsRepository(this._load) : super(client: Dio());
 
-  final Future<FeedLoadResult> Function(FeedFilter filter, String? cursor)
+  final Future<FeedLoadResult> Function(
+    FeedFilter filter,
+    String? cursor,
+    int limit,
+  )
   _load;
 
   @override
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
-  }) => _load(filter, cursor);
+    int limit = 10,
+  }) => _load(filter, cursor, limit);
 }
 
 FeedLoadResult _page(List<FeedPost> posts, {String? nextCursor}) =>

@@ -1,12 +1,14 @@
 import { Hono } from "hono";
 import { ApiError, errorResponse } from "./errors.ts";
 import { getPosts } from "./feed.ts";
+import { getProfile } from "./profile.ts";
 import { getSearchSuggestions } from "./search.ts";
 
 export const app = new Hono().basePath("/api");
 
 app.get("/health", (context) => context.json({ status: "ok" }));
 app.get("/posts", getPosts);
+app.get("/profile", getProfile);
 app.get("/search/suggestions", getSearchSuggestions);
 
 app.notFound(() =>

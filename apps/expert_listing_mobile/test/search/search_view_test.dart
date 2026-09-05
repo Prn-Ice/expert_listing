@@ -57,6 +57,12 @@ void main() {
       find.byKey(const ValueKey<String>('property-suggestion-5003')),
       findsOneWidget,
     );
+    expect(
+      find.bySemanticsLabel(
+        RegExp('Two-bedroom apartment near the waterfront.'),
+      ),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -102,6 +108,44 @@ void main() {
     );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('long recent searches grow at large text scale', (tester) async {
+    tester.view
+      ..physicalSize = const Size(360, 800)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const recentSearch = 'Victoria Island waterfront apartments';
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          searchRepositoryProvider.overrideWithValue(_SearchRepository()),
+          recentSearchStoreProvider.overrideWithValue(
+            _RecentSearchStore(const [recentSearch]),
+          ),
+        ],
+        child: MaterialApp(
+          theme: AppTheme.light(platform: TargetPlatform.android),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: SearchView(
+              isActive: true,
+              onPropertySelected: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text(recentSearch), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
 
 final class _SearchRepository extends SearchRepository {
@@ -129,11 +173,15 @@ final class _EmptySearchRepository extends SearchRepository {
 }
 
 final class _RecentSearchStore implements RecentSearchStore {
+  _RecentSearchStore([this.searches = const ['Lekki']]);
+
+  final List<String> searches;
+
   @override
   Future<void> clear() async {}
 
   @override
-  Future<List<String>> load() async => const ['Lekki'];
+  Future<List<String>> load() async => searches;
 
   @override
   Future<List<String>> remove(String query) async => const [];

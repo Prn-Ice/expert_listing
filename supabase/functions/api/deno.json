@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "test": "deno test --frozen --allow-env=API_BASE_URL,SUPABASE_URL,PUBLIC_API_ORIGIN,SUPABASE_SERVICE_ROLE_KEY,SUPABASE_DB_URL,CURRENT_USER_ID --allow-net=127.0.0.1 --allow-run=psql"
+    "test": "deno test --frozen --allow-env=API_BASE_URL,SUPABASE_URL,PUBLIC_API_ORIGIN,SUPABASE_SERVICE_ROLE_KEY,SUPABASE_DB_URL,CURRENT_USER_ID,ALLOW_PREVIEW_ACTORS --allow-net=127.0.0.1 --allow-run=psql"
   },
   "imports": {
     "hono": "npm:hono@^4.13.5",

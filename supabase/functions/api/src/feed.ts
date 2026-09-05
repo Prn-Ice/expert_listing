@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Context } from "hono";
+import { resolveRequestActor } from "./actor.ts";
 import { decodeCursor, encodeCursor } from "./cursor.ts";
 import { type AppEnv, readEnv } from "./env.ts";
 import { internalError, validationError } from "./errors.ts";
@@ -207,13 +208,14 @@ export async function getPosts(context: Context): Promise<Response> {
   }
 
   const origin = publicOrigin(context, env);
+  const actor = resolveRequestActor(context, env);
 
   const supabase = createClient(env.supabaseUrl, env.serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
   const { data, error } = await supabase.rpc("feed_page", {
-    p_viewer_id: env.currentUserId,
+    p_viewer_id: actor.userId,
     p_limit: limit + 1,
     p_cursor_created_at: cursor?.createdAt ?? null,
     p_cursor_id: cursor?.id ?? null,

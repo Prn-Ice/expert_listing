@@ -68,6 +68,17 @@ supabase start
 supabase functions serve api --no-verify-jwt
 ~~~
 
+To test current-user states across the deterministic fixtures, opt in only for
+that local function process:
+
+~~~sh
+ALLOW_PREVIEW_ACTORS=true supabase functions serve api --no-verify-jwt
+~~~
+
+The Profile developer tool remains hidden unless both the Flutter build is a
+debug build and the local API advertises aliases. Hosted Supabase URLs reject
+the override even if the flag is set.
+
 `supabase start` already serves the function at the address above, but its
 runtime caches worker code; after editing `supabase/functions/api/`, either
 restart the runtime container (`docker restart

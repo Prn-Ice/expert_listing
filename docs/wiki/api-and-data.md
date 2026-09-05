@@ -16,6 +16,8 @@ Implemented now:
 | --- | --- |
 | `GET /api/health` | `200 {"status":"ok"}` |
 | `GET /api/posts` | Cursor-paginated, server-side filtered feed of hydrated, variant-discriminated post DTOs |
+| `GET /api/search/suggestions` | Bounded property and location autocomplete |
+| `GET /api/profile` | Server-resolved current user's display name, handle, role, and public avatar URL |
 
 `GET /api/posts` accepts `limit` (default 10, maximum 20), an opaque versioned
 `cursor`, `postType`, `requestType` (only with `postType=request`),
@@ -32,6 +34,9 @@ Configuration is environment-based:
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the Edge
   runtime and are the only credentials; they never appear in responses.
 - `CURRENT_USER_ID` optionally overrides the deterministic seeded current user.
+- `ALLOW_PREVIEW_ACTORS=true` enables fixture aliases only when `SUPABASE_URL`
+  identifies the local stack. Hosted URLs ignore it. Debug clients send an
+  advertised alias through `X-Preview-Actor`; UUIDs are never a client input.
 - `PUBLIC_API_ORIGIN` optionally overrides the media-URL origin (it cannot start
   with `SUPABASE_`; the runtime strips those from custom configuration); see
   [decisions.md](decisions.md#why-do-media-urls-derive-from-the-forwarded-request-origin).
@@ -70,14 +75,17 @@ location owner, comment order, property image order, and uncovered foreign
 keys.
 
 All exposed tables have RLS enabled, no anonymous write policy, and no direct
-grants to API roles. Two security-definer functions are the entire database
-surface reachable by `service_role`:
+grants to API roles. Security-definer functions are the entire database surface
+reachable by `service_role`:
 
 - `create_post` creates the matching post variant and, for properties, ordered
   image metadata in one database transaction;
 - `feed_page` returns one hydrated feed page — author, variant payload,
   engagement counts, and the viewer's like state — in a single round trip, with
-  cursor keyset filtering and literal, escaped location matching.
+  cursor keyset filtering and literal, escaped location matching;
+- `property_search_suggestions` returns ranked, bounded property autocomplete;
+- `user_profile` returns one user's public profile fields without exposing the
+  UUID in the HTTP response.
 
 ## Media storage
 

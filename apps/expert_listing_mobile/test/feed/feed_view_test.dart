@@ -528,6 +528,7 @@ final class _PageRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     loadCalls++;
     return Future.value(page);
@@ -547,6 +548,7 @@ final class _SequencePageRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     final index = _nextPage < _pages.length ? _nextPage : _pages.length - 1;
     final page = _pages[index];
@@ -565,6 +567,7 @@ final class _SavedThenFilteredFailureRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     if (!filter.isEmpty) {
       return Future.error(const FeedLoadFailure(FeedFailureKind.connection));
@@ -590,6 +593,7 @@ final class _TrackingFilterRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     filters.add(filter);
     return Future.value(_page());
@@ -608,6 +612,7 @@ final class _NextPageFailureRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     if (cursor == null) {
       return Future.value(_page(nextCursor: 'page-two', postCount: 6));

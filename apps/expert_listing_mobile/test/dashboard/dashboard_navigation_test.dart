@@ -12,6 +12,9 @@ import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/models/post_types.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/profile/models/profile.dart';
+import 'package:expert_listing/profile/profile_providers.dart';
+import 'package:expert_listing/profile/profile_repository.dart';
 import 'package:expert_listing/search/models/search_suggestion.dart';
 import 'package:expert_listing/search/recent_search_store.dart';
 import 'package:expert_listing/search/search_providers.dart';
@@ -58,6 +61,7 @@ void main() {
             feedRepositoryProvider.overrideWithValue(repository),
             searchRepositoryProvider.overrideWithValue(_SearchRepository()),
             recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
+            profileRepositoryProvider.overrideWithValue(_ProfileRepository()),
           ],
           child: const ExpertListingApp(),
         ),
@@ -200,7 +204,9 @@ void main() {
       );
       expect(searchField.controller.text, 'Lekki');
       expect(
-        find.bySemanticsLabel('For Sale property in Lekki Phase 1, Lagos'),
+        find.bySemanticsLabel(
+          RegExp('For Sale property in Lekki Phase 1, Lagos'),
+        ),
         findsOneWidget,
       );
 
@@ -211,8 +217,7 @@ void main() {
         findsOneWidget,
       );
 
-      // Destinations not implemented yet keep List selected and answer with
-      // their exact boundary notice.
+      // Notifications remain an explicit preview boundary.
       await tester.tap(find.bySemanticsLabel('Notification'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -223,10 +228,17 @@ void main() {
 
       await tester.tap(find.bySemanticsLabel('Profile'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       expect(
-        find.text('Profiles are not part of this preview.'),
+        find.text('Prince Adeyemi'),
         findsOneWidget,
+      );
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Profile').last)
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
       );
 
       await tester.pumpAndSettle();
@@ -246,6 +258,7 @@ Widget _platformHarness(TargetPlatform platform) => ProviderScope(
     feedRepositoryProvider.overrideWithValue(_CountingRepository()),
     searchRepositoryProvider.overrideWithValue(_SearchRepository()),
     recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
+    profileRepositoryProvider.overrideWithValue(_ProfileRepository()),
   ],
   child: ExpertListingApp(platformOverride: platform),
 );
@@ -259,6 +272,7 @@ final class _CountingRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) {
     loadCalls++;
     return Future.value(
@@ -281,6 +295,21 @@ final class _SearchRepository extends SearchRepository {
       imageUrl: null,
     ),
   ];
+}
+
+final class _ProfileRepository extends ProfileRepository {
+  _ProfileRepository() : super(client: Dio());
+
+  @override
+  Future<ProfileResult> load() async => const ProfileResult(
+    profile: Profile(
+      handle: 'prince',
+      displayName: 'Prince Adeyemi',
+      role: 'Realtor',
+      avatarUrl: null,
+    ),
+    previewActors: [],
+  );
 }
 
 final class _RecentSearchStore implements RecentSearchStore {

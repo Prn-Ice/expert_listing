@@ -677,6 +677,7 @@ UUID strings; post, comment, and image IDs are JSON numbers.
 ### Cache headers
 
 - Successful `GET /posts`: `Cache-Control: private, max-age=0`.
+- Successful `GET /search/suggestions`: `Cache-Control: private, max-age=0`.
 - Mutations: `Cache-Control: no-store`.
 - Errors: `Cache-Control: no-store`.
 
@@ -752,6 +753,44 @@ Feed items are discriminated:
 The legacy combined subtype field is absent. Property image positions are stable and ordered.
 
 The final page uses JSON null, never a string sentinel.
+
+### `GET /search/suggestions`
+
+Required query parameters:
+
+| Parameter | Contract |
+|---|---|
+| `q` | trimmed literal substring from 3 through 120 characters |
+| `limit` | optional integer from 1 through 10; default 6 |
+
+Unknown parameters fail with `VALIDATION_ERROR`. The response is deterministic
+and contains at most `limit` entries. It uses this discriminated shape:
+
+```json
+{
+  "suggestions": [
+    {
+      "type": "location",
+      "label": "Lekki Phase 1, Lagos",
+      "propertyCount": 1
+    },
+    {
+      "type": "property",
+      "postId": 1001,
+      "propertyId": 5001,
+      "status": "for_sale",
+      "location": "Lekki Phase 1, Lagos",
+      "summary": "Three-bedroom family home with a bright kitchen.",
+      "imageUrl": "https://assets.example.invalid/properties/5001/front.webp"
+    }
+  ]
+}
+```
+
+The first matching location may lead the response, followed by properties
+ranked by location prefix, location substring, then summary substring. Further
+location matches follow properties so they cannot consume the default result.
+Hono builds public media URLs; clients never build Storage paths.
 
 ### `POST /posts`
 
@@ -1102,7 +1141,8 @@ Every visually interactive element must respond. Static labels such as location,
 | List | Select List and open the network-first property catalog |
 | Property catalog card | `Property details aren’t part of this preview.` |
 | Notifications | `Notifications aren’t part of this preview.` without selecting it |
-| Profile | `Profiles aren’t part of this preview.` without selecting it |
+| Profile | Select Profile and load the server-resolved current user's public details |
+| Local preview actor | In debug builds only, switch to an advertised alias and recreate actor-sensitive feature state |
 
 The backend `bookmarkCount` excludes this device. A local bookmark overlays the aggregate by zero or one and never implies server synchronization.
 

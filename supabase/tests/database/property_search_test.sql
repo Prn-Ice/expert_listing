@@ -1,6 +1,6 @@
 begin;
 
-select plan(9);
+select plan(10);
 
 select has_function(
   'public',
@@ -69,6 +69,15 @@ select is(
   ),
   0::bigint,
   'null inputs are bounded and return no suggestions'
+);
+
+select is(
+  (
+    select count(*)
+    from public.property_search_suggestions(repeat('a', 121), 6)
+  ),
+  0::bigint,
+  'oversized direct queries return no suggestions'
 );
 
 select is(

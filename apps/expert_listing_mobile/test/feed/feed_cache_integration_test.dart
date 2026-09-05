@@ -17,6 +17,53 @@ import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('saved viewer state never crosses preview actor namespaces', () async {
+    final directory = await Directory.systemTemp.createTemp(
+      'feed-actor-cache-test',
+    );
+    addTearDown(() => directory.delete(recursive: true));
+    final server = await _FeedServer.start();
+    final cache = FeedCache(
+      _cacheManager(
+        'feed-actor-cache-${DateTime.now().microsecondsSinceEpoch}',
+        directory,
+      ),
+    );
+    addTearDown(() async {
+      await cache.clear();
+      await cache.dispose();
+    });
+    final baseUrl = server.baseUrl;
+    final prince = FeedRepository(
+      client: Dio(BaseOptions(baseUrl: baseUrl)),
+      feedCache: cache,
+      cacheNamespace: 'prince',
+    );
+
+    await prince.loadPage(filter: const FeedFilter());
+    await server.close();
+
+    final ayo = FeedRepository(
+      client: Dio(BaseOptions(baseUrl: baseUrl)),
+      feedCache: cache,
+      cacheNamespace: 'ayo',
+    );
+    await expectLater(
+      ayo.loadPage(filter: const FeedFilter()),
+      throwsA(
+        isA<FeedLoadFailure>().having(
+          (failure) => failure.kind,
+          'kind',
+          FeedFailureKind.connection,
+        ),
+      ),
+    );
+
+    final saved = await prince.loadPage(filter: const FeedFilter());
+    expect(saved.source, FeedDataSource.saved);
+    expect(saved.posts.single.id, 42);
+  });
+
   test(
     'reconstructed cache restores data after a connection failure',
     () async {
@@ -734,9 +781,14 @@ final class _TrackingFeedRepository extends FeedRepository {
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
+    int limit = 10,
   }) async {
     try {
-      return await super.loadPage(filter: filter, cursor: cursor);
+      return await super.loadPage(
+        filter: filter,
+        cursor: cursor,
+        limit: limit,
+      );
     } finally {
       _completionCount++;
       if (_completionCount == expectedCompletions) _allCompleted.complete();

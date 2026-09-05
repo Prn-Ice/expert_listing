@@ -36,4 +36,17 @@ fi
 API_BASE_URL="$api_url/functions/v1/api" \
 SUPABASE_URL="$api_url" \
 SUPABASE_SERVICE_ROLE_KEY="$service_role_key" \
-deno task --config supabase/functions/api/deno.json test
+ALLOW_PREVIEW_ACTORS=false \
+deno task --config supabase/functions/api/deno.json test \
+  tests/health_test.ts \
+  tests/env_test.ts \
+  tests/feed_test.ts \
+  tests/search_test.ts \
+  tests/profile_test.ts
+
+API_BASE_URL="$api_url/functions/v1/api" \
+SUPABASE_URL="$api_url" \
+SUPABASE_SERVICE_ROLE_KEY="$service_role_key" \
+ALLOW_PREVIEW_ACTORS=true \
+deno task --config supabase/functions/api/deno.json test \
+  tests/profile_preview_test.ts

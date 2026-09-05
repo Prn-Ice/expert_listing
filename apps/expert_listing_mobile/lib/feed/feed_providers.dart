@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/feed/bloc/feed_bloc.dart';
 import 'package:expert_listing/feed/bloc/feed_state.dart';
@@ -28,6 +29,7 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(
     client: ref.watch(httpClientProvider),
     feedCache: ref.watch(feedCacheProvider),
+    cacheNamespace: ref.watch(previewActorProvider),
   );
 });
 

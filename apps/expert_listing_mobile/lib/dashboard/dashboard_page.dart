@@ -1,21 +1,24 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/dashboard/destination_switcher.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/listings/view/listings_view.dart';
+import 'package:expert_listing/profile/view/profile_view.dart';
 import 'package:expert_listing/search/view/search_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The app-level dashboard scaffold and active destination navigation.
-class DashboardPage extends StatefulWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   /// Creates the dashboard.
   const DashboardPage({super.key});
 
   @override
-  State<DashboardPage> createState() => _DashboardPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-final class _DashboardPageState extends State<DashboardPage> {
+final class _DashboardPageState extends ConsumerState<DashboardPage> {
   final _feedKey = GlobalKey<FeedViewState>();
   final _feedScrollController = ScrollController();
   _DashboardDestination _selectedDestination = _DashboardDestination.feed;
@@ -28,12 +31,14 @@ final class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final previewActor = ref.watch(previewActorProvider);
     return PrimaryScrollController(
       controller: _feedScrollController,
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: Theme.of(context).appBarTheme.systemOverlayStyle!,
         child: AppScaffold(
           body: DestinationSwitcher(
+            key: ValueKey<String?>('dashboard-actor-$previewActor'),
             selectedIndex: _selectedDestination.index,
             children: [
               FeedView(
@@ -55,6 +60,9 @@ final class _DashboardPageState extends State<DashboardPage> {
                   "Property details aren't part of this preview.",
                 ),
               ),
+              ProfileView(
+                isActive: _selectedDestination == _DashboardDestination.profile,
+              ),
             ],
           ),
           bottomNavigationBar: _DashboardNavigation(
@@ -65,6 +73,9 @@ final class _DashboardPageState extends State<DashboardPage> {
             ),
             onListingsPressed: () => setState(
               () => _selectedDestination = _DashboardDestination.listings,
+            ),
+            onProfilePressed: () => setState(
+              () => _selectedDestination = _DashboardDestination.profile,
             ),
             onNotice: (message) => AppNotice.show(context, message),
           ),
@@ -82,7 +93,7 @@ final class _DashboardPageState extends State<DashboardPage> {
   }
 }
 
-enum _DashboardDestination { feed, search, listings }
+enum _DashboardDestination { feed, search, listings, profile }
 
 final class _DashboardNavigation extends StatelessWidget {
   const _DashboardNavigation({
@@ -90,6 +101,7 @@ final class _DashboardNavigation extends StatelessWidget {
     required this.onFeedPressed,
     required this.onSearchPressed,
     required this.onListingsPressed,
+    required this.onProfilePressed,
     required this.onNotice,
   });
 
@@ -97,6 +109,7 @@ final class _DashboardNavigation extends StatelessWidget {
   final VoidCallback onFeedPressed;
   final VoidCallback onSearchPressed;
   final VoidCallback onListingsPressed;
+  final VoidCallback onProfilePressed;
   final ValueChanged<String> onNotice;
 
   @override
@@ -156,8 +169,9 @@ final class _DashboardNavigation extends StatelessWidget {
                 child: _NavigationItem(
                   icon: AppIcons.navProfile,
                   label: 'Profile',
-                  onPressed: () =>
-                      onNotice('Profiles are not part of this preview.'),
+                  selected:
+                      selectedDestination == _DashboardDestination.profile,
+                  onPressed: onProfilePressed,
                 ),
               ),
             ],

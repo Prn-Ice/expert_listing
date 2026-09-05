@@ -260,7 +260,10 @@ final class _ListingsStatus extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(message, textAlign: TextAlign.center),
+            Semantics(
+              liveRegion: true,
+              child: Text(message, textAlign: TextAlign.center),
+            ),
             if (actionLabel case final label?) ...[
               const SizedBox(height: AppSpacing.medium),
               FilledButton(onPressed: onPressed, child: Text(label)),
