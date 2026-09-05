@@ -41,9 +41,9 @@ class PostActions extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final like = AppIconButton(
-      icon: AppIcons.heart,
+      icon: post.likedByCurrentUser ? AppIcons.heartFilled : AppIcons.heart,
       iconSize: AppIconSize.small,
-      color: post.likedByCurrentUser ? colors.accent : colors.textSecondary,
+      color: post.likedByCurrentUser ? colors.brandText : colors.textSecondary,
       label: post.likeCount == 0 ? null : '${post.likeCount}',
       tooltip: post.likedByCurrentUser ? 'Unlike' : 'Like',
       onPressed:
@@ -72,9 +72,9 @@ class PostActions extends StatelessWidget {
     );
     final bookmarkCount = post.bookmarkCount + (bookmarked ? 1 : 0);
     final bookmark = AppIconButton(
-      icon: AppIcons.bookmark,
+      icon: bookmarked ? AppIcons.bookmarkFilled : AppIcons.bookmark,
       iconSize: AppIconSize.small,
-      color: bookmarked ? colors.accent : colors.textSecondary,
+      color: bookmarked ? colors.brandText : colors.textSecondary,
       label: bookmarkCount == 0 ? null : '$bookmarkCount',
       tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark',
       onPressed:

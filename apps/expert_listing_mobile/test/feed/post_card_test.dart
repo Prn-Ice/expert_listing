@@ -297,6 +297,39 @@ void main() {
     },
   );
 
+  testWidgets('selected engagement uses filled brand icons', (tester) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 1),
+      'likeCount': 1,
+      'likedByCurrentUser': true,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PostCard(post: post, bookmarked: true, onNotice: (_) {}),
+        ),
+      ),
+    );
+
+    AppIcon selectedIcon(String label) {
+      final button = find.ancestor(
+        of: find.bySemanticsLabel(label),
+        matching: find.byType(AppIconButton),
+      );
+      return tester.widget<AppIcon>(
+        find.descendant(of: button, matching: find.byType(AppIcon)),
+      );
+    }
+
+    final heart = selectedIcon('Unlike, 1');
+    final bookmark = selectedIcon('Remove bookmark, 1');
+    expect(heart.asset, AppIcons.heartFilled);
+    expect(bookmark.asset, AppIcons.bookmarkFilled);
+    expect(heart.color, AppColors.light.brandText);
+    expect(bookmark.color, AppColors.light.brandText);
+  });
+
   testWidgets('the profile pressed overlay moves no visible geometry', (
     tester,
   ) async {

@@ -27,6 +27,9 @@ abstract final class AppIcons {
   /// Bookmark action.
   static const String bookmark = '$_dir/bookmark.svg';
 
+  /// Selected bookmark action.
+  static const String bookmarkFilled = '$_dir/bookmark-filled.svg';
+
   /// Comment action.
   static const String comment = '$_dir/comment.svg';
 
@@ -35,6 +38,9 @@ abstract final class AppIcons {
 
   /// Like action.
   static const String heart = '$_dir/heart.svg';
+
+  /// Selected like action.
+  static const String heartFilled = '$_dir/heart-filled.svg';
 
   /// Owned-location row.
   static const String mapPin = '$_dir/map-pin.svg';
