@@ -15,6 +15,8 @@ APK, visual-overlay, and named-device evidence remain incomplete or unverified.
 - [Development](docs/wiki/development.md): environment, local backend, tests,
   and device setup.
 - [Architecture](docs/wiki/architecture.md): ownership and data flow.
+- [Database schema](docs/wiki/supabase-schema-chvhwausefhvaceygppc.png): visual
+  overview of the Supabase relational schema.
 - [Design system](docs/wiki/design-system.md): Figma measurements, assets, and
   shared UI contracts.
 - [Release](docs/wiki/release.md): CI, signing, artifact, and delivery evidence.
