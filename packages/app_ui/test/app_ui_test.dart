@@ -1,4 +1,5 @@
-import 'dart:ui' show Tristate;
+import 'dart:math' show max, min, pow, sqrt;
+import 'dart:ui' show Tristate, instantiateImageCodec;
 
 import 'package:app_ui/app_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -56,6 +57,14 @@ void main() {
       expect(
         dark.appBarTheme.systemOverlayStyle?.statusBarIconBrightness,
         Brightness.light,
+      );
+      expect(
+        light.appBarTheme.systemOverlayStyle?.statusBarBrightness,
+        Brightness.light,
+      );
+      expect(
+        dark.appBarTheme.systemOverlayStyle?.statusBarBrightness,
+        Brightness.dark,
       );
     });
 
@@ -411,5 +420,159 @@ void main() {
       );
       expect(box.color, AppColors.dark.surface);
     });
+
+    testWidgets('the strip is 40px tall with the 32px retry control', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: OfflineStatusBar(
+              message: 'Showing saved posts.',
+              onRetry: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.getSize(find.byType(OfflineStatusBar)).height, 40);
+      final button = tester.widget<TextButton>(find.byType(TextButton));
+      expect(button.style?.tapTargetSize, MaterialTapTargetSize.shrinkWrap);
+      expect(
+        tester.getSize(find.byType(TextButton)).height,
+        AppIconSize.textButtonTapTarget,
+      );
+    });
+  });
+
+  group('semantic colour contrast', () {
+    double contrastRatio(Color foreground, Color background) {
+      final lighter = max(
+        foreground.computeLuminance(),
+        background.computeLuminance(),
+      );
+      final darker = min(
+        foreground.computeLuminance(),
+        background.computeLuminance(),
+      );
+      return (lighter + 0.05) / (darker + 0.05);
+    }
+
+    test('the composer-hint foreground meets AA on its surfaces', () {
+      for (final colors in [AppColors.light, AppColors.dark]) {
+        final appearance = colors == AppColors.light ? 'light' : 'dark';
+        expect(
+          contrastRatio(colors.textSecondary, colors.canvas),
+          greaterThanOrEqualTo(4.5),
+          reason: 'hint copy on canvas must stay readable ($appearance)',
+        );
+        expect(
+          contrastRatio(colors.textSecondary, colors.surface),
+          greaterThanOrEqualTo(4.5),
+        );
+      }
+    });
+
+    test('every status-tag foreground meets AA on its tint', () {
+      for (final colors in [AppColors.light, AppColors.dark]) {
+        final pairs = [
+          (colors.info, colors.infoTint, 'For Sale'),
+          (colors.brandText, colors.brandTint, 'For Rent'),
+          (colors.accent, colors.accentTint, 'Looking to Buy'),
+          (colors.warm, colors.warmTint, 'Looking to Rent'),
+        ];
+        for (final (foreground, background, label) in pairs) {
+          expect(
+            contrastRatio(foreground, background),
+            greaterThanOrEqualTo(4.5),
+            reason: '$label tag copy must stay readable',
+          );
+        }
+      }
+    });
+  });
+
+  group('status icon assets', () {
+    // A complete Figma tag/key glyph fills nearly the whole 48px export;
+    // the lone inner Vector dot spans a fraction of the canvas.
+    const minimumGlyphSpan = 30.0;
+    const minimumInkedPixels = 200;
+
+    const statusAssets = <String, Color>{
+      AppIcons.postTag: Color(0xff1257b0),
+      AppIcons.lookingToBuyTag: Color(0xff5b21b6),
+      AppIcons.propertyRentKey: Color(0xff4f7a1f),
+      AppIcons.lookingToRentKey: Color(0xffb07800),
+    };
+
+    test(
+      'each committed glyph fills its canvas with its design colour',
+      () async {
+        for (final entry in statusAssets.entries) {
+          final data = await rootBundle.load('packages/app_ui/${entry.key}');
+          final codec = await instantiateImageCodec(data.buffer.asUint8List());
+          final frame = await codec.getNextFrame();
+          final width = frame.image.width;
+          final height = frame.image.height;
+          final bytes = await frame.image.toByteData();
+          frame.image.dispose();
+          codec.dispose();
+          expect(bytes, isNotNull, reason: '${entry.key} must decode');
+          final pixels = bytes!.buffer.asUint8List();
+
+          // The new component colour model exposes 0..1 channels.
+          final targetR = entry.value.r * 255;
+          final targetG = entry.value.g * 255;
+          final targetB = entry.value.b * 255;
+          var minX = width.toDouble();
+          var minY = height.toDouble();
+          var maxX = 0.0;
+          var maxY = 0.0;
+          var inked = 0;
+          var colourDistance = double.infinity;
+          for (var offset = 0; offset < pixels.length; offset += 4) {
+            final alpha = pixels[offset + 3];
+            if (alpha <= 16) continue;
+            inked++;
+            final index = offset ~/ 4;
+            final x = (index % width).toDouble();
+            final y = (index ~/ width).toDouble();
+            minX = min(minX, x);
+            minY = min(minY, y);
+            maxX = max(maxX, x);
+            maxY = max(maxY, y);
+            final distance = sqrt(
+              pow(pixels[offset] - targetR, 2) +
+                  pow(pixels[offset + 1] - targetG, 2) +
+                  pow(pixels[offset + 2] - targetB, 2),
+            );
+            colourDistance = min(colourDistance, distance);
+          }
+
+          final reason = '${entry.key} is not the complete status glyph';
+          expect(
+            maxX - minX,
+            greaterThanOrEqualTo(minimumGlyphSpan),
+            reason: reason,
+          );
+          expect(
+            maxY - minY,
+            greaterThanOrEqualTo(minimumGlyphSpan),
+            reason: reason,
+          );
+          expect(
+            inked,
+            greaterThanOrEqualTo(minimumInkedPixels),
+            reason: reason,
+          );
+          expect(
+            colourDistance,
+            lessThan(48),
+            reason: '${entry.key} must carry its design colour',
+          );
+        }
+      },
+    );
   });
 }

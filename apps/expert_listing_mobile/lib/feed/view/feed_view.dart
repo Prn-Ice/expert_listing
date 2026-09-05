@@ -70,8 +70,9 @@ class FeedViewState extends ConsumerState<FeedView> {
             ),
             SliverToBoxAdapter(child: CreatePostPrompt(onNotice: _showNotice)),
             if (state.isShowingSavedPosts)
-              SliverToBoxAdapter(
-                child: OfflineStatusBar(
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _OfflineBarDelegate(
                   message: state.fallbackReason == FeedFallbackReason.connection
                       ? 'Offline · Showing saved posts'
                       : 'Showing saved posts',
@@ -132,6 +133,9 @@ class FeedViewState extends ConsumerState<FeedView> {
 
   void _loadMoreWhenNeeded() {
     if (_scrollController.position.extentAfter < 360) {
+      // A failed next page waits for the visible Try again control; automatic
+      // pagination must not retry on its own.
+      if (ref.read(feedBlocProvider).nextPageFailed) return;
       _retryNextPage();
     }
   }
@@ -177,6 +181,30 @@ class FeedViewState extends ConsumerState<FeedView> {
   void _showNotice(String message) => AppNotice.show(context, message);
 }
 
+final class _OfflineBarDelegate extends SliverPersistentHeaderDelegate {
+  const _OfflineBarDelegate({required this.message, required this.onRetry});
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  double get maxExtent => OfflineStatusBar.height;
+
+  @override
+  double get minExtent => OfflineStatusBar.height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) => OfflineStatusBar(message: message, onRetry: onRetry);
+
+  @override
+  bool shouldRebuild(_OfflineBarDelegate oldDelegate) =>
+      oldDelegate.message != message || oldDelegate.onRetry != onRetry;
+}
+
 final class _FilterControl extends StatelessWidget {
   const _FilterControl({required this.activeCount, required this.onPressed});
 
@@ -186,11 +214,13 @@ final class _FilterControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
+      // Measured filter row: 24px side insets, 16px above the pill, and no
+      // bottom padding because the create-post prompt supplies the gap.
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xlarge,
-        AppSpacing.small,
-        AppSpacing.xlarge,
-        AppSpacing.medium,
+        AppSpacing.xxlarge,
+        AppSpacing.large,
+        AppSpacing.xxlarge,
+        0,
       ),
       child: Align(
         alignment: Alignment.centerLeft,

@@ -13,10 +13,11 @@ class CreatePostPrompt extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Padding(
+      // Measured prompt geometry: 16px side insets, 8px above, 12px below.
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xlarge,
-        0,
-        AppSpacing.xlarge,
+        AppSpacing.large,
+        AppSpacing.small,
+        AppSpacing.large,
         AppSpacing.medium,
       ),
       child: SizedBox(
@@ -30,14 +31,19 @@ class CreatePostPrompt extends StatelessWidget {
             ),
             borderRadius: AppRadii.pill,
             child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.small),
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.small,
+                AppSpacing.small,
+                12,
+                AppSpacing.small,
+              ),
               child: Row(
                 children: [
                   const AppAvatar.asset(
                     assetName: 'assets/images/current-user.jpg',
                     displayName: 'Prince Adeyemi',
                   ),
-                  const SizedBox(width: AppSpacing.small),
+                  const SizedBox(width: AppSpacing.xsmall),
                   Expanded(
                     child: Text(
                       'Share a property, Make a request or say something...',

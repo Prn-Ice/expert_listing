@@ -54,6 +54,8 @@ win. Ask before changing an explicit product decision.
 
 - Treat committed Figma measurements and exact assets as the visual contract.
   Do not approximate an available SVG or scatter repeated design values.
+- For Figma-to-Flutter implementation or layout correction, load and follow the
+  repository `figma-to-flutter-layout` skill before editing UI code.
 - Keep canonical Figma references in the specification and agent guidance;
   user-facing README and wiki pages use semantic asset names and measurements,
   never Figma IDs or links.
@@ -62,8 +64,12 @@ win. Ask before changing an explicit product decision.
   state.
 - Light mode is the Figma reference and default. Dark mode is required and uses
   the same semantic roles. Do not add a theme selector absent from the design.
-- Preserve visible Figma icon dimensions inside at least 48 by 48 logical-pixel
-  semantic hit regions without changing layout geometry.
+- Preserve visible Figma icon dimensions inside ordinary controls with at least
+  48 by 48 logical-pixel hit regions. Adjust normal parent padding, alignment,
+  and spacing to approach the design; when an exact measurement conflicts, the
+  accessible target wins.
+- Do not use overflow boxes, overlapping or invisible targets, custom hit
+  testing, or stacked controls solely to preserve compact design geometry.
 - Every visible interactive control must produce a real action, native surface,
   or short useful boundary notice. Never fake success or select an unavailable
   destination.

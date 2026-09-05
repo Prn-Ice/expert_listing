@@ -40,9 +40,16 @@ class StoryStrip extends StatelessWidget {
     ];
 
     return SizedBox(
-      height: 83,
+      // Figma [private design node removed] uses a 60px avatar, 1px inner gap, 2px ring,
+      // 4px label gap, and 12px label.
+      height: 87,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xlarge),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.xlarge,
+          2,
+          AppSpacing.xlarge,
+          0,
+        ),
         scrollDirection: Axis.horizontal,
         itemCount: stories.length,
         separatorBuilder: (_, _) => const SizedBox(width: AppSpacing.large),
@@ -80,8 +87,10 @@ final class _Story extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+    final cacheDimension = (60 * devicePixelRatio).round();
     return SizedBox(
-      width: 76,
+      width: 66,
       child: TextButton(
         onPressed: onPressed,
         style: TextButton.styleFrom(padding: EdgeInsets.zero),
@@ -90,37 +99,59 @@ final class _Story extends StatelessWidget {
             Stack(
               clipBehavior: Clip.none,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(1),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: colors.brand),
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      asset,
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.cover,
+                if (isCurrentUser)
+                  // Your Story has no brand ring; its add badge marks it.
+                  Padding(
+                    padding: const EdgeInsets.all(1),
+                    child: ClipOval(
+                      child: Image.asset(
+                        asset,
+                        key: ValueKey<String>('story-image-$label'),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        cacheWidth: cacheDimension,
+                        cacheHeight: cacheDimension,
+                      ),
+                    ),
+                  )
+                else
+                  Container(
+                    key: ValueKey<String>('story-ring-$label'),
+                    padding: const EdgeInsets.all(1),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: colors.brand, width: 2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        asset,
+                        key: ValueKey<String>('story-image-$label'),
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                        cacheWidth: cacheDimension,
+                        cacheHeight: cacheDimension,
+                      ),
                     ),
                   ),
-                ),
                 if (isCurrentUser)
                   Positioned(
                     right: 0,
-                    bottom: 0,
+                    bottom: 3,
                     child: DecoratedBox(
                       decoration: BoxDecoration(
                         color: colors.brand,
                         shape: BoxShape.circle,
                         border: Border.all(color: colors.canvas, width: 2),
                       ),
-                      child: const SizedBox.square(
+                      child: SizedBox.square(
                         dimension: AppIconSize.large,
                         child: Center(
                           child: AppIcon(
                             AppIcons.storyAdd,
                             size: AppIconSize.small,
+                            color: colors.onBrand,
                           ),
                         ),
                       ),

@@ -19,12 +19,20 @@ class FeedRepository {
   final Dio _client;
   final FeedCache? _feedCache;
 
+  /// One entry per full feed URI holding the latest active request token, so
+  /// a superseded response cannot reach the cache. Tokens retire with their
+  /// request, keeping the map bounded to work that is actually running.
+  final _activeRequests = <Uri, int>{};
+  var _nextRequestToken = 0;
+
   /// Loads one page network-first, consulting disk only for approved failures.
   Future<FeedLoadResult> loadPage({
     required FeedFilter filter,
     String? cursor,
   }) async {
     final uri = _feedUri(filter: filter, cursor: cursor);
+    final requestToken = ++_nextRequestToken;
+    _activeRequests[uri] = requestToken;
 
     try {
       final response = await _client.getUri<Map<String, dynamic>>(uri);
@@ -33,7 +41,11 @@ class FeedRepository {
         throw const FeedLoadFailure(FeedFailureKind.unavailable);
       }
       final page = _parseLivePage(data);
-      await _feedCache?.write(uri, data);
+      // A superseded response for this URI must never reach the cache; the
+      // newest accepted response for one full URI is the final saved value.
+      if (_activeRequests[uri] == requestToken) {
+        await _feedCache?.write(uri, data);
+      }
       return page;
     } on DioException catch (error) {
       final fallbackReason = _fallbackReasonFor(error);
@@ -68,11 +80,18 @@ class FeedRepository {
       rethrow;
     } on Object {
       throw const FeedLoadFailure(FeedFailureKind.unavailable);
+    } finally {
+      if (_activeRequests[uri] == requestToken) {
+        _activeRequests.remove(uri);
+      }
     }
   }
 
   /// Removes all saved feed pages after a successful mutation.
   Future<void> invalidateFeed() async {
+    // Retire the loads that were still running before the wipe so their
+    // responses cannot write pre-mutation data into the cleared cache.
+    _activeRequests.clear();
     await _feedCache?.clear();
   }
 

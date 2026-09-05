@@ -24,10 +24,15 @@ or redraw the committed exports.
 | Brand mark | `../../apps/expert_listing_mobile/assets/brand/brand-mark.svg` | User-supplied header export |
 | Full wordmark | `../../packages/app_ui/assets/brand/expert-listing-wordmark.svg` | User-supplied header export |
 | Search navigation | `../../packages/app_ui/assets/icons/search.svg` | Figma MagnifyingGlass export retrieved with the feed design context |
-| For Sale tag | `../../packages/app_ui/assets/icons/post-tag.svg` | Figma Tag export |
-| Looking to Buy tag | `../../packages/app_ui/assets/icons/post-tag-looking-to-buy.svg` | Figma Tag export |
-| For Rent tag | `../../packages/app_ui/assets/icons/post-key-for-rent.svg` | Figma Key export |
-| Looking to Rent tag | `../../packages/app_ui/assets/icons/post-key-looking-to-rent.svg` | Figma Key export |
+| For Sale tag | `../../packages/app_ui/assets/icons/for-sale.png` | Complete Figma Tag export at 4x |
+| Looking to Buy tag | `../../packages/app_ui/assets/icons/looking-to-buy.png` | Complete Figma Tag export at 4x |
+| For Rent tag | `../../packages/app_ui/assets/icons/for-rent.png` | Complete Figma Key export at 4x |
+| Looking to Rent tag | `../../packages/app_ui/assets/icons/looking-to-rent.png` | Complete Figma Key export at 4x |
+
+The four status glyphs are 48-pixel raster exports of the complete Figma
+Tag/Key components. No complete vector export is obtainable for these
+components, so they render as tinted rasters sized from the measured 12px
+glyph geometry. Do not redraw or substitute them.
 
 Open Runde weights 400, 500, 600, and 700 plus its OFL 1.1 licence are bundled
 at `../../packages/app_ui/assets/fonts/open_runde/`. `app_ui` registers them as
@@ -105,7 +110,7 @@ The observed light reference currently establishes these roles:
 | Info tint | #f3f8ff |
 | Accent text | #5b21b6 |
 | Accent tint | #f7f3ff |
-| Warm text | #b07800 |
+| Warm text | #8a5b00 |
 | Warm tint | #fff9e5 |
 
 Additional shared roles are border `#e8e8e8` and brand deep `#105b48`.
@@ -115,6 +120,11 @@ white.
 
 These values become named theme roles in app_ui; widgets do not repeat raw
 colour literals.
+
+The warm text role deliberately deepens the observed light Figma value
+`#b07800`, which measures 3.6:1 on its tint. `#8a5b00` measures 5.6:1 on the
+warm tint and canvas so Looking to Rent tag copy meets WCAG AA. Revisit if the
+reference design publishes an accessible amber.
 
 Light mode is the Figma target. Dark mode follows system brightness and reuses
 the same semantic roles without per-widget inversion or an invented theme
@@ -129,7 +139,7 @@ sheet flash. Text-facing tag colours are lightened for dark surfaces.
 | Tertiary text | #7e807e | 4.72:1 |
 | Brand text | #c7ec96 | 14.21:1 |
 | Accent text | #c9b8f5 | 10.44:1 |
-| Warm text | #d8c4a8 | 11.09:1 |
+| Warm text | #ffcf72 | 9.00:1 |
 | On-brand text | #101211 on #a8dc66 | 11.73:1 |
 
 Contrast values use the WCAG sRGB relative-luminance formula. `AppTheme` also
@@ -139,16 +149,24 @@ available.
 
 ## Spacing, type, shape, and motion
 
-Observed roles use Open Runde: caption 12/500 at 1.25, metadata 13/400 at 1.3,
-body 14/400 at 1.45, post body 16/500 at 1.2, and title 16/600 at 1.25. The
-20/600 brand role has a 1.2 line height. Bottom-navigation labels are 14px at
-1.2 (weight 400 unselected over `text-secondary`, weight 500 selected over
-`primary-text`), measured on the Figma Nav frame.
+Observed roles use Open Runde: caption 13/500 at 1.2 (owned locations, status
+tags, and engagement counts), metadata 13/400 at 1.3, body 14/400 at 1.45, post
+body 16/500 at 1.2, and title 16/500 at 1.2. The 20/600 brand role has a 1.2
+line height. Bottom-navigation labels are 14px at 1.2 (weight 400 unselected
+over `text-secondary`, weight 500 selected over `primary-text`), measured on
+the Figma Nav frame.
 
-The dashboard bottom bar follows the Figma Nav frame ([private design node removed]): a 0.5px
-hairline top border, 16px top padding, 20px side insets, 24px glyphs, an 11px
-glyph-to-label gap, and content anchored to the top; the device safe-area
-inset supplies the space the mock reserved for the home indicator.
+Measured feed geometry: the story strip uses a 60px avatar inside its ring as a
+64px-wide item with 16px separation and a 4px label gap; the header links row
+pads 12px vertically around a 48px control row; the create-post prompt
+insets 16px on the sides with 8px above and 12px below, and leaves a 4px gap
+between its 40px avatar and hint text; the filter pill insets 24px; status-tag
+pills pad 8px horizontally and 4px vertically around a 4px glyph gap.
+
+The dashboard bottom bar uses a 0.5px hairline top border, 16px top padding,
+20px side insets, 24px glyphs, an 11px glyph-to-label gap, and content anchored
+to the top; the device safe-area inset supplies the space reserved for the home
+indicator.
 
 Define finite spacing, radius, border, icon, and interaction scales from
 repeated measurements. Keep one-off geometry as a named local constant with its
@@ -162,7 +180,7 @@ repetitive animation.
 
 Implement these only where the repeated contract is used:
 
-- AppIcon renders an exact committed SVG with correct semantics.
+- AppIcon renders committed vector and raster icons with correct semantics.
 - AppIconButton preserves the Figma glyph size inside at least a 48 by 48
   logical-pixel hit region, including focus, tooltip, semantics, platform press
   feedback, and optional restrained haptic feedback.

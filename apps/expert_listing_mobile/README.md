@@ -2,8 +2,10 @@
 
 This directory contains the Flutter client. M4 implements the network-first
 feed, filters, refresh, pagination, saved-feed provenance, and bounded public
-image rendering. Create-post and engagement journeys remain later feature work;
-named-device journeys are not yet verified.
+image rendering. Create-post and engagement journeys remain later feature
+work. The feed journey is verified on a local simulator against a seeded local
+Hono and Postgres backend, including the offline saved-feed fallback; browsing
+the hosted backend on a physical device is not yet verified.
 
 The approved architecture uses Riverpod for dependency lifecycles, Bloc/Cubit
 for feature behaviour, and Riverbloc to connect them. JSON requests and

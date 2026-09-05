@@ -14,9 +14,16 @@ an error. `FeedCache.read` calls `getFileFromCache` with the full request URI,
 so it is a cache-only operation and cannot fetch.
 
 Saved entries contain the original saved timestamp and validated data. Expired,
-corrupt, unreadable, or unavailable cache entries are cache misses. Cache I/O is
-optional infrastructure: a failure cannot turn a valid live response into an
-error. There is no mutation cache and no offline queue.
+corrupt, unreadable, or unavailable cache entries are cache misses. Reads,
+writes, and corrupt-entry cleanup for one full URI run one at a time in call
+order: a superseded response never saves, the newest accepted response for a
+URI is the final saved value, and cleanup cannot delete a fresher value
+written under the same URI. Invalidation retires the network loads that were
+still running and drains cache writes already underway, so neither can write
+pre-mutation data into the cleared cache. Different filter and cursor pages
+stay independent. Cache I/O is optional infrastructure: a failure cannot turn a
+valid live response into an error. There is no mutation cache and no offline
+queue.
 
 ## Visible provenance
 
@@ -38,5 +45,12 @@ invalidation deliberately leaves image bytes alone.
 a real local HTTP server and temporary-directory `CacheManager`, reconstructs
 the manager and repository, then verifies connection and service fallback
 provenance, full-URI lookup, seven-day expiry, 32-entry eviction,
-corruption misses, malformed-live protection, and live success when cache
-writing fails.
+corruption misses, malformed-live protection, same-URI write and cleanup
+races, and live success when cache writing fails.
+
+Named manual evidence: on 4 September 2026, the iPhone 16 Pro simulator
+full-app journey rebuilt the production provider graph over the primed disk
+store after the operator stopped the local functions route. Refresh rendered
+`Offline · Showing saved posts`, the saved posts, and Retry. This
+operator-driven flow is not an unattended integration test; the reconstruction
+test above is the automated offline proof.

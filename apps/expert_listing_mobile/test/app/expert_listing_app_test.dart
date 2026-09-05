@@ -8,6 +8,7 @@ import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -38,6 +39,11 @@ void main() {
     final context = tester.element(find.byType(Scaffold));
     expect(AppColors.of(context), AppColors.light);
     expect(Theme.of(context).scaffoldBackgroundColor, AppColors.light.canvas);
+    final overlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    expect(overlay.value.statusBarIconBrightness, Brightness.dark);
+    expect(overlay.value.statusBarBrightness, Brightness.light);
   });
 
   testWidgets('system dark brightness renders the dark theme', (tester) async {
@@ -49,6 +55,11 @@ void main() {
     final context = tester.element(find.byType(Scaffold));
     expect(AppColors.of(context), AppColors.dark);
     expect(Theme.of(context).scaffoldBackgroundColor, AppColors.dark.canvas);
+    final overlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    expect(overlay.value.statusBarIconBrightness, Brightness.light);
+    expect(overlay.value.statusBarBrightness, Brightness.dark);
   });
 
   testWidgets('configuration errors follow system dark appearance', (
@@ -66,6 +77,11 @@ void main() {
     final context = tester.element(find.byType(Scaffold));
     expect(AppColors.of(context), AppColors.dark);
     expect(Theme.of(context).scaffoldBackgroundColor, AppColors.dark.canvas);
+    final overlay = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+      find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+    );
+    expect(overlay.value.statusBarIconBrightness, Brightness.light);
+    expect(overlay.value.statusBarBrightness, Brightness.dark);
   });
 }
 

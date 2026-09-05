@@ -41,7 +41,9 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    return Padding(
+    // The single-child scroll view keeps every control reachable when the
+    // keyboard compresses the sheet on small screens.
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(
         AppSpacing.xlarge,
         AppSpacing.large,
@@ -171,6 +173,7 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
           const SizedBox(height: AppSpacing.small),
           TextField(
             controller: _locationController,
+            // The API accepts a trimmed location of 1 through 120 characters.
             maxLength: 120,
             textInputAction: TextInputAction.done,
             decoration: const InputDecoration(
@@ -205,7 +208,7 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
         postType: _postType,
         requestType: _postType == PostType.request ? _requestType : null,
         propertyStatus: _postType == PostType.property ? _propertyStatus : null,
-        location: _locationController.text,
+        location: _locationController.text.trim(),
       ),
     );
   }

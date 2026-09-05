@@ -335,7 +335,7 @@ Expected capabilities include:
 - Flutter Riverpod;
 - Bloc and Bloc testing utilities;
 - Dio;
-- a maintained Dio cache interceptor and durable file store;
+- the dedicated `FeedCache` contract backed by one durable file `CacheManager`;
 - path-provider support;
 - cached network images and a maintained mobile cache manager;
 - SVG rendering;
@@ -653,7 +653,7 @@ UUID strings; post, comment, and image IDs are JSON numbers.
 - Mutations: `Cache-Control: no-store`.
 - Errors: `Cache-Control: no-store`.
 
-The selected Dio cache implementation must be verified against these headers and the explicit repository fallback behaviour.
+The dedicated `FeedCache`/`CacheManager` contract (section 16) must be verified against these headers and the explicit repository fallback behaviour.
 
 ### `GET /health`
 
@@ -866,6 +866,11 @@ Rules:
 
 - successful feed responses persist on disk;
 - the full request URI, including cursor and filters, identifies an entry;
+- a superseded response for one URI never saves, and the newest accepted
+  response for that URI is the final saved value; same-URI reads, writes, and
+  corrupt-entry cleanup run one at a time while different URIs stay
+  independent, and invalidation retires loads still in flight and drains
+  writes already underway;
 - cached responses retain saved timestamp, stale provenance, and fallback reason;
 - HTTP service failures are never called offline;
 - `FeedCache` uses a seven-day `CacheManager` stale period and a 32-object

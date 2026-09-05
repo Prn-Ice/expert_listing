@@ -15,6 +15,9 @@ abstract final class AppIconSize {
 
   /// Minimum hit region for any icon control, per the design contract.
   static const double tapTarget = 48;
+
+  /// Minimum hit region for any text button control.
+  static const double textButtonTapTarget = 32;
 }
 
 /// The committed SVG icon inventory.
@@ -64,14 +67,17 @@ abstract final class AppIcons {
   static const String storyAdd = '$_dir/story-add.svg';
 
   /// The blue For Sale tag glyph.
-  static const String postTag = '$_dir/post-tag.svg';
+  ///
+  /// The four status glyphs are exact 4x Figma exports rasterized at 48px
+  /// because no complete vector export is obtainable for these components.
+  static const String postTag = '$_dir/for-sale.png';
 
   /// The purple Looking to Buy tag glyph.
-  static const String lookingToBuyTag = '$_dir/post-tag-looking-to-buy.svg';
+  static const String lookingToBuyTag = '$_dir/looking-to-buy.png';
 
   /// The green For Rent key glyph.
-  static const String propertyRentKey = '$_dir/post-key-for-rent.svg';
+  static const String propertyRentKey = '$_dir/for-rent.png';
 
   /// The amber Looking to Rent key glyph.
-  static const String lookingToRentKey = '$_dir/post-key-looking-to-rent.svg';
+  static const String lookingToRentKey = '$_dir/looking-to-rent.png';
 }

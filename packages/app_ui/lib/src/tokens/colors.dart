@@ -106,7 +106,9 @@ final class AppColors extends ThemeExtension<AppColors> {
     infoTint: Color(0xfff3f8ff),
     accent: Color(0xff5b21b6),
     accentTint: Color(0xfff7f3ff),
-    warm: Color(0xffb07800),
+    // Deepened from the observed #b07800, which measures 3.6:1 on its tint;
+    // this value measures 5.6:1 so tag copy meets WCAG AA.
+    warm: Color(0xff8a5b00),
     warmTint: Color(0xfffff9e5),
   );
 

@@ -3,6 +3,7 @@ import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/dashboard/dashboard_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() {
@@ -55,16 +56,24 @@ class ConfigurationErrorApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      home: Scaffold(
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xxlarge),
-            child: Text(
-              'The app is not configured correctly.\n${error.message}',
-              textAlign: TextAlign.center,
+      home: Builder(
+        builder: (context) {
+          // The error surface owns the status bar like every other screen.
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: Theme.of(context).appBarTheme.systemOverlayStyle!,
+            child: Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxlarge),
+                  child: Text(
+                    'The app is not configured correctly.\n${error.message}',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }

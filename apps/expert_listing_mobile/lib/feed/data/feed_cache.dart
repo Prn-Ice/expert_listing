@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -28,64 +29,81 @@ final class FeedCache {
 
   final CacheManager _manager;
 
-  /// Reads one non-expired saved response without making a network request.
-  Future<SavedFeedEntry?> read(Uri uri) async {
-    final key = uri.toString();
-    try {
-      final cached = await _manager.getFileFromCache(key);
-      if (cached == null) return null;
-      if (!cached.validTill.isAfter(DateTime.now())) {
-        await _remove(key);
-        return null;
-      }
+  /// The operation chain for each saved page, so concurrent work on one full
+  /// URI finishes one at a time in call order while other pages stay free.
+  final _operationsByUri = <String, Future<void>>{};
 
-      final decoded = jsonDecode(await cached.file.readAsString());
-      if (decoded is! Map<String, dynamic>) {
+  /// Reads one non-expired saved response without making a network request.
+  Future<SavedFeedEntry?> read(Uri uri) {
+    return _oneAtATime(uri, () async {
+      final key = uri.toString();
+      try {
+        final cached = await _manager.getFileFromCache(key);
+        if (cached == null) return null;
+        if (!cached.validTill.isAfter(DateTime.now())) {
+          await _remove(key);
+          return null;
+        }
+
+        final decoded = jsonDecode(await cached.file.readAsString());
+        if (decoded is! Map<String, dynamic>) {
+          await _remove(key);
+          return null;
+        }
+        final savedAt = DateTime.tryParse(decoded['savedAt'] as String? ?? '');
+        final data = decoded['data'];
+        if (savedAt == null || data is! Map<String, dynamic>) {
+          await _remove(key);
+          return null;
+        }
+        return SavedFeedEntry(data: data, savedAt: savedAt.toUtc());
+      } on Object {
+        // A corrupt entry is removed so it is never decoded repeatedly; a
+        // removal failure only leaves an already-unreadable cache miss.
         await _remove(key);
         return null;
       }
-      final savedAt = DateTime.tryParse(decoded['savedAt'] as String? ?? '');
-      final data = decoded['data'];
-      if (savedAt == null || data is! Map<String, dynamic>) {
-        await _remove(key);
-        return null;
-      }
-      return SavedFeedEntry(data: data, savedAt: savedAt.toUtc());
-    } on Object {
-      return null;
-    }
+    });
   }
 
   /// Saves a validated response for the requested full URI.
-  Future<void> write(Uri uri, Map<String, dynamic> validatedData) async {
-    try {
-      final savedAt = DateTime.now().toUtc();
-      final bytes = Uint8List.fromList(
-        utf8.encode(
-          jsonEncode({
-            'savedAt': savedAt.toIso8601String(),
-            'data': validatedData,
-          }),
-        ),
-      );
-      await _manager.putFile(
-        uri.toString(),
-        bytes,
-        key: uri.toString(),
-        maxAge: retention,
-        fileExtension: 'json',
-      );
-      // CacheManager schedules metadata persistence separately from byte
-      // writes.
-      await Future<void>.delayed(Duration.zero);
-    } on Object {
-      // The live response remains correct when disk storage is unavailable.
-    }
+  Future<void> write(Uri uri, Map<String, dynamic> validatedData) {
+    return _oneAtATime(uri, () async {
+      try {
+        final savedAt = DateTime.now().toUtc();
+        final bytes = Uint8List.fromList(
+          utf8.encode(
+            jsonEncode({
+              'savedAt': savedAt.toIso8601String(),
+              'data': validatedData,
+            }),
+          ),
+        );
+        await _manager.putFile(
+          uri.toString(),
+          bytes,
+          key: uri.toString(),
+          maxAge: retention,
+          fileExtension: 'json',
+        );
+        // CacheManager schedules metadata persistence separately from byte
+        // writes.
+        await Future<void>.delayed(Duration.zero);
+      } on Object {
+        // The live response remains correct when disk storage is unavailable.
+      }
+    });
   }
 
-  /// Removes every saved feed response after a successful mutation.
+  /// Removes all saved feed pages after a successful mutation.
   Future<void> clear() async {
     try {
+      // Page work already running finishes before the wipe, so a slow write
+      // cannot restore stale data after the invalidation.
+      final running = _operationsByUri.values.toList();
+      for (final operation in running) {
+        await operation;
+      }
       await _manager.emptyCache();
     } on Object {
       // Cache invalidation must never fail a correct mutation.
@@ -107,5 +125,29 @@ final class FeedCache {
     } on Object {
       // A corrupt entry is already a cache miss if removal also fails.
     }
+  }
+
+  /// Runs [operation] after every earlier read, write, or removal for [uri].
+  ///
+  /// Each page keeps its own queue: the newest write for a URI is therefore
+  /// the final saved value, and corrupt-entry cleanup can no longer delete a
+  /// replacement written under the same URI. Different URIs never wait for
+  /// each other.
+  Future<T> _oneAtATime<T>(Uri uri, Future<T> Function() operation) {
+    final key = uri.toString();
+    final pending = _operationsByUri[key] ?? Future<void>.value();
+    final done = Completer<void>();
+    final result = pending.then((_) async {
+      try {
+        return await operation();
+      } finally {
+        if (identical(_operationsByUri[key], done.future)) {
+          final _ = _operationsByUri.remove(key);
+        }
+        done.complete();
+      }
+    });
+    _operationsByUri[key] = done.future;
+    return result;
   }
 }

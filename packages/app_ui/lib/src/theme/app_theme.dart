@@ -99,6 +99,7 @@ abstract final class AppTheme {
           statusBarIconBrightness: brightness == Brightness.dark
               ? Brightness.light
               : Brightness.dark,
+          statusBarBrightness: brightness,
           systemNavigationBarColor: colors.canvas,
           systemNavigationBarIconBrightness: brightness == Brightness.dark
               ? Brightness.light

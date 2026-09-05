@@ -4,8 +4,14 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/models/post_types.dart';
+import 'package:expert_listing/feed/view/post_actions.dart';
+import 'package:expert_listing/feed/view/property_media.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+const double _postInset = AppSpacing.xlarge;
+const _postAvatarSize = 40.0;
+const double _postContentInset =
+    _postInset + _postAvatarSize + AppSpacing.small;
 
 /// A Figma-aligned feed row for every hydrated post variant.
 class PostCard extends StatelessWidget {
@@ -22,79 +28,106 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    // Centered action content sits about 8px inside its 48px target in the
+    // counted reference state. Let the targets use the adjacent outer space.
+    const actionTargetLeftInset = _postContentInset - AppSpacing.small;
+    const actionTargetRightInset = _postInset;
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(
-            AppSpacing.large,
+            _postInset,
             AppSpacing.medium,
-            AppSpacing.xlarge,
-            AppSpacing.medium,
+            _postInset,
+            0,
           ),
-          child: Row(
+          child: _PostHeader(post: post, onNotice: onNotice),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(
+            left: _postContentInset,
+            right: _postInset,
+          ),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                key: ValueKey<String>('author-avatar-${post.id}'),
-                child: AppAvatar(
-                  imageUrl: post.author.avatarUrl,
-                  displayName: post.author.displayName,
-                  onPressed: _showProfileNotice,
-                ),
-              ),
-              const SizedBox(width: AppSpacing.xsmall),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _PostHeading(post: post, onNotice: onNotice),
-                    const SizedBox(height: AppSpacing.xsmall),
-                    Text(post.body, style: AppTypography.postBody(colors)),
-                    const SizedBox(height: AppSpacing.small),
-                    _PostDetails(post: post),
-                    if (post case final PropertyFeedPost property
-                        when property.images.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.small),
-                      _PropertyMedia(images: property.images),
-                    ],
-                    const SizedBox(height: AppSpacing.small),
-                    _PostActions(post: post, onNotice: onNotice),
-                    if (post.commentCount > 0) ...[
-                      const SizedBox(height: AppSpacing.xsmall),
-                      SizedBox(
-                        height: AppIconSize.tapTarget,
-                        child: TextButton(
-                          onPressed: () => onNotice(
-                            'Comments are part of the next preview step.',
-                          ),
-                          child: Text(
-                            'View all ${post.commentCount} comments',
-                            style: AppTypography.bodyStrong(colors),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+              const SizedBox(height: AppSpacing.xsmall),
+              Text(post.body, style: AppTypography.postBody(colors)),
+              const SizedBox(height: AppSpacing.small),
+              _PostDetails(post: post),
+              if (post case final PropertyFeedPost property
+                  when property.images.isNotEmpty) ...[
+                const SizedBox(height: AppSpacing.small),
+                PropertyMedia(images: property.images),
+              ],
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            actionTargetLeftInset,
+            0,
+            actionTargetRightInset,
+            0,
+          ),
+          child: PostActions(
+            key: ValueKey<String>('post-actions-${post.id}'),
+            post: post,
+            onNotice: onNotice,
+          ),
+        ),
+        if (post.commentCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(
+              left: actionTargetLeftInset,
+              right: _postInset,
+            ),
+            child: SizedBox(
+              height: AppIconSize.textButtonTapTarget,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton(
+                  key: ValueKey<String>('post-comments-${post.id}'),
+                  onPressed: () => onNotice(
+                    'Comments are part of the next preview step.',
+                  ),
+                  style: TextButton.styleFrom(
+                    alignment: Alignment.center,
+                    minimumSize: const Size.square(
+                      AppIconSize.textButtonTapTarget,
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.small,
+                    ),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: Text(
+                    'View all ${post.commentCount} comments',
+                    style: AppTypography.bodyMedium(
+                      colors,
+                      color: colors.textTertiary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         const Divider(height: 1),
       ],
     );
   }
-
-  void _showProfileNotice() =>
-      onNotice('Profiles are not part of this preview.');
 }
 
-final class _PostHeading extends StatelessWidget {
-  const _PostHeading({required this.post, required this.onNotice});
+final class _PostHeader extends StatelessWidget {
+  const _PostHeader({required this.post, required this.onNotice});
 
   final FeedPost post;
   final ValueChanged<String> onNotice;
+
+  void _showProfileNotice() =>
+      onNotice('Profiles are not part of this preview.');
 
   @override
   Widget build(BuildContext context) {
@@ -105,63 +138,85 @@ final class _PostHeading extends StatelessWidget {
         children: [
           Expanded(
             child: TextButton(
-              key: ValueKey<String>('author-name-${post.id}'),
-              onPressed: () =>
-                  onNotice('Profiles are not part of this preview.'),
+              key: ValueKey<String>('post-profile-${post.id}'),
+              onPressed: _showProfileNotice,
               style: TextButton.styleFrom(
                 alignment: Alignment.centerLeft,
-                minimumSize: Size.zero,
+                minimumSize: const Size.fromHeight(AppIconSize.tapTarget),
                 padding: EdgeInsets.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadii.pill,
+                ),
+                overlayColor: colors.subtleSurface,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          post.author.displayName,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.title(colors),
+              child: Semantics(
+                label: '${post.author.displayName}, view profile',
+                excludeSemantics: true,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: _postAvatarSize,
+                      height: AppIconSize.tapTarget,
+                      child: Center(
+                        child: AppAvatar(
+                          imageUrl: post.author.avatarUrl,
+                          displayName: post.author.displayName,
                         ),
                       ),
-                      const SizedBox(width: AppSpacing.xsmall),
-                      Text('·', style: AppTypography.meta(colors)),
-                      const SizedBox(width: AppSpacing.xsmall),
-                      Flexible(
-                        child: Text(
-                          post.author.role,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.body(
-                            colors,
-                            color: colors.textTertiary,
+                    ),
+                    const SizedBox(width: AppSpacing.small),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  post.author.displayName,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.title(colors),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xsmall),
+                              Text('·', style: AppTypography.meta(colors)),
+                              const SizedBox(width: AppSpacing.xsmall),
+                              Flexible(
+                                child: Text(
+                                  post.author.role,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.body(
+                                    colors,
+                                    color: colors.textTertiary,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '${_postTypeLabel(post.postType)}  ·  '
+                            '${_timeAgo(post.createdAt)}',
+                            style: AppTypography.meta(colors),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${_postTypeLabel(post.postType)}  ·  '
-                    '${_timeAgo(post.createdAt)}',
-                    style: AppTypography.meta(colors),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          SizedBox.square(
+          AppIconButton(
             key: ValueKey<String>('post-overflow-${post.id}'),
-            dimension: AppIconSize.tapTarget,
-            child: AppIconButton(
-              icon: AppIcons.postOverflow,
-              iconSize: AppIconSize.small,
-              tooltip: 'Post options',
-              onPressed: () =>
-                  onNotice('Post options are part of the next preview step.'),
+            icon: AppIcons.postOverflow,
+            iconSize: AppIconSize.small,
+            tooltip: 'Post options',
+            onPressed: () => onNotice(
+              'Post options are part of the next preview step.',
             ),
           ),
         ],
@@ -192,7 +247,14 @@ final class _PostDetails extends StatelessWidget {
               color: colors.textSecondary,
             ),
             const SizedBox(width: AppSpacing.xsmall),
-            Text(post.location, style: AppTypography.caption(colors)),
+            Flexible(
+              child: Text(
+                post.location,
+                style: AppTypography.caption(colors),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
         _PostTag(post: post),
@@ -258,258 +320,6 @@ final class _PostTag extends StatelessWidget {
   }
 }
 
-final class _PropertyMedia extends StatefulWidget {
-  const _PropertyMedia({required this.images});
-
-  final List<PropertyImage> images;
-
-  @override
-  State<_PropertyMedia> createState() => _PropertyMediaState();
-}
-
-final class _PropertyMediaState extends State<_PropertyMedia> {
-  var _page = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    final images = widget.images.where((image) => image.url != null).toList();
-    if (images.isEmpty) return const SizedBox.shrink();
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Figma's property media box is 388 by 260 at the reference width.
-        final height = constraints.maxWidth * 260 / 388;
-        return Column(
-          children: [
-            SizedBox(
-              height: height,
-              child: ClipRRect(
-                borderRadius: AppRadii.image,
-                child: PageView.builder(
-                  itemCount: images.length,
-                  onPageChanged: (page) => setState(() => _page = page),
-                  itemBuilder: (context, index) {
-                    final image = images[index];
-                    return InkWell(
-                      onTap: () => _showImage(
-                        context,
-                        image.url!,
-                        index: index,
-                        imageCount: images.length,
-                      ),
-                      child: AppNetworkImage(
-                        imageUrl: image.url!,
-                        semanticLabel:
-                            'Property photo ${index + 1} of ${images.length}',
-                        placeholder: ColoredBox(
-                          color: AppColors.of(context).surface,
-                        ),
-                        fallback: ColoredBox(
-                          color: AppColors.of(context).surface,
-                          child: const Center(
-                            child: Icon(Icons.image_not_supported),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ),
-            if (images.length > 1) ...[
-              const SizedBox(height: AppSpacing.xsmall),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  images.length,
-                  (index) => Container(
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: index == _page
-                          ? AppColors.of(context).brandDeep
-                          : AppColors.of(context).border,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  void _showImage(
-    BuildContext context,
-    String url, {
-    required int index,
-    required int imageCount,
-  }) {
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (context) => _FullScreenImageViewer(
-          imageUrl: url,
-          semanticLabel: 'Property photo ${index + 1} of $imageCount',
-        ),
-      ),
-    );
-  }
-}
-
-final class _FullScreenImageViewer extends StatelessWidget {
-  const _FullScreenImageViewer({
-    required this.imageUrl,
-    required this.semanticLabel,
-  });
-
-  final String imageUrl;
-  final String semanticLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    const overlayStyle = SystemUiOverlayStyle(
-      statusBarColor: Colors.black,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Colors.black,
-      systemNavigationBarIconBrightness: Brightness.light,
-    );
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
-        systemOverlayStyle: overlayStyle,
-      ),
-      body: LayoutBuilder(
-        builder: (context, constraints) => InteractiveViewer(
-          child: SizedBox(
-            width: constraints.maxWidth,
-            height: constraints.maxHeight,
-            child: AppNetworkImage(
-              imageUrl: imageUrl,
-              fit: BoxFit.contain,
-              semanticLabel: semanticLabel,
-              fallback: const Center(
-                child: Icon(Icons.image_not_supported, color: Colors.white),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-final class _PostActions extends StatelessWidget {
-  const _PostActions({required this.post, required this.onNotice});
-
-  final FeedPost post;
-  final ValueChanged<String> onNotice;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    return Row(
-      children: [
-        _Action(
-          icon: AppIcons.heart,
-          label: post.likeCount == 0 ? null : '${post.likeCount}',
-          tooltip: 'Like',
-          onPressed: () => onNotice('Likes are part of the next preview step.'),
-        ),
-        _Action(
-          icon: AppIcons.comment,
-          label: post.commentCount == 0 ? null : '${post.commentCount}',
-          tooltip: 'Comments',
-          onPressed: () =>
-              onNotice('Comments are part of the next preview step.'),
-        ),
-        _Action(
-          icon: AppIcons.share,
-          tooltip: 'Share',
-          onPressed: () => onNotice('Sharing is not available right now.'),
-        ),
-        if (post.viewCount > 0)
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  '${_viewCount(post.viewCount)} Views',
-                  style: AppTypography.caption(colors),
-                ),
-              ),
-            ),
-          )
-        else
-          const Spacer(),
-        _Action(
-          icon: AppIcons.bookmark,
-          label: post.bookmarkCount == 0 ? null : '${post.bookmarkCount}',
-          tooltip: 'Bookmark',
-          onPressed: () =>
-              onNotice('Bookmarks are part of the next preview step.'),
-        ),
-      ],
-    );
-  }
-}
-
-final class _Action extends StatelessWidget {
-  const _Action({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    this.label,
-  });
-
-  final String icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  final String? label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final semanticLabel = label == null ? tooltip : '$tooltip, $label';
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      onTap: onPressed,
-      excludeSemantics: true,
-      child: Tooltip(
-        message: tooltip,
-        child: SizedBox(
-          width: 48,
-          height: 48,
-          child: TextButton(
-            onPressed: onPressed,
-            style: TextButton.styleFrom(padding: EdgeInsets.zero),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                AppIcon(
-                  icon,
-                  size: AppIconSize.small,
-                  color: colors.textSecondary,
-                ),
-                if (label != null) ...[
-                  const SizedBox(width: AppSpacing.xsmall),
-                  Text(label!, style: AppTypography.caption(colors)),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 String _postTypeLabel(PostType postType) => switch (postType) {
   PostType.general => 'General',
   PostType.request => 'Request',
@@ -522,15 +332,4 @@ String _timeAgo(DateTime value) {
   if (elapsed.inHours < 1) return '${elapsed.inMinutes}m';
   if (elapsed.inDays < 1) return '${elapsed.inHours}h';
   return '${elapsed.inDays}d';
-}
-
-String _viewCount(int count) {
-  if (count >= 1000) {
-    final compact = (count / 1000).toStringAsFixed(1);
-    final withoutTrailingDecimal = compact.endsWith('.0')
-        ? compact.substring(0, compact.length - 2)
-        : compact;
-    return '${withoutTrailingDecimal}K';
-  }
-  return '$count';
 }

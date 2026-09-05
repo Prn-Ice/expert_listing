@@ -43,14 +43,15 @@ abstract final class AppTypography {
     color: color,
   );
 
-  /// Open Runde, 16 logical pixels, 20px line height, weight 600.
+  /// Open Runde, 16 logical pixels, 19.2px line height, weight 500.
   ///
-  /// Used for author names and semibold content.
+  /// Used for author names and semibold content; the feed reference measures
+  /// the author title as 16 Medium at a 1.2 line height.
   static TextStyle title(AppColors colors, {Color? color}) => _role(
     colors,
     size: 16,
-    weight: FontWeight.w600,
-    height: 1.25,
+    weight: FontWeight.w500,
+    height: 1.2,
     color: color,
   );
 
@@ -76,9 +77,20 @@ abstract final class AppTypography {
     color: color,
   );
 
+  /// Open Runde, 14 logical pixels, 16.8px line height, weight 500.
+  ///
+  /// Used for compact supporting actions and comment copy.
+  static TextStyle bodyMedium(AppColors colors, {Color? color}) => _role(
+    colors,
+    size: 14,
+    weight: FontWeight.w500,
+    height: 1.2,
+    color: color,
+  );
+
   /// Open Runde, 14 logical pixels, 20.3px line height, weight 600.
   ///
-  /// Used for emphasized rows, for example "View all comments".
+  /// Used for emphasized body rows.
   static TextStyle bodyStrong(AppColors colors, {Color? color}) => _role(
     colors,
     size: 14,
@@ -98,26 +110,29 @@ abstract final class AppTypography {
     color: color ?? colors.textSecondary,
   );
 
-  /// Open Runde, 12 logical pixels, 15px line height, weight 500.
+  /// Open Runde, 13 logical pixels, 15.6px line height, weight 500.
   ///
-  /// Used for tags, locations, and counts.
+  /// Used for owned locations, status tags, and engagement counts; the feed
+  /// reference measures this role as 13 Medium at a 1.2 line height.
   static TextStyle caption(AppColors colors, {Color? color}) => _role(
     colors,
-    size: 12,
+    size: 13,
     weight: FontWeight.w500,
-    height: 1.25,
+    height: 1.2,
     color: color ?? colors.textSecondary,
   );
 
   /// Open Runde, 13 logical pixels, 16.9px line height, weight 500.
   ///
-  /// Used for concise hint copy in dense controls.
+  /// Used for concise hint copy in dense controls. The default is the
+  /// secondary role: the tertiary role measures below 4.5:1 on the canvas and
+  /// hint copy must stay readable.
   static TextStyle hint(AppColors colors, {Color? color}) => _role(
     colors,
     size: 13,
     weight: FontWeight.w500,
     height: 1.3,
-    color: color ?? colors.textTertiary,
+    color: color ?? colors.textSecondary,
   );
 
   /// Open Runde, 12 logical pixels, 15px line height, weight 400.

@@ -1,6 +1,9 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 /// The app-level dashboard scaffold and active destination navigation.
 class DashboardPage extends StatefulWidget {
@@ -16,11 +19,14 @@ final class _DashboardPageState extends State<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: FeedView(key: _feedKey),
-      bottomNavigationBar: _DashboardNavigation(
-        onFeedPressed: () => _feedKey.currentState?.returnToTopOrRefresh(),
-        onNotice: (message) => AppNotice.show(context, message),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: Theme.of(context).appBarTheme.systemOverlayStyle!,
+      child: Scaffold(
+        body: FeedView(key: _feedKey),
+        bottomNavigationBar: _DashboardNavigation(
+          onFeedPressed: () => _feedKey.currentState?.returnToTopOrRefresh(),
+          onNotice: (message) => AppNotice.show(context, message),
+        ),
       ),
     );
   }
@@ -122,6 +128,27 @@ final class _NavigationItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final color = selected ? colors.brandText : colors.textSecondary;
+    final child = Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppIcon(icon, size: AppIconSize.large, color: color),
+        // The Figma Nav containers ([private design node removed]) gap 11px between the
+        // 24px glyph and its 14px label.
+        const SizedBox(height: 11),
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              style: selected
+                  ? AppTypography.navLabelSelected(colors, color: color)
+                  : AppTypography.navLabel(colors, color: color),
+            ),
+          ),
+        ),
+      ],
+    );
     return Semantics(
       container: true,
       button: true,
@@ -129,34 +156,29 @@ final class _NavigationItem extends StatelessWidget {
       selected: selected,
       onTap: onPressed,
       excludeSemantics: true,
-      child: TextButton(
-        onPressed: onPressed,
-        style: TextButton.styleFrom(
-          padding: EdgeInsets.zero,
-          minimumSize: const Size(48, 48),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcon(icon, size: AppIconSize.large, color: color),
-            // The Figma Nav containers ([private design node removed]) gap 11px between the
-            // 24px glyph and its 14px label.
-            const SizedBox(height: 11),
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: selected
-                      ? AppTypography.navLabelSelected(colors, color: color)
-                      : AppTypography.navLabel(colors, color: color),
-                ),
+      // Green marks selection, never press feedback. iOS answers with the
+      // restrained press opacity; Android with a neutral ripple contained
+      // to the destination cell by the item-scoped Material and stadium
+      // clip, so ink never crosses the divider or a neighbouring cell.
+      child: defaultTargetPlatform == TargetPlatform.iOS
+          ? CupertinoButton(
+              padding: EdgeInsets.zero,
+              minimumSize: const Size(48, 48),
+              pressedOpacity: 0.6,
+              onPressed: onPressed,
+              child: child,
+            )
+          : Material(
+              type: MaterialType.transparency,
+              child: InkResponse(
+                onTap: onPressed,
+                containedInkWell: true,
+                borderRadius: AppRadii.pill,
+                highlightColor: colors.subtleSurface,
+                splashColor: colors.subtleSurface,
+                child: child,
               ),
             ),
-          ],
-        ),
-      ),
     );
   }
 }

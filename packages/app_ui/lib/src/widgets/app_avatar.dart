@@ -40,7 +40,16 @@ class AppAvatar extends StatelessWidget {
     final url = imageUrl?.trim();
     Widget image = initials;
     if (assetName != null) {
-      image = Image.asset(assetName!, fit: BoxFit.cover);
+      // Bundled avatars are square; decoding at the rendered physical size
+      // keeps large source files out of the image cache.
+      final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+      final cacheDimension = (40 * devicePixelRatio).round();
+      image = Image.asset(
+        assetName!,
+        fit: BoxFit.cover,
+        cacheWidth: cacheDimension,
+        cacheHeight: cacheDimension,
+      );
     } else if (url != null && url.isNotEmpty) {
       image = AppNetworkImage(
         imageUrl: url,
@@ -64,9 +73,13 @@ class AppAvatar extends StatelessWidget {
         child: ExcludeSemantics(child: visual),
       );
     }
+    // The visual stays top-aligned with the post heading while the hit region
+    // keeps its 48px minimum; the semantic node owns the tap action so
+    // assistive technology activates the same handler.
     return Semantics(
       button: true,
       label: label,
+      onTap: onPressed,
       excludeSemantics: true,
       child: SizedBox.square(
         dimension: AppIconSize.tapTarget,
@@ -77,7 +90,10 @@ class AppAvatar extends StatelessWidget {
             padding: EdgeInsets.zero,
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Center(child: visual),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: visual,
+          ),
         ),
       ),
     );

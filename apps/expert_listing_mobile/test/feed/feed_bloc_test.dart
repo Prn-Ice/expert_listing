@@ -37,6 +37,31 @@ void main() {
   });
 
   test(
+    'repeated first-page events for the active filter share one request',
+    () async {
+      final firstPage = Completer<FeedLoadResult>();
+      var calls = 0;
+      final repository = _TestFeedRepository((_, _) {
+        calls++;
+        return firstPage.future;
+      });
+      final bloc = FeedBloc(repository: repository);
+      addTearDown(bloc.close);
+
+      bloc
+        ..add(const FeedStarted())
+        ..add(const FeedRefreshed())
+        ..add(const FeedRetryRequested());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(calls, 1);
+      firstPage.complete(_page(1));
+      await Future<void>.delayed(Duration.zero);
+      expect(bloc.state.posts.single.id, 1);
+    },
+  );
+
+  test(
     'duplicate next-page events issue one request and keep stable IDs',
     () async {
       final nextPage = Completer<FeedLoadResult>();

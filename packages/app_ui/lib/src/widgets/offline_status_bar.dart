@@ -1,4 +1,5 @@
 import 'package:app_ui/src/tokens/colors.dart';
+import 'package:app_ui/src/tokens/icons.dart';
 import 'package:app_ui/src/tokens/spacing.dart';
 import 'package:app_ui/src/tokens/typography.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,11 @@ class OfflineStatusBar extends StatelessWidget {
   /// Retries the active network request without hiding saved provenance.
   final VoidCallback? onRetry;
 
+  /// The measured strip height: a 32px text-button control with 4px of
+  /// breathing room on each side. Retry keeps the 32px text-button hit
+  /// region, like every other text control in the design system.
+  static const double height = 40;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
@@ -33,7 +39,7 @@ class OfflineStatusBar extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.large,
-            vertical: AppSpacing.small,
+            vertical: AppSpacing.xsmall,
           ),
           child: Row(
             children: [
@@ -44,7 +50,24 @@ class OfflineStatusBar extends StatelessWidget {
                 ),
               ),
               if (onRetry != null)
-                TextButton(onPressed: onRetry, child: const Text('Retry')),
+                SizedBox(
+                  height: AppIconSize.textButtonTapTarget,
+                  child: Center(
+                    child: TextButton(
+                      onPressed: onRetry,
+                      style: TextButton.styleFrom(
+                        minimumSize: const Size.square(
+                          AppIconSize.textButtonTapTarget,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.small,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Retry'),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

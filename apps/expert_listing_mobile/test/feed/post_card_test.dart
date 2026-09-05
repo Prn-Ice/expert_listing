@@ -1,7 +1,9 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
+import 'package:expert_listing/feed/view/property_media.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -93,10 +95,9 @@ void main() {
 
   testWidgets(
     'zero counts stay icon-only and named controls use 48px targets',
-    (
-      tester,
-    ) async {
+    (tester) async {
       final notices = <String>[];
+      final semantics = tester.ensureSemantics();
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
@@ -109,13 +110,12 @@ void main() {
       expect(find.bySemanticsLabel('Like'), findsOneWidget);
       expect(find.bySemanticsLabel('Like, 0'), findsNothing);
       expect(find.text('0 Views'), findsNothing);
-      expect(
-        tester.getSize(find.byKey(const ValueKey<String>('author-avatar-1'))),
-        const Size(48, 48),
-      );
+      // The avatar visual keeps its measured 40px circle inside the profile
+      // action.
+      expect(tester.getSize(find.byType(ClipOval)), const Size(40, 40));
       expect(
         tester
-            .getSize(find.byKey(const ValueKey<String>('author-name-1')))
+            .getSize(find.byKey(const ValueKey<String>('post-profile-1')))
             .height,
         48,
       );
@@ -123,17 +123,174 @@ void main() {
         tester.getSize(find.byKey(const ValueKey<String>('post-overflow-1'))),
         const Size(48, 48),
       );
-      await tester.tap(find.byKey(const ValueKey<String>('author-avatar-1')));
-      await tester.tap(find.byKey(const ValueKey<String>('author-name-1')));
-      expect(
-        notices,
-        [
-          'Profiles are not part of this preview.',
-          'Profiles are not part of this preview.',
-        ],
-      );
+
+      // One semantic profile button spans the avatar and the identity.
+      final profile = find.bySemanticsLabel('Prince, view profile');
+      expect(profile, findsOneWidget);
+      expect(tester.getSemantics(profile).flagsCollection.isButton, isTrue);
+      await tester.tap(profile);
+      expect(notices, ['Profiles are not part of this preview.']);
+      semantics.dispose();
     },
   );
+
+  testWidgets(
+    'profile and engagement buttons activate across their 48px targets',
+    (tester) async {
+      final notices = <String>[];
+      final semantics = tester.ensureSemantics();
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            home: Scaffold(
+              body: PostCard(post: _generalPost(), onNotice: notices.add),
+            ),
+          ),
+        );
+
+        Finder actionButton(String label) => find.ancestor(
+          of: find.bySemanticsLabel(label),
+          matching: find.byType(TextButton),
+        );
+
+        for (final label in ['Like', 'Comments', 'Share']) {
+          final button = actionButton(label);
+          final buttonRect = tester.getRect(button);
+          final icon = find.descendant(
+            of: button,
+            matching: find.byType(AppIcon),
+          );
+          expect(
+            tester.getRect(icon).center.dx,
+            buttonRect.center.dx,
+            reason: '$label icon must be horizontally centered in its target',
+          );
+          expect(
+            tester.getRect(icon).center.dy,
+            buttonRect.center.dy,
+            reason: '$label content must be centered in its pressed overlay',
+          );
+        }
+
+        final likeButton = actionButton('Like');
+        final likeRect = tester.getRect(likeButton);
+        final bodyRect = tester.getRect(find.text('Post 1'));
+        final likeIconRectFinder = find.descendant(
+          of: likeButton,
+          matching: find.byType(AppIcon),
+        );
+        final likeIconRect = tester.getRect(likeIconRectFinder);
+        expect(
+          likeRect.left,
+          bodyRect.left - AppSpacing.small,
+          reason: 'the action target uses the space before the content edge',
+        );
+        final locationIconRect = tester.getRect(
+          find.byWidgetPredicate(
+            (widget) => widget is AppIcon && widget.asset == AppIcons.mapPin,
+          ),
+        );
+        expect(
+          likeIconRect.top - locationIconRect.bottom,
+          AppSpacing.large,
+          reason: 'the centered action keeps ordinary in-flow geometry',
+        );
+
+        final cardRect = tester.getRect(find.byType(PostCard));
+        final bookmarkButtonRect = tester.getRect(actionButton('Bookmark'));
+        expect(
+          bookmarkButtonRect.right,
+          moreOrLessEquals(cardRect.right - AppSpacing.xlarge),
+          reason: 'the trailing action target ends at the content edge',
+        );
+
+        expect(likeButton, findsOneWidget);
+        expect(likeRect.size, const Size.square(AppIconSize.tapTarget));
+
+        final press = await tester.startGesture(likeRect.center);
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(tester.getRect(likeIconRectFinder).center, likeRect.center);
+        await press.cancel();
+        await tester.pump();
+
+        for (final point in <Offset>[
+          likeRect.topLeft + const Offset(1, 1),
+          likeRect.topRight + const Offset(-1, 1),
+          likeRect.bottomLeft + const Offset(1, -1),
+          likeRect.bottomRight + const Offset(-1, -1),
+        ]) {
+          await tester.tapAt(point);
+          await tester.pump();
+        }
+        expect(
+          notices,
+          List<String>.filled(
+            4,
+            'Likes are part of the next preview step.',
+          ),
+        );
+
+        final profileButton = find.byKey(
+          const ValueKey<String>('post-profile-1'),
+        );
+        final profileRect = tester.getRect(profileButton);
+        expect(profileRect.height, AppIconSize.tapTarget);
+        await tester.tapAt(profileRect.topLeft + const Offset(1, 1));
+        await tester.pump();
+        expect(
+          notices.last,
+          'Profiles are not part of this preview.',
+        );
+
+        await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
+        await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      } finally {
+        semantics.dispose();
+      }
+    },
+  );
+
+  testWidgets('the profile pressed overlay moves no visible geometry', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PostCard(post: _generalPost(), onNotice: (_) {}),
+        ),
+      ),
+    );
+
+    final targets = <String, Finder>{
+      'avatar': find.byType(ClipOval),
+      'name': find.text('Prince'),
+      'meta': find.textContaining('General'),
+      'body': find.text('Post 1'),
+      'overflow': find.byKey(const ValueKey<String>('post-overflow-1')),
+    };
+    Map<String, Rect> measure() => {
+      for (final entry in targets.entries)
+        entry.key: tester.getRect(entry.value),
+    };
+
+    final idle = measure();
+
+    // Press and hold the profile action: the ink highlight shows while the
+    // pointer is down and every measured position must stay identical.
+    final press = await tester.startGesture(
+      tester.getCenter(find.text('Prince')),
+    );
+    await tester.pump(const Duration(milliseconds: 200));
+    final pressed = measure();
+
+    expect(pressed, idle);
+
+    await press.up();
+    await tester.pump();
+  });
 
   testWidgets('formats one thousand views without a decimal', (tester) async {
     final post = FeedPost.fromJson({..._commonPost(id: 4), 'viewCount': 1000});
@@ -148,6 +305,244 @@ void main() {
 
     expect(find.text('1K Views'), findsOneWidget);
     expect(find.text('1.0K Views'), findsNothing);
+  });
+
+  testWidgets('views follow share and comments align with post content', (
+    tester,
+  ) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 6),
+      'viewCount': 243,
+      'commentCount': 2,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PostCard(post: post, onNotice: (_) {}),
+        ),
+      ),
+    );
+
+    final shareButton = find.ancestor(
+      of: find.bySemanticsLabel('Share'),
+      matching: find.byType(TextButton),
+    );
+    final views = find.byKey(const ValueKey<String>('post-views-6'));
+    final bookmark = find.descendant(
+      of: find.ancestor(
+        of: find.bySemanticsLabel('Bookmark'),
+        matching: find.byType(TextButton),
+      ),
+      matching: find.byType(AppIcon),
+    );
+    expect(tester.getRect(views).left, tester.getRect(shareButton).right);
+    expect(
+      tester.getRect(views).right,
+      lessThan(tester.getRect(bookmark).left),
+    );
+
+    final actions = find.byKey(const ValueKey<String>('post-actions-6'));
+    final comments = find.byKey(const ValueKey<String>('post-comments-6'));
+    final commentsText = find.text('View all 2 comments');
+    final body = find.text('Post 6');
+    final divider = find.byType(Divider);
+    final commentsLabel = tester.widget<Text>(commentsText);
+    expect(tester.getRect(comments).top, tester.getRect(actions).bottom);
+    expect(tester.getRect(comments).height, AppIconSize.textButtonTapTarget);
+    expect(tester.getRect(divider).top, tester.getRect(comments).bottom);
+    expect(tester.getRect(commentsText).left, tester.getRect(body).left);
+    expect(
+      tester.getRect(comments).left,
+      tester.getRect(commentsText).left - AppSpacing.small,
+    );
+    expect(
+      tester.getRect(comments).right,
+      tester.getRect(commentsText).right + AppSpacing.small,
+    );
+    expect(
+      tester.getRect(commentsText).center.dy,
+      tester.getRect(comments).center.dy,
+    );
+    expect(commentsLabel.style?.fontSize, 14);
+    expect(commentsLabel.style?.fontWeight, FontWeight.w500);
+    expect(commentsLabel.style?.height, 1.2);
+    expect(commentsLabel.style?.color, AppColors.light.textTertiary);
+  });
+
+  testWidgets('counted edge actions align with the property image', (
+    tester,
+  ) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 7),
+      'likeCount': 2,
+      'bookmarkCount': 17,
+      'postType': 'property',
+      'location': null,
+      'property': const <String, dynamic>{
+        'id': 7,
+        'status': 'for_sale',
+        'location': 'Lekki Phase 1, Lagos',
+        'images': <Map<String, dynamic>>[
+          {
+            'id': 7,
+            'url': 'https://example.test/property.jpg',
+            'position': 0,
+          },
+        ],
+      },
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 428,
+              child: PostCard(post: post, onNotice: (_) {}),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Finder actionContent(String label) {
+      final button = find.ancestor(
+        of: find.bySemanticsLabel(label),
+        matching: find.byType(TextButton),
+      );
+      return find.descendant(of: button, matching: find.byType(Row));
+    }
+
+    final mediaRect = tester.getRect(find.byType(PropertyMedia));
+    expect(
+      tester.getRect(actionContent('Like, 2')).left,
+      moreOrLessEquals(mediaRect.left, epsilon: 1),
+    );
+    expect(
+      tester.getRect(actionContent('Bookmark, 17')).right,
+      moreOrLessEquals(mediaRect.right, epsilon: 1),
+    );
+  });
+
+  testWidgets('the full-screen image viewer uses light icons on black', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: SizedBox(
+            width: 300,
+            child: PropertyMedia(
+              images: [
+                PropertyImage(
+                  id: 1,
+                  url: 'https://example.test/property.jpg',
+                  position: 0,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.byType(InkWell));
+    await tester.pumpAndSettle();
+
+    final overlays = tester
+        .widgetList<AnnotatedRegion<SystemUiOverlayStyle>>(
+          find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+        )
+        .map((region) => region.value);
+    expect(
+      overlays,
+      contains(
+        isA<SystemUiOverlayStyle>()
+            .having(
+              (style) => style.statusBarIconBrightness,
+              'Android icon brightness',
+              Brightness.light,
+            )
+            .having(
+              (style) => style.statusBarBrightness,
+              'iOS status-bar brightness',
+              Brightness.dark,
+            ),
+      ),
+    );
+  });
+
+  testWidgets('a property carousel restores its page after reconstruction', (
+    tester,
+  ) async {
+    final bucket = PageStorageBucket();
+    var showCarousel = true;
+    late StateSetter setHostState;
+    const images = [
+      PropertyImage(
+        id: 11,
+        url: 'https://example.test/property-1.jpg',
+        position: 0,
+      ),
+      PropertyImage(
+        id: 12,
+        url: 'https://example.test/property-2.jpg',
+        position: 1,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: PageStorage(
+            bucket: bucket,
+            child: StatefulBuilder(
+              builder: (context, setState) {
+                setHostState = setState;
+                return showCarousel
+                    ? const SizedBox(
+                        width: 388,
+                        child: PropertyMedia(images: images),
+                      )
+                    : const SizedBox.shrink();
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.drag(find.byType(PageView), const Offset(-350, 0));
+    await tester.pumpAndSettle();
+    Color activeIndicatorColor() =>
+        (tester
+                    .widget<Container>(
+                      find.byKey(
+                        const ValueKey<String>('property-media-11-indicator-1'),
+                      ),
+                    )
+                    .decoration!
+                as BoxDecoration)
+            .color!;
+    expect(
+      activeIndicatorColor(),
+      AppColors.light.brandDeep,
+    );
+
+    setHostState(() => showCarousel = false);
+    await tester.pump();
+    expect(find.byType(PageView), findsNothing);
+
+    setHostState(() => showCarousel = true);
+    await tester.pumpAndSettle();
+
+    expect(
+      activeIndicatorColor(),
+      AppColors.light.brandDeep,
+    );
   });
 }
 

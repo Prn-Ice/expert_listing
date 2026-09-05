@@ -25,10 +25,19 @@ final class AppConfig {
       throw const AppConfigException('API_BASE_URL must be a valid HTTP URL.');
     }
 
-    if (isRelease && uri.scheme != 'https') {
-      throw const AppConfigException(
-        'Release builds require an HTTPS API_BASE_URL.',
-      );
+    if (isRelease) {
+      if (uri.scheme != 'https') {
+        throw const AppConfigException(
+          'Release builds require an HTTPS API_BASE_URL.',
+        );
+      }
+      // One exact hosted host: loopback, reserved, example, and lookalike
+      // hosts all fail this comparison.
+      if (uri.host.toLowerCase() != hostedApiHost) {
+        throw const AppConfigException(
+          'Release builds must use the hosted Expert Listing API.',
+        );
+      }
     }
 
     if (uri.path != '/functions/v1/api') {
@@ -39,6 +48,9 @@ final class AppConfig {
 
     return AppConfig._(uri);
   }
+
+  /// The only hosted API host release builds may target.
+  static const String hostedApiHost = 'chvhwausefhvaceygppc.supabase.co';
 
   /// The complete Hono API base URL used for application requests.
   final Uri apiBaseUri;

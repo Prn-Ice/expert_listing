@@ -38,6 +38,10 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
     bool keepVisible = false,
   }) async {
     final activeFilter = filter ?? state.filter;
+    if (activeFilter == state.filter &&
+        (state.isInitialLoading || state.isRefreshing)) {
+      return;
+    }
     final generation = ++_requestGeneration;
     final hasVisiblePosts = keepVisible && state.posts.isNotEmpty;
 
