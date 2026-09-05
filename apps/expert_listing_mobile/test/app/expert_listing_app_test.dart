@@ -6,6 +6,7 @@ import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
+import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -53,7 +54,7 @@ void main() {
       tester.platformDispatcher.platformBrightnessTestValue = Brightness.light;
       await tester.pumpWidget(harness(platformOverride: platform));
       await tester.pump();
-      var context = tester.element(find.byType(Scaffold));
+      var context = tester.element(find.byType(FeedView));
       expect(
         Theme.of(context).extension<AppColors>(),
         AppColors.light,
@@ -71,7 +72,7 @@ void main() {
       // The Material root animates its theme switch; the Cupertino root
       // restyles synchronously.
       await tester.pumpAndSettle();
-      context = tester.element(find.byType(Scaffold));
+      context = tester.element(find.byType(FeedView));
       expect(
         Theme.of(context).extension<AppColors>(),
         AppColors.dark,
@@ -88,12 +89,12 @@ void main() {
 
     await tester.pumpWidget(harness(platformOverride: TargetPlatform.iOS));
     await tester.pump();
-    var theme = CupertinoTheme.of(tester.element(find.byType(Scaffold)));
+    var theme = CupertinoTheme.of(tester.element(find.byType(FeedView)));
     expect(theme.scaffoldBackgroundColor, AppColors.light.canvas);
 
     tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
     await tester.pump();
-    theme = CupertinoTheme.of(tester.element(find.byType(Scaffold)));
+    theme = CupertinoTheme.of(tester.element(find.byType(FeedView)));
     expect(theme.scaffoldBackgroundColor, AppColors.dark.canvas);
   });
 

@@ -17,6 +17,7 @@ class AppPressable extends StatelessWidget {
     this.color,
     this.overlayColor,
     this.semanticLabel,
+    this.selected = false,
   });
 
   /// The composed surface content.
@@ -28,7 +29,7 @@ class AppPressable extends StatelessWidget {
   /// Ink and press-highlight rounding; rectangular when null.
   final BorderRadius? borderRadius;
 
-  /// The Android surface fill behind the ink; transparent when null.
+  /// The surface fill; transparent when null.
   final Color? color;
 
   /// The Android press-highlight colour, for surfaces with an accepted
@@ -37,6 +38,9 @@ class AppPressable extends StatelessWidget {
 
   /// Replaces the subtree semantics with one button label when supplied.
   final String? semanticLabel;
+
+  /// Whether the control marks a currently selected destination.
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -52,6 +56,9 @@ class AppPressable extends StatelessWidget {
             padding: EdgeInsets.zero,
             minimumSize: Size.zero,
             pressedOpacity: 0.6,
+            color: surfaceColor,
+            borderRadius:
+                borderRadius ?? const BorderRadius.all(Radius.circular(8)),
             onPressed: onPressed,
             child: content,
           )
@@ -85,6 +92,7 @@ class AppPressable extends StatelessWidget {
       container: true,
       button: true,
       enabled: onPressed != null,
+      selected: selected,
       label: label,
       excludeSemantics: label != null,
       child: pressable,

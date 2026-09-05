@@ -218,10 +218,14 @@ Implement these only where the repeated contract is used:
   (rows, tiles, imagery) without owning their layout: contained Android ink on
   the supplied radius and restrained iOS press opacity, with one button
   semantic node per control.
+- AppScaffold is the adaptive page surface: CupertinoPageScaffold on iOS,
+  Scaffold everywhere else; the optional bottom bar fills the Material slot on
+  Android and composes beneath the body on iOS.
 - AppBrandWordmark owns the exact 169 by 22 Expert Listing wordmark asset;
   feature widgets own its surrounding hit target and action.
 - AppSheet applies the shared design identity with current platform mechanics.
-- AppNotice provides one safe-area-aware transient message and prevents queues.
+- AppNotice provides one safe-area-aware transient message and prevents
+  queues: the themed Android SnackBar and a restrained dismissible iOS dialog.
 - OfflineStatusBar persistently describes saved-feed provenance.
 - AppNetworkImage is the only production owner of `CachedNetworkImage`; it
   derives decode dimensions from finite layout constraints and device pixel

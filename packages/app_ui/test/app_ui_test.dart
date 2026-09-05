@@ -255,10 +255,20 @@ void main() {
         debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
         await pumpPlatform(
           tester,
-          AppPressable(onPressed: () {}, child: const Text('surface')),
+          AppPressable(
+            color: AppColors.light.subtleSurface,
+            borderRadius: AppRadii.pill,
+            onPressed: () {},
+            child: const Text('surface'),
+          ),
         );
         expect(find.byType(CupertinoButton), findsOneWidget);
         expect(find.byType(InkResponse), findsNothing);
+        final button = tester.widget<CupertinoButton>(
+          find.byType(CupertinoButton),
+        );
+        expect(button.color, AppColors.light.subtleSurface);
+        expect(button.borderRadius, AppRadii.pill);
 
         debugDefaultTargetPlatformOverride = TargetPlatform.android;
         await pumpPlatform(
@@ -293,6 +303,34 @@ void main() {
       final rect = tester.getRect(find.byType(AppPressable));
       await tester.tapAt(rect.topLeft + const Offset(1, 1));
       expect(taps, 1, reason: 'a shaped surface never rejects corner taps');
+    });
+
+    testWidgets('AppScaffold picks the native page surface', (tester) async {
+      const scaffold = AppScaffold(
+        body: Text('body'),
+        bottomNavigationBar: Text('bar'),
+      );
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await tester.pumpWidget(
+          MaterialApp(theme: AppTheme.light(), home: scaffold),
+        );
+        expect(find.byType(CupertinoPageScaffold), findsOneWidget);
+        expect(find.byType(Scaffold), findsNothing);
+        expect(find.text('body'), findsOneWidget);
+        expect(find.text('bar'), findsOneWidget);
+
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await tester.pumpWidget(
+          MaterialApp(theme: AppTheme.light(), home: scaffold),
+        );
+        expect(find.byType(Scaffold), findsOneWidget);
+        expect(find.byType(CupertinoPageScaffold), findsNothing);
+        expect(find.text('body'), findsOneWidget);
+        expect(find.text('bar'), findsOneWidget);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 
@@ -523,6 +561,48 @@ void main() {
 
       expect(find.text('First notice.'), findsNothing);
       expect(find.text('Second notice.'), findsOneWidget);
+    });
+
+    testWidgets('iOS answers with the restrained native dialog', (
+      tester,
+    ) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light(),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => Center(
+                  child: TextButton(
+                    onPressed: () => AppNotice.show(
+                      context,
+                      'Search is not part of this preview.',
+                    ),
+                    child: const Text('show'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('show'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Search is not part of this preview.'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('OK'));
+        await tester.pumpAndSettle();
+        expect(
+          find.text('Search is not part of this preview.'),
+          findsNothing,
+        );
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
     });
   });
 

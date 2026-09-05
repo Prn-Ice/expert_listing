@@ -17,5 +17,6 @@ export 'src/widgets/app_icon_button.dart';
 export 'src/widgets/app_network_image.dart';
 export 'src/widgets/app_notice.dart';
 export 'src/widgets/app_pressable.dart';
+export 'src/widgets/app_scaffold.dart';
 export 'src/widgets/app_sheet.dart';
 export 'src/widgets/offline_status_bar.dart';
