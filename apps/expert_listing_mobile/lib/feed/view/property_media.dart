@@ -1,5 +1,6 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -65,9 +66,8 @@ final class _PropertyMediaState extends State<PropertyMedia> {
                     return AppPressable(
                       onPressed: () => _showImage(
                         context,
-                        image.url!,
-                        index: index,
-                        imageCount: images.length,
+                        images,
+                        initialIndex: index,
                       ),
                       child: AppNetworkImage(
                         imageUrl: image.url!,
@@ -144,32 +144,48 @@ final class _PropertyMediaState extends State<PropertyMedia> {
 
   void _showImage(
     BuildContext context,
-    String url, {
-    required int index,
-    required int imageCount,
+    List<PropertyImage> images, {
+    required int initialIndex,
   }) {
-    Navigator.of(context).push<void>(
-      MaterialPageRoute(
-        builder: (context) => _FullScreenImageViewer(
-          imageUrl: url,
-          semanticLabel: 'Property photo ${index + 1} of $imageCount',
-        ),
-      ),
+    Widget buildViewer(BuildContext context) => _FullScreenImageViewer(
+      images: images,
+      initialIndex: initialIndex,
     );
+
+    final route = Theme.of(context).platform == TargetPlatform.iOS
+        ? CupertinoPageRoute<void>(builder: buildViewer)
+        : MaterialPageRoute<void>(builder: buildViewer);
+    Navigator.of(context).push<void>(route);
   }
 }
 
-final class _FullScreenImageViewer extends StatelessWidget {
+final class _FullScreenImageViewer extends StatefulWidget {
   const _FullScreenImageViewer({
-    required this.imageUrl,
-    required this.semanticLabel,
+    required this.images,
+    required this.initialIndex,
   });
 
-  final String imageUrl;
-  final String semanticLabel;
+  final List<PropertyImage> images;
+  final int initialIndex;
+
+  @override
+  State<_FullScreenImageViewer> createState() => _FullScreenImageViewerState();
+}
+
+final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
+  late final PageController _controller = PageController(
+    initialPage: widget.initialIndex,
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final imageCount = widget.images.length;
     const overlayStyle = SystemUiOverlayStyle(
       statusBarColor: Colors.black,
       statusBarIconBrightness: Brightness.light,
@@ -186,21 +202,26 @@ final class _FullScreenImageViewer extends StatelessWidget {
           foregroundColor: Colors.white,
           systemOverlayStyle: overlayStyle,
         ),
-        body: LayoutBuilder(
-          builder: (context, constraints) => InteractiveViewer(
-            child: SizedBox(
-              width: constraints.maxWidth,
-              height: constraints.maxHeight,
+        body: PageView.builder(
+          key: const ValueKey<String>('full-screen-property-images'),
+          controller: _controller,
+          itemCount: imageCount,
+          itemBuilder: (context, index) {
+            final image = widget.images[index];
+            return SizedBox.expand(
               child: AppNetworkImage(
-                imageUrl: imageUrl,
+                imageUrl: image.url!,
                 fit: BoxFit.contain,
-                semanticLabel: semanticLabel,
+                semanticLabel: 'Property photo ${index + 1} of $imageCount',
                 fallback: const Center(
-                  child: Icon(Icons.image_not_supported, color: Colors.white),
+                  child: Icon(
+                    Icons.image_not_supported,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

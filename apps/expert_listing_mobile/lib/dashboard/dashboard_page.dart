@@ -14,16 +14,29 @@ class DashboardPage extends StatefulWidget {
 
 final class _DashboardPageState extends State<DashboardPage> {
   final _feedKey = GlobalKey<FeedViewState>();
+  final _feedScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _feedScrollController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: Theme.of(context).appBarTheme.systemOverlayStyle!,
-      child: AppScaffold(
-        body: FeedView(key: _feedKey),
-        bottomNavigationBar: _DashboardNavigation(
-          onFeedPressed: () => _feedKey.currentState?.returnToTopOrRefresh(),
-          onNotice: (message) => AppNotice.show(context, message),
+    return PrimaryScrollController(
+      controller: _feedScrollController,
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: Theme.of(context).appBarTheme.systemOverlayStyle!,
+        child: AppScaffold(
+          body: FeedView(
+            key: _feedKey,
+            scrollController: _feedScrollController,
+          ),
+          bottomNavigationBar: _DashboardNavigation(
+            onFeedPressed: () => _feedKey.currentState?.returnToTopOrRefresh(),
+            onNotice: (message) => AppNotice.show(context, message),
+          ),
         ),
       ),
     );

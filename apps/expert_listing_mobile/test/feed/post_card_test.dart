@@ -539,6 +539,91 @@ void main() {
     );
   });
 
+  testWidgets('the full-screen viewer uses the active platform route', (
+    tester,
+  ) async {
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      final observer = _PushedRouteObserver();
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey<TargetPlatform>(platform),
+          navigatorObservers: [observer],
+          theme: AppTheme.light(platform: platform),
+          home: const Scaffold(
+            body: SizedBox(
+              width: 300,
+              child: PropertyMedia(
+                images: [
+                  PropertyImage(
+                    id: 1,
+                    url: 'https://example.test/property.jpg',
+                    position: 0,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.byType(AppPressable));
+      await tester.pumpAndSettle();
+
+      expect(
+        observer.lastPushed,
+        platform == TargetPlatform.iOS
+            ? isA<CupertinoPageRoute<void>>()
+            : isA<MaterialPageRoute<void>>(),
+      );
+    }
+  });
+
+  testWidgets('the full-screen viewer starts tapped and swipes in order', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: SizedBox(
+            width: 300,
+            child: PropertyMedia(
+              images: [
+                PropertyImage(
+                  id: 1,
+                  url: 'https://example.test/property-1.jpg',
+                  position: 0,
+                ),
+                PropertyImage(
+                  id: 2,
+                  url: 'https://example.test/property-2.jpg',
+                  position: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.drag(find.byType(PageView), const Offset(-300, 0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.bySemanticsLabel('Property photo 2 of 2'));
+    await tester.pumpAndSettle();
+
+    final viewer = tester.widget<PageView>(
+      find.byKey(const ValueKey<String>('full-screen-property-images')),
+    );
+    expect(viewer.controller!.page, 1);
+
+    await tester.drag(
+      find.byKey(const ValueKey<String>('full-screen-property-images')),
+      const Offset(700, 0),
+    );
+    await tester.pumpAndSettle();
+    expect(viewer.controller!.page, 0);
+  });
+
   testWidgets('a property carousel restores its page after reconstruction', (
     tester,
   ) async {
@@ -631,6 +716,16 @@ void main() {
       Colors.white,
     );
   });
+}
+
+final class _PushedRouteObserver extends NavigatorObserver {
+  Route<dynamic>? lastPushed;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushed = route;
+    super.didPush(route, previousRoute);
+  }
 }
 
 FeedPost _generalPost() => FeedPost.fromJson(_commonPost(id: 1));

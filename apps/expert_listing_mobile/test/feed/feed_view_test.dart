@@ -64,6 +64,37 @@ void main() {
     }
   });
 
+  testWidgets('each platform uses its native refresh control', (tester) async {
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      await tester.pumpWidget(_harness(_page(), platform: platform));
+      await tester.pump();
+
+      final feed = tester.widget<CustomScrollView>(
+        find.byType(CustomScrollView),
+      );
+      expect(
+        feed.slivers.whereType<CupertinoSliverRefreshControl>().length,
+        platform == TargetPlatform.iOS ? 1 : 0,
+      );
+      expect(
+        find.byType(RefreshIndicator),
+        platform == TargetPlatform.android ? findsOneWidget : findsNothing,
+      );
+    }
+  });
+
+  testWidgets('iOS exposes the feed as the page primary scroll view', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(_page(), platform: TargetPlatform.iOS));
+    await tester.pump();
+
+    final pageContext = tester.element(find.byType(CupertinoPageScaffold));
+    final primaryController = PrimaryScrollController.maybeOf(pageContext);
+    final feed = tester.widget<CustomScrollView>(find.byType(CustomScrollView));
+    expect(primaryController, same(feed.controller));
+  });
+
   testWidgets('labels a saved connection fallback and exposes Retry', (
     tester,
   ) async {
@@ -166,21 +197,27 @@ void main() {
     expect(repository.filters.last.isEmpty, isTrue);
   });
 
-  testWidgets('a short feed can pull to refresh', (tester) async {
-    final repository = _PageRepository(_page());
-    await tester.pumpWidget(_harnessWith(repository));
-    await tester.pump();
-    expect(repository.loadCalls, 1);
+  testWidgets('a short feed can pull to refresh on each platform', (
+    tester,
+  ) async {
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      final repository = _PageRepository(_page());
+      await tester.pumpWidget(
+        _harnessWith(repository, platform: platform),
+      );
+      await tester.pump();
+      expect(repository.loadCalls, 1);
 
-    await tester.fling(
-      find.byType(CustomScrollView),
-      const Offset(0, 500),
-      1000,
-    );
-    await tester.pump();
-    await tester.pump(const Duration(seconds: 1));
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 500),
+        1000,
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
 
-    expect(repository.loadCalls, 2);
+      expect(repository.loadCalls, 2);
+    }
   });
 
   testWidgets('announces a service saved-feed fallback once', (tester) async {
@@ -430,12 +467,13 @@ void main() {
   });
 }
 
-Widget _harness(FeedLoadResult page) {
-  return _harnessWith(_PageRepository(page));
+Widget _harness(FeedLoadResult page, {TargetPlatform? platform}) {
+  return _harnessWith(_PageRepository(page), platform: platform);
 }
 
-Widget _harnessWith(FeedRepository repository) {
+Widget _harnessWith(FeedRepository repository, {TargetPlatform? platform}) {
   return ProviderScope(
+    key: ValueKey<TargetPlatform?>(platform),
     overrides: [
       appConfigProvider.overrideWithValue(
         AppConfig.parse(
@@ -445,7 +483,7 @@ Widget _harnessWith(FeedRepository repository) {
       ),
       feedRepositoryProvider.overrideWithValue(repository),
     ],
-    child: const ExpertListingApp(),
+    child: ExpertListingApp(platformOverride: platform),
   );
 }
 

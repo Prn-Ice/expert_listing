@@ -10,13 +10,17 @@ import 'package:expert_listing/feed/view/feed_header.dart';
 import 'package:expert_listing/feed/view/filter_sheet.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/feed/view/story_strip.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// The network-first Expert Listing feed body.
 class FeedView extends ConsumerStatefulWidget {
   /// Creates the feed view.
-  const FeedView({super.key});
+  const FeedView({required this.scrollController, super.key});
+
+  /// The dashboard-owned primary controller for this feed.
+  final ScrollController scrollController;
 
   @override
   ConsumerState<FeedView> createState() => FeedViewState();
@@ -24,20 +28,24 @@ class FeedView extends ConsumerStatefulWidget {
 
 /// Owns feed scroll position and the feed-specific lifecycle.
 class FeedViewState extends ConsumerState<FeedView> {
-  final _scrollController = ScrollController();
-
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_loadMoreWhenNeeded);
+    widget.scrollController.addListener(_loadMoreWhenNeeded);
     ref.read(feedBlocProvider.bloc).add(const FeedStarted());
   }
 
   @override
+  void didUpdateWidget(FeedView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.scrollController == widget.scrollController) return;
+    oldWidget.scrollController.removeListener(_loadMoreWhenNeeded);
+    widget.scrollController.addListener(_loadMoreWhenNeeded);
+  }
+
+  @override
   void dispose() {
-    _scrollController
-      ..removeListener(_loadMoreWhenNeeded)
-      ..dispose();
+    widget.scrollController.removeListener(_loadMoreWhenNeeded);
     super.dispose();
   }
 
@@ -45,68 +53,74 @@ class FeedViewState extends ConsumerState<FeedView> {
   Widget build(BuildContext context) {
     ref.listen<FeedState>(feedBlocProvider, _showSavedFeedTransition);
     final state = ref.watch(feedBlocProvider);
+    final usesCupertinoRefresh =
+        Theme.of(context).platform == TargetPlatform.iOS;
+    final feed = CustomScrollView(
+      controller: widget.scrollController,
+      key: const PageStorageKey<String>('feed-scroll'),
+      // AlwaysScrollable enables refresh on a short feed while the app root
+      // still supplies the platform's bouncing or clamping behavior.
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        if (usesCupertinoRefresh)
+          CupertinoSliverRefreshControl(onRefresh: _refresh),
+        SliverToBoxAdapter(
+          child: FeedHeader(
+            onLogoPressed: scrollToTop,
+            onNotice: _showNotice,
+          ),
+        ),
+        SliverToBoxAdapter(child: StoryStrip(onNotice: _showNotice)),
+        SliverToBoxAdapter(
+          child: _FilterControl(
+            activeCount: state.filter.activeCount,
+            onPressed: _openFilters,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: CreatePostPrompt(
+            onNotice: _showNotice,
+            showInvitation: state.posts.isNotEmpty,
+          ),
+        ),
+        if (state.isShowingSavedPosts)
+          SliverPersistentHeader(
+            pinned: true,
+            delegate: _OfflineBarDelegate(
+              message: state.fallbackReason == FeedFallbackReason.connection
+                  ? 'Offline · Showing saved posts'
+                  : 'Showing saved posts',
+              onRetry: _retryFirstPage,
+            ),
+          ),
+        if (state.refreshFailed)
+          const SliverToBoxAdapter(
+            child: _InlineStatus(
+              message: "Couldn't refresh. Showing the posts already loaded.",
+            ),
+          ),
+        _FeedContent(
+          state: state,
+          onNotice: _showNotice,
+          onRetryFirstPage: _retryFirstPage,
+          onRetryNextPage: _retryNextPage,
+          onClearFilters: _clearFilters,
+        ),
+      ],
+    );
 
     return SafeArea(
       bottom: false,
-      child: RefreshIndicator.adaptive(
-        onRefresh: _refresh,
-        child: CustomScrollView(
-          controller: _scrollController,
-          key: const PageStorageKey<String>('feed-scroll'),
-          physics: const AlwaysScrollableScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: FeedHeader(
-                onLogoPressed: scrollToTop,
-                onNotice: _showNotice,
-              ),
-            ),
-            SliverToBoxAdapter(child: StoryStrip(onNotice: _showNotice)),
-            SliverToBoxAdapter(
-              child: _FilterControl(
-                activeCount: state.filter.activeCount,
-                onPressed: _openFilters,
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: CreatePostPrompt(
-                onNotice: _showNotice,
-                showInvitation: state.posts.isNotEmpty,
-              ),
-            ),
-            if (state.isShowingSavedPosts)
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _OfflineBarDelegate(
-                  message: state.fallbackReason == FeedFallbackReason.connection
-                      ? 'Offline · Showing saved posts'
-                      : 'Showing saved posts',
-                  onRetry: _retryFirstPage,
-                ),
-              ),
-            if (state.refreshFailed)
-              const SliverToBoxAdapter(
-                child: _InlineStatus(
-                  message:
-                      "Couldn't refresh. Showing the posts already loaded.",
-                ),
-              ),
-            _FeedContent(
-              state: state,
-              onNotice: _showNotice,
-              onRetryFirstPage: _retryFirstPage,
-              onRetryNextPage: _retryNextPage,
-              onClearFilters: _clearFilters,
-            ),
-          ],
-        ),
-      ),
+      child: usesCupertinoRefresh
+          ? feed
+          : RefreshIndicator(onRefresh: _refresh, child: feed),
     );
   }
 
   /// Returns the feed to its top, or refreshes while it is already at top.
   void returnToTopOrRefresh() {
-    if (!_scrollController.hasClients || _scrollController.offset <= 0) {
+    final controller = widget.scrollController;
+    if (!controller.hasClients || controller.offset <= 0) {
       _retryFirstPage();
       return;
     }
@@ -115,8 +129,9 @@ class FeedViewState extends ConsumerState<FeedView> {
 
   /// Smoothly returns the feed to its top without triggering a refresh.
   void scrollToTop() {
-    if (!_scrollController.hasClients || _scrollController.offset <= 0) return;
-    _scrollController.animateTo(
+    final controller = widget.scrollController;
+    if (!controller.hasClients || controller.offset <= 0) return;
+    controller.animateTo(
       0,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
@@ -137,7 +152,7 @@ class FeedViewState extends ConsumerState<FeedView> {
       ref.read(feedBlocProvider.bloc).add(const FeedNextPageRequested());
 
   void _loadMoreWhenNeeded() {
-    if (_scrollController.position.extentAfter < 360) {
+    if (widget.scrollController.position.extentAfter < 360) {
       // A failed next page waits for the visible Try again control; automatic
       // pagination must not retry on its own.
       if (ref.read(feedBlocProvider).nextPageFailed) return;
@@ -156,8 +171,8 @@ class FeedViewState extends ConsumerState<FeedView> {
               ? const FeedFiltersCleared()
               : FeedFiltersApplied(filter),
         );
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
+    if (widget.scrollController.hasClients) {
+      widget.scrollController.animateTo(
         0,
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
