@@ -58,7 +58,7 @@ keyAlias=...
 keyPassword=...
 EOF
 flutter pub get --enforce-lockfile
-flutter build apk --release --no-pub \
+flutter build apk --release \
   --dart-define=API_BASE_URL=https://chvhwausefhvaceygppc.supabase.co/functions/v1/api
 ~~~
 

@@ -115,7 +115,7 @@ jobs:
             printf '%s\n' 'keyPassword=probe-store-password'
           } > apps/expert_listing_mobile/android/key.properties
       - name: Build a release APK with the disposable keystore
-        run: flutter build apk --release --no-pub
+        run: flutter build apk --release
         working-directory: apps/expert_listing_mobile
       - name: Verify the APK is signed by the probe keystore
         run: |

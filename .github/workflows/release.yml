@@ -85,7 +85,7 @@ jobs:
             echo "::error::PUBLIC_API_BASE_URL must equal $expected_api_url for a release build."
             exit 1
           fi
-          flutter build apk --release --no-pub --dart-define=API_BASE_URL="$PUBLIC_API_BASE_URL"
+          flutter build apk --release --dart-define=API_BASE_URL="$PUBLIC_API_BASE_URL"
         working-directory: apps/expert_listing_mobile
       - name: Verify the APK is signed by the release keystore
         env:
