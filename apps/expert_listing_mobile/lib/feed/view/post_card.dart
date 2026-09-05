@@ -28,10 +28,14 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    // Centered action content sits about 8px inside its 48px target in the
-    // counted reference state. Let the targets use the adjacent outer space.
-    const actionTargetLeftInset = _postContentInset - AppSpacing.small;
-    const actionTargetRightInset = _postInset;
+    // Let centered edge targets use the adjacent outer space so their visible
+    // content stays on the post edge whether or not a count is present.
+    final actionTargetLeftInset =
+        _postContentInset -
+        (post.likeCount == 0 ? AppSpacing.large : AppSpacing.small);
+    final actionTargetRightInset = post.bookmarkCount == 0
+        ? _postInset - AppSpacing.large
+        : _postInset;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -66,7 +70,7 @@ class PostCard extends StatelessWidget {
           ),
         ),
         Padding(
-          padding: const EdgeInsets.fromLTRB(
+          padding: EdgeInsets.fromLTRB(
             actionTargetLeftInset,
             0,
             actionTargetRightInset,
@@ -81,7 +85,7 @@ class PostCard extends StatelessWidget {
         if (post.commentCount > 0)
           Padding(
             padding: const EdgeInsets.only(
-              left: actionTargetLeftInset,
+              left: _postContentInset - AppSpacing.small,
               right: _postInset,
             ),
             child: SizedBox(

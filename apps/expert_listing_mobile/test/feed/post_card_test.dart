@@ -183,7 +183,7 @@ void main() {
         final likeIconRect = tester.getRect(likeIconRectFinder);
         expect(
           likeRect.left,
-          bodyRect.left - AppSpacing.small,
+          bodyRect.left - AppSpacing.large,
           reason: 'the action target uses the space before the content edge',
         );
         final locationIconRect = tester.getRect(
@@ -201,8 +201,10 @@ void main() {
         final bookmarkButtonRect = tester.getRect(actionButton('Bookmark'));
         expect(
           bookmarkButtonRect.right,
-          moreOrLessEquals(cardRect.right - AppSpacing.xlarge),
-          reason: 'the trailing action target ends at the content edge',
+          moreOrLessEquals(
+            cardRect.right - AppSpacing.xlarge + AppSpacing.large,
+          ),
+          reason: 'the target uses space beyond the visible content edge',
         );
 
         expect(likeButton, findsOneWidget);
@@ -424,6 +426,43 @@ void main() {
       tester.getRect(actionContent('Bookmark, 17')).right,
       moreOrLessEquals(mediaRect.right, epsilon: 1),
     );
+  });
+
+  testWidgets('icon-only edge actions align at 428 and 360 widths', (
+    tester,
+  ) async {
+    for (final width in [428.0, 360.0]) {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: Align(
+              alignment: Alignment.topLeft,
+              child: SizedBox(
+                width: width,
+                child: PostCard(post: _generalPost(), onNotice: (_) {}),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      Finder actionIcon(String label) {
+        final button = find.ancestor(
+          of: find.bySemanticsLabel(label),
+          matching: find.byType(TextButton),
+        );
+        return find.descendant(of: button, matching: find.byType(AppIcon));
+      }
+
+      final cardRect = tester.getRect(find.byType(PostCard));
+      final bodyRect = tester.getRect(find.text('Post 1'));
+      expect(tester.getRect(actionIcon('Like')).left, bodyRect.left);
+      expect(
+        tester.getRect(actionIcon('Bookmark')).right,
+        cardRect.right - AppSpacing.xlarge,
+      );
+    }
   });
 
   testWidgets('the full-screen image viewer uses light icons on black', (
