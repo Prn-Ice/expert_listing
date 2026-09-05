@@ -4,6 +4,7 @@
 import 'package:dio/dio.dart';
 
 import 'package:expert_listing/feed/data/feed_cache.dart';
+import 'package:expert_listing/feed/models/feed_comment.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 
@@ -98,6 +99,61 @@ class FeedRepository {
     // responses cannot write pre-mutation data into the cleared cache.
     _activeRequests.clear();
     await _feedCache?.clear();
+  }
+
+  /// Sets, rather than toggles, the current user's desired like state.
+  Future<LikeResult> setPostLiked({
+    required int postId,
+    required bool liked,
+  }) async {
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/posts/$postId/like',
+        data: <String, dynamic>{'liked': liked},
+      );
+      final data = response.data;
+      if (data == null) throw const FormatException();
+      return LikeResult.fromJson(data);
+    } on Object {
+      throw const EngagementFailure();
+    }
+  }
+
+  /// Loads persistent comments oldest first without consulting feed cache.
+  Future<List<FeedComment>> loadComments(int postId) async {
+    try {
+      final response = await _client.get<Map<String, dynamic>>(
+        '/posts/$postId/comments',
+      );
+      final rawComments = response.data?['comments'];
+      if (rawComments is! List) throw const FormatException();
+      return rawComments
+          .map((raw) {
+            if (raw is! Map<String, dynamic>) throw const FormatException();
+            return FeedComment.fromJson(raw);
+          })
+          .toList(growable: false);
+    } on Object {
+      throw const EngagementFailure();
+    }
+  }
+
+  /// Persists one trimmed comment and returns its hydrated representation.
+  Future<FeedComment> createComment({
+    required int postId,
+    required String body,
+  }) async {
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/posts/$postId/comments',
+        data: <String, dynamic>{'body': body},
+      );
+      final data = response.data;
+      if (data == null) throw const FormatException();
+      return FeedComment.fromJson(data);
+    } on Object {
+      throw const EngagementFailure();
+    }
   }
 
   FeedLoadResult _parseLivePage(Map<String, dynamic> data) {

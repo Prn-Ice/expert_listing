@@ -8,6 +8,19 @@ async function api(path: string, alias: string) {
   return { response, body: JSON.parse(rawBody), rawBody };
 }
 
+async function post(path: string, alias: string, body: unknown) {
+  const response = await app.request(`http://127.0.0.1:56321/api${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Preview-Actor": alias,
+    },
+    body: JSON.stringify(body),
+  });
+  const rawBody = await response.text();
+  return { response, body: JSON.parse(rawBody), rawBody };
+}
+
 Deno.test("preview aliases resolve profiles without exposing user IDs", async () => {
   const result = await api("/profile", "ayo");
   if (result.response.status !== 200) {
@@ -54,5 +67,43 @@ Deno.test("preview actor headers accept aliases only", async () => {
     ) {
       throw new Error(`Expected ${value} to be rejected: ${result.rawBody}`);
     }
+  }
+});
+
+Deno.test("preview like mutations remain request-actor scoped", async () => {
+  const postId = 1002;
+  const initialPrince = await api("/posts?limit=20", "prince");
+  const initialAyo = await api("/posts?limit=20", "ayo");
+  const princeWasLiked = initialPrince.body.posts.find(
+    (item: { id: number }) => item.id === postId,
+  )?.likedByCurrentUser === true;
+  const ayoWasLiked = initialAyo.body.posts.find(
+    (item: { id: number }) => item.id === postId,
+  )?.likedByCurrentUser === true;
+
+  try {
+    await post(`/posts/${postId}/like`, "prince", { liked: false });
+    await post(`/posts/${postId}/like`, "ayo", { liked: false });
+    const liked = await post(`/posts/${postId}/like`, "ayo", { liked: true });
+    if (liked.response.status !== 200 || liked.body.liked !== true) {
+      throw new Error(`Ayo could not like the post: ${liked.rawBody}`);
+    }
+    const princeFeed = await api("/posts?limit=20", "prince");
+    const ayoFeed = await api("/posts?limit=20", "ayo");
+    const princePost = princeFeed.body.posts.find(
+      (item: { id: number }) => item.id === postId,
+    );
+    const ayoPost = ayoFeed.body.posts.find(
+      (item: { id: number }) => item.id === postId,
+    );
+    if (princePost?.likedByCurrentUser !== false) {
+      throw new Error("Prince inherited Ayo's like mutation.");
+    }
+    if (ayoPost?.likedByCurrentUser !== true) {
+      throw new Error("Ayo's mutation was not resolved for Ayo.");
+    }
+  } finally {
+    await post(`/posts/${postId}/like`, "ayo", { liked: ayoWasLiked });
+    await post(`/posts/${postId}/like`, "prince", { liked: princeWasLiked });
   }
 });

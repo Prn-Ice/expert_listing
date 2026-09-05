@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/feed/bloc/feed_bloc.dart';
 import 'package:expert_listing/feed/bloc/feed_event.dart';
 import 'package:expert_listing/feed/bloc/feed_state.dart';
+import 'package:expert_listing/feed/comments/comments_sheet.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
+import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:expert_listing/feed/post_details.dart';
 import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/feed_header.dart';
 import 'package:expert_listing/feed/view/filter_sheet.dart';
@@ -13,7 +17,9 @@ import 'package:expert_listing/feed/view/story_strip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 /// The network-first Expert Listing feed body.
 class FeedView extends ConsumerStatefulWidget {
@@ -29,11 +35,12 @@ class FeedView extends ConsumerStatefulWidget {
 
 /// Owns feed scroll position and the feed-specific lifecycle.
 class FeedViewState extends ConsumerState<FeedView> {
+  FeedBloc? _startedBloc;
+
   @override
   void initState() {
     super.initState();
     widget.scrollController.addListener(_loadMoreWhenNeeded);
-    ref.read(feedBlocProvider.bloc).add(const FeedStarted());
   }
 
   @override
@@ -52,7 +59,18 @@ class FeedViewState extends ConsumerState<FeedView> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen<FeedState>(feedBlocProvider, _showSavedFeedTransition);
+    ref
+      ..listen<FeedState>(feedBlocProvider, _showSavedFeedTransition)
+      ..listen<FeedState>(feedBlocProvider, _showEngagementNotice);
+    final bloc = ref.watch(feedBlocProvider.bloc);
+    if (!identical(bloc, _startedBloc)) {
+      _startedBloc = bloc;
+      scheduleMicrotask(() {
+        if (mounted && identical(bloc, _startedBloc)) {
+          bloc.add(const FeedStarted());
+        }
+      });
+    }
     final state = ref.watch(feedBlocProvider);
     final usesCupertinoRefresh = context.isIos;
     final feed = CustomScrollView(
@@ -106,6 +124,11 @@ class FeedViewState extends ConsumerState<FeedView> {
           onRetryFirstPage: _retryFirstPage,
           onRetryNextPage: _retryNextPage,
           onClearFilters: _clearFilters,
+          onLike: (postId) => bloc.add(FeedLikeToggled(postId)),
+          onComments: _openComments,
+          onShare: _sharePost,
+          onBookmark: (postId) => bloc.add(FeedBookmarkToggled(postId)),
+          onOptions: _openPostOptions,
         ),
       ],
     );
@@ -197,6 +220,90 @@ class FeedViewState extends ConsumerState<FeedView> {
         previous.fallbackReason == FeedFallbackReason.connection &&
         next.source == FeedDataSource.network) {
       AppNotice.show(context, 'Back online. Feed updated.');
+    }
+  }
+
+  void _showEngagementNotice(FeedState? previous, FeedState next) {
+    if (previous?.noticeSequence == next.noticeSequence ||
+        next.notice == null) {
+      return;
+    }
+    AppNotice.show(context, next.notice!);
+  }
+
+  Future<void> _openComments(FeedPost post) async {
+    await AppSheet.show<void>(
+      context,
+      child: CommentsSheet(postId: post.id),
+    );
+  }
+
+  Future<void> _sharePost(FeedPost post, BuildContext sourceContext) async {
+    final box = sourceContext.findRenderObject();
+    final origin = box is RenderBox && box.hasSize
+        ? box.localToGlobal(Offset.zero) & box.size
+        : null;
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: postDetailsText(post),
+          sharePositionOrigin: origin,
+        ),
+      );
+    } on Object {
+      if (mounted) {
+        AppNotice.show(context, "Sharing isn't available right now.");
+      }
+    }
+  }
+
+  Future<void> _openPostOptions(FeedPost post) async {
+    final action = await AppSheet.show<_PostOption>(
+      context,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.xlarge),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              'Post options',
+              style: AppTypography.title(AppColors.of(context)),
+            ),
+            const SizedBox(height: AppSpacing.medium),
+            AppButton(
+              minimumSize: const Size.fromHeight(AppIconSize.tapTarget),
+              alignment: Alignment.centerLeft,
+              onPressed: () => Navigator.pop(
+                context,
+                _PostOption.copyDetails,
+              ),
+              child: const Text('Copy post details'),
+            ),
+            AppButton(
+              minimumSize: const Size.fromHeight(AppIconSize.tapTarget),
+              alignment: Alignment.centerLeft,
+              onPressed: () => Navigator.pop(context, _PostOption.hide),
+              child: const Text('Hide this post'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || action == null) return;
+    switch (action) {
+      case _PostOption.copyDetails:
+        await Clipboard.setData(ClipboardData(text: postDetailsText(post)));
+        if (mounted) AppNotice.show(context, 'Post details copied.');
+      case _PostOption.hide:
+        ref.read(feedBlocProvider.bloc).add(FeedPostHidden(post.id));
+        AppNotice.show(
+          context,
+          'Post hidden.',
+          actionLabel: 'Undo',
+          onAction: () =>
+              ref.read(feedBlocProvider.bloc).add(FeedPostRestored(post.id)),
+        );
     }
   }
 
@@ -325,6 +432,11 @@ final class _FeedContent extends StatelessWidget {
     required this.onRetryFirstPage,
     required this.onRetryNextPage,
     required this.onClearFilters,
+    required this.onLike,
+    required this.onComments,
+    required this.onShare,
+    required this.onBookmark,
+    required this.onOptions,
   });
 
   final FeedState state;
@@ -332,6 +444,11 @@ final class _FeedContent extends StatelessWidget {
   final VoidCallback onRetryFirstPage;
   final VoidCallback onRetryNextPage;
   final VoidCallback onClearFilters;
+  final ValueChanged<int> onLike;
+  final ValueChanged<FeedPost> onComments;
+  final void Function(FeedPost post, BuildContext context) onShare;
+  final ValueChanged<int> onBookmark;
+  final ValueChanged<FeedPost> onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -352,6 +469,31 @@ final class _FeedContent extends StatelessWidget {
       );
     }
 
+    if (state.visiblePosts.isEmpty && state.posts.isNotEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('No posts left in this session.'),
+              if (state.isLoadingMore)
+                const Padding(
+                  padding: EdgeInsets.all(AppSpacing.large),
+                  child: CircularProgressIndicator.adaptive(),
+                )
+              else if (state.canLoadMore)
+                AppButton(
+                  minimumSize: const Size(64, 48),
+                  onPressed: onRetryNextPage,
+                  child: Text(state.nextPageFailed ? 'Try again' : 'Load more'),
+                ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (state.posts.isEmpty) {
       return SliverFillRemaining(
         hasScrollBody: false,
@@ -366,10 +508,22 @@ final class _FeedContent extends StatelessWidget {
     return SliverMainAxisGroup(
       slivers: [
         SliverList.builder(
-          itemCount: state.posts.length,
+          itemCount: state.visiblePosts.length,
           itemBuilder: (context, index) => KeyedSubtree(
-            key: ValueKey(state.posts[index].id),
-            child: PostCard(post: state.posts[index], onNotice: onNotice),
+            key: ValueKey(state.visiblePosts[index].id),
+            child: PostCard(
+              post: state.visiblePosts[index],
+              onNotice: onNotice,
+              bookmarked: state.bookmarkedPostIds.contains(
+                state.visiblePosts[index].id,
+              ),
+              onLike: () => onLike(state.visiblePosts[index].id),
+              onComments: () => onComments(state.visiblePosts[index]),
+              onShare: (sourceContext) =>
+                  onShare(state.visiblePosts[index], sourceContext),
+              onBookmark: () => onBookmark(state.visiblePosts[index].id),
+              onOptions: () => onOptions(state.visiblePosts[index]),
+            ),
           ),
         ),
         if (state.isLoadingMore)
@@ -393,6 +547,8 @@ final class _FeedContent extends StatelessWidget {
     );
   }
 }
+
+enum _PostOption { copyDetails, hide }
 
 final class _FeedFailure extends StatelessWidget {
   const _FeedFailure({required this.failure, required this.onRetry});

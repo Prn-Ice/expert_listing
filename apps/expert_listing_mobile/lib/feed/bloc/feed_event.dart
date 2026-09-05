@@ -47,3 +47,53 @@ final class FeedNextPageRequested extends FeedEvent {
 final class FeedRetryRequested extends FeedEvent {
   const FeedRetryRequested();
 }
+
+/// Optimistically reverses the current like intent for one post.
+final class FeedLikeToggled extends FeedEvent {
+  const FeedLikeToggled(this.postId);
+
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
+
+/// Reverses the device-only bookmark state for one post.
+final class FeedBookmarkToggled extends FeedEvent {
+  const FeedBookmarkToggled(this.postId);
+
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
+
+/// Hides one post until this feed lifecycle ends.
+final class FeedPostHidden extends FeedEvent {
+  const FeedPostHidden(this.postId);
+
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
+
+/// Restores one session-hidden post.
+final class FeedPostRestored extends FeedEvent {
+  const FeedPostRestored(this.postId);
+
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}
+
+/// Reconciles a newly persisted comment into the visible feed count.
+final class FeedCommentAdded extends FeedEvent {
+  const FeedCommentAdded(this.postId);
+
+  final int postId;
+
+  @override
+  List<Object?> get props => [postId];
+}

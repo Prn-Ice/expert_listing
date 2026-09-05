@@ -3,12 +3,16 @@ import 'dart:ui' show Tristate;
 import 'package:app_ui/app_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:expert_listing/app/app_config.dart';
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/app/providers.dart';
+import 'package:expert_listing/feed/comments/comments_sheet.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
+import 'package:expert_listing/feed/models/feed_comment.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/feed/view/post_actions.dart';
 import 'package:expert_listing/feed/view/property_media.dart';
 import 'package:expert_listing/main.dart';
@@ -44,6 +48,138 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Post type'), findsOneWidget);
     expect(find.text('Apply'), findsOneWidget);
+  });
+
+  testWidgets('comment action opens the shared persistent comments sheet', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(_page()));
+    await tester.pump();
+
+    await tester.tap(find.bySemanticsLabel('Comments, 1'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CommentsSheet), findsOneWidget);
+    expect(find.byKey(const ValueKey<String>('comment-input')), findsOneWidget);
+    expect(find.text('No comments yet.'), findsOneWidget);
+  });
+
+  testWidgets('iOS comments composer stays reachable above the keyboard', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(tester.view.reset);
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(428, 926);
+    await tester.binding.setSurfaceSize(const Size(428, 926));
+    await tester.pumpWidget(
+      _harness(_page(), platform: TargetPlatform.iOS),
+    );
+    await tester.pump();
+
+    await tester.tap(find.bySemanticsLabel('Comments, 1'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey<String>('comment-input')),
+      'Is inspection still open?',
+    );
+    tester.view.viewInsets = const FakeViewPadding(bottom: 336);
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.bySemanticsLabel('Close'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('comment-submit')).hitTestable(),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .getRect(find.byKey(const ValueKey<String>('comment-submit')))
+          .bottom,
+      lessThanOrEqualTo(590),
+    );
+
+    await tester.tap(find.bySemanticsLabel('Close'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CommentsSheet), findsNothing);
+  });
+
+  testWidgets('session hide removes a post and Undo restores it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(_page()));
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('post-overflow-42')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hide this post'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Saved post'), findsNothing);
+    expect(find.text('Post hidden.'), findsOneWidget);
+    expect(find.text('Undo'), findsOneWidget);
+
+    await tester.tap(find.text('Undo'));
+    await tester.pumpAndSettle();
+    expect(find.text('Saved post'), findsOneWidget);
+  });
+
+  testWidgets('an all-hidden page keeps later pages reachable', (tester) async {
+    final repository = _PageRepository(_page(nextCursor: 'next'));
+    await tester.pumpWidget(_harnessWith(repository));
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('post-overflow-42')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hide this post'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Load more'), findsOneWidget);
+    await tester.tap(find.text('Load more'));
+    await tester.pump();
+    await tester.pump();
+    expect(repository.loadCalls, 2);
+  });
+
+  testWidgets('a replacement actor starts its new feed bloc', (tester) async {
+    final calls = <String?>[];
+    final container = ProviderContainer(
+      overrides: [
+        feedRepositoryProvider.overrideWith((ref) {
+          final actor = ref.watch(previewActorProvider);
+          return _ActorPageRepository(actor: actor, calls: calls);
+        }),
+      ],
+    );
+    addTearDown(container.dispose);
+    final controller = ScrollController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(body: FeedView(scrollController: controller)),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Feed for prince'), findsOneWidget);
+
+    container.read(previewActorProvider.notifier).select('ayo');
+    await tester.pump();
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Feed for ayo'), findsOneWidget);
+    expect(calls, [null, 'ayo']);
   });
 
   testWidgets('iOS pins the filter pill leading and uses native controls', (
@@ -532,6 +668,35 @@ final class _PageRepository extends FeedRepository {
   }) {
     loadCalls++;
     return Future.value(page);
+  }
+
+  @override
+  Future<List<FeedComment>> loadComments(int postId) async => const [];
+}
+
+final class _ActorPageRepository extends FeedRepository {
+  _ActorPageRepository({required this.actor, required this.calls})
+    : super(client: Dio());
+
+  final String? actor;
+  final List<String?> calls;
+
+  @override
+  Future<FeedLoadResult> loadPage({
+    required FeedFilter filter,
+    String? cursor,
+    int limit = 10,
+  }) async {
+    calls.add(actor);
+    return FeedLoadResult(
+      posts: [
+        FeedPost.fromJson({
+          ..._feedPostJson(42, body: 'Feed for ${actor ?? 'prince'}'),
+        }),
+      ],
+      nextCursor: null,
+      source: FeedDataSource.network,
+    );
   }
 }
 

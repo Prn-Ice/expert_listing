@@ -5,7 +5,16 @@ import 'package:flutter/material.dart';
 /// The engagement, views, and bookmark row for one feed post.
 class PostActions extends StatelessWidget {
   /// Creates the post action row.
-  const PostActions({required this.post, required this.onNotice, super.key});
+  const PostActions({
+    required this.post,
+    required this.onNotice,
+    super.key,
+    this.bookmarked = false,
+    this.onLike,
+    this.onComments,
+    this.onShare,
+    this.onBookmark,
+  });
 
   /// The post whose counts are rendered.
   final FeedPost post;
@@ -13,16 +22,32 @@ class PostActions extends StatelessWidget {
   /// Shows the current boundary response for deferred actions.
   final ValueChanged<String> onNotice;
 
+  /// Whether this post is saved on this device.
+  final bool bookmarked;
+
+  /// Reverses the optimistic like intent.
+  final VoidCallback? onLike;
+
+  /// Opens the post's persistent comment thread.
+  final VoidCallback? onComments;
+
+  /// Opens the native share sheet from the share control's render context.
+  final ValueChanged<BuildContext>? onShare;
+
+  /// Reverses the device-only bookmark state.
+  final VoidCallback? onBookmark;
+
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final like = AppIconButton(
       icon: AppIcons.heart,
       iconSize: AppIconSize.small,
-      color: colors.textSecondary,
+      color: post.likedByCurrentUser ? colors.accent : colors.textSecondary,
       label: post.likeCount == 0 ? null : '${post.likeCount}',
-      tooltip: 'Like',
-      onPressed: () => onNotice('Likes are part of the next preview step.'),
+      tooltip: post.likedByCurrentUser ? 'Unlike' : 'Like',
+      onPressed:
+          onLike ?? () => onNotice('Likes are part of the next preview step.'),
     );
     final comments = AppIconButton(
       icon: AppIcons.comment,
@@ -30,22 +55,31 @@ class PostActions extends StatelessWidget {
       color: colors.textSecondary,
       label: post.commentCount == 0 ? null : '${post.commentCount}',
       tooltip: 'Comments',
-      onPressed: () => onNotice('Comments are part of the next preview step.'),
+      onPressed:
+          onComments ??
+          () => onNotice('Comments are part of the next preview step.'),
     );
-    final share = AppIconButton(
-      icon: AppIcons.share,
-      iconSize: AppIconSize.small,
-      color: colors.textSecondary,
-      tooltip: 'Share',
-      onPressed: () => onNotice('Sharing is not available right now.'),
+    final share = Builder(
+      builder: (shareContext) => AppIconButton(
+        icon: AppIcons.share,
+        iconSize: AppIconSize.small,
+        color: colors.textSecondary,
+        tooltip: 'Share',
+        onPressed: () => onShare == null
+            ? onNotice('Sharing is not available right now.')
+            : onShare!(shareContext),
+      ),
     );
+    final bookmarkCount = post.bookmarkCount + (bookmarked ? 1 : 0);
     final bookmark = AppIconButton(
       icon: AppIcons.bookmark,
       iconSize: AppIconSize.small,
-      color: colors.textSecondary,
-      label: post.bookmarkCount == 0 ? null : '${post.bookmarkCount}',
-      tooltip: 'Bookmark',
-      onPressed: () => onNotice('Bookmarks are part of the next preview step.'),
+      color: bookmarked ? colors.accent : colors.textSecondary,
+      label: bookmarkCount == 0 ? null : '$bookmarkCount',
+      tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark',
+      onPressed:
+          onBookmark ??
+          () => onNotice('Bookmarks are part of the next preview step.'),
     );
     final views = Text(
       '${_viewCount(post.viewCount)} Views',

@@ -14,7 +14,12 @@ abstract final class AppNotice {
   static Route<void>? _cupertinoNoticeRoute;
 
   /// Shows [message], replacing any currently visible notice.
-  static void show(BuildContext context, String message) {
+  static void show(
+    BuildContext context,
+    String message, {
+    String? actionLabel,
+    VoidCallback? onAction,
+  }) {
     if (context.isIos) {
       final previousRoute = _cupertinoNoticeRoute;
       if (previousRoute?.isActive ?? false) {
@@ -28,6 +33,14 @@ abstract final class AppNotice {
         builder: (dialogContext) => CupertinoAlertDialog(
           content: Text(message),
           actions: [
+            if (actionLabel != null && onAction != null)
+              CupertinoDialogAction(
+                onPressed: () {
+                  Navigator.pop(dialogContext);
+                  onAction();
+                },
+                child: Text(actionLabel),
+              ),
             CupertinoDialogAction(
               onPressed: () => Navigator.pop(dialogContext),
               child: const Text('OK'),
@@ -52,6 +65,13 @@ abstract final class AppNotice {
     }
     ScaffoldMessenger.of(context)
       ..removeCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          action: actionLabel == null || onAction == null
+              ? null
+              : SnackBarAction(label: actionLabel, onPressed: onAction),
+        ),
+      );
   }
 }

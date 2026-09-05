@@ -88,6 +88,49 @@ sealed class FeedPost extends Equatable {
   /// The location owned by this post's variant.
   String get location;
 
+  /// Returns this post with server-owned engagement fields reconciled.
+  FeedPost withEngagement({
+    int? likeCount,
+    int? commentCount,
+    bool? likedByCurrentUser,
+  }) {
+    final common = _CommonPost(
+      id: id,
+      body: body,
+      createdAt: createdAt,
+      viewCount: viewCount,
+      bookmarkCount: bookmarkCount,
+      likeCount: likeCount ?? this.likeCount,
+      commentCount: commentCount ?? this.commentCount,
+      likedByCurrentUser: likedByCurrentUser ?? this.likedByCurrentUser,
+      author: author,
+    );
+    return switch (this) {
+      GeneralFeedPost(:final location) => GeneralFeedPost._(
+        common: common,
+        location: location,
+      ),
+      RequestFeedPost(:final requestType, :final location) => RequestFeedPost._(
+        common: common,
+        requestType: requestType,
+        location: location,
+      ),
+      PropertyFeedPost(
+        :final propertyId,
+        :final status,
+        :final location,
+        :final images,
+      ) =>
+        PropertyFeedPost._(
+          common: common,
+          propertyId: propertyId,
+          status: status,
+          location: location,
+          images: images,
+        ),
+    };
+  }
+
   /// Builds a strict discriminated post rather than accepting combined
   /// variants.
   factory FeedPost.fromJson(Map<String, dynamic> json) {

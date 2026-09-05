@@ -23,6 +23,10 @@ final class FeedState extends Equatable {
     this.failure,
     this.refreshFailed = false,
     this.nextPageFailed = false,
+    this.bookmarkedPostIds = const {},
+    this.hiddenPostIds = const {},
+    this.noticeSequence = 0,
+    this.notice,
   });
 
   /// The initial, untouched feed state.
@@ -40,6 +44,10 @@ final class FeedState extends Equatable {
   final FeedLoadFailure? failure;
   final bool refreshFailed;
   final bool nextPageFailed;
+  final Set<int> bookmarkedPostIds;
+  final Set<int> hiddenPostIds;
+  final int noticeSequence;
+  final String? notice;
 
   /// Whether a later cursor request remains available.
   bool get canLoadMore => nextCursor != null;
@@ -47,6 +55,11 @@ final class FeedState extends Equatable {
   /// Whether saved content must remain visibly labelled.
   bool get isShowingSavedPosts =>
       source == FeedDataSource.saved && !isInitialLoading && failure == null;
+
+  /// Posts remaining after session-only hides.
+  List<FeedPost> get visiblePosts => posts
+      .where((post) => !hiddenPostIds.contains(post.id))
+      .toList(growable: false);
 
   /// Preserves state immutably while allowing explicit provenance clearing.
   FeedState copyWith({
@@ -65,6 +78,11 @@ final class FeedState extends Equatable {
     bool clearFailure = false,
     bool? refreshFailed,
     bool? nextPageFailed,
+    Set<int>? bookmarkedPostIds,
+    Set<int>? hiddenPostIds,
+    int? noticeSequence,
+    String? notice,
+    bool clearNotice = false,
   }) {
     return FeedState(
       posts: posts ?? this.posts,
@@ -81,6 +99,10 @@ final class FeedState extends Equatable {
       failure: clearFailure ? null : failure ?? this.failure,
       refreshFailed: refreshFailed ?? this.refreshFailed,
       nextPageFailed: nextPageFailed ?? this.nextPageFailed,
+      bookmarkedPostIds: bookmarkedPostIds ?? this.bookmarkedPostIds,
+      hiddenPostIds: hiddenPostIds ?? this.hiddenPostIds,
+      noticeSequence: noticeSequence ?? this.noticeSequence,
+      notice: clearNotice ? null : notice ?? this.notice,
     );
   }
 
@@ -98,5 +120,9 @@ final class FeedState extends Equatable {
     failure,
     refreshFailed,
     nextPageFailed,
+    bookmarkedPostIds,
+    hiddenPostIds,
+    noticeSequence,
+    notice,
   ];
 }

@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:expert_listing/feed/bloc/feed_bloc.dart';
 import 'package:expert_listing/feed/bloc/feed_event.dart';
+import 'package:expert_listing/feed/data/bookmark_store.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
+import 'package:expert_listing/feed/models/feed_comment.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
@@ -170,6 +172,230 @@ void main() {
       expect(bloc.state.fallbackReason, isNull);
     },
   );
+
+  test('rapid like taps converge without stale response overwrite', () async {
+    final repository = _EngagementRepository();
+    final bloc = FeedBloc(repository: repository);
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await _flush();
+    bloc.add(const FeedLikeToggled(1));
+    await _flush();
+    expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
+    expect(bloc.state.posts.single.likeCount, 1);
+    expect(repository.likeRequests, hasLength(1));
+
+    bloc.add(const FeedLikeToggled(1));
+    await _flush();
+    expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+    expect(bloc.state.posts.single.likeCount, 0);
+    expect(repository.likeRequests, hasLength(1));
+
+    repository.likeRequests.first.result.complete(
+      const LikeResult(postId: 1, liked: true, likeCount: 1),
+    );
+    await _flush();
+    expect(repository.likeRequests, hasLength(2));
+    expect(repository.likeRequests.last.liked, isFalse);
+
+    repository.likeRequests.last.result.complete(
+      const LikeResult(postId: 1, liked: false, likeCount: 0),
+    );
+    await _flush();
+    await _flush();
+
+    expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+    expect(bloc.state.posts.single.likeCount, 0);
+    expect(repository.invalidateCalls, 2);
+  });
+
+  test(
+    'a tap during cache invalidation is sent before the worker exits',
+    () async {
+      final repository = _EngagementRepository(
+        invalidateBarrier: Completer<void>(),
+      );
+      final bloc = FeedBloc(repository: repository);
+      addTearDown(bloc.close);
+
+      bloc.add(const FeedStarted());
+      await _flush();
+      bloc.add(const FeedLikeToggled(1));
+      await _flush();
+      repository.likeRequests.single.result.complete(
+        const LikeResult(postId: 1, liked: true, likeCount: 1),
+      );
+      await _flush();
+
+      bloc.add(const FeedLikeToggled(1));
+      await _flush();
+      expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+      expect(repository.likeRequests, hasLength(1));
+
+      repository.invalidateBarrier!.complete();
+      await _flush();
+      expect(repository.likeRequests, hasLength(2));
+      expect(repository.likeRequests.last.liked, isFalse);
+
+      repository.likeRequests.last.result.complete(
+        const LikeResult(postId: 1, liked: false, likeCount: 0),
+      );
+      await _flush();
+      expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+    },
+  );
+
+  test('a pre-mutation refresh cannot overwrite a successful like', () async {
+    final repository = _RefreshRaceRepository();
+    final bloc = FeedBloc(repository: repository);
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await _flush();
+    bloc.add(const FeedRefreshed());
+    await _flush();
+    expect(repository.refreshes, hasLength(1));
+
+    bloc.add(const FeedLikeToggled(1));
+    await _flush();
+    repository.likeResult.complete(
+      const LikeResult(postId: 1, liked: true, likeCount: 1),
+    );
+    await _flush();
+    await _flush();
+    expect(repository.refreshes, hasLength(2));
+
+    repository.refreshes.first.complete(_page(1));
+    await _flush();
+    expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
+
+    repository.refreshes.last.complete(_likedPage());
+    await _flush();
+    expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
+    expect(bloc.state.posts.single.likeCount, 1);
+  });
+
+  test('a failed latest like intent rolls back to confirmed state', () async {
+    final repository = _EngagementRepository();
+    final bloc = FeedBloc(repository: repository);
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await _flush();
+    bloc.add(const FeedLikeToggled(1));
+    await _flush();
+    expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
+
+    repository.likeRequests.single.result.completeError(
+      const EngagementFailure(),
+    );
+    await _flush();
+
+    expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+    expect(bloc.state.posts.single.likeCount, 0);
+    expect(bloc.state.notice, "Couldn't update your like. Try again.");
+  });
+
+  test('bookmarks persist locally and disclose device scope once', () async {
+    final store = _BookmarkStore();
+    final bloc = FeedBloc(
+      repository: _TestFeedRepository((_, _) async => _page(1)),
+      bookmarkStore: store,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await _flush();
+    bloc.add(const FeedBookmarkToggled(1));
+    await _flush();
+
+    expect(bloc.state.bookmarkedPostIds, {1});
+    expect(store.savedPostIds, {1});
+    expect(bloc.state.notice, 'Saved on this device.');
+    final firstNoticeSequence = bloc.state.noticeSequence;
+
+    bloc.add(const FeedBookmarkToggled(1));
+    await _flush();
+    bloc.add(const FeedBookmarkToggled(1));
+    await _flush();
+
+    expect(store.savedPostIds, {1});
+    expect(bloc.state.noticeSequence, firstNoticeSequence);
+  });
+
+  test('a bookmark read failure never overwrites persisted IDs', () async {
+    final store = _BookmarkStore(
+      savedPostIds: {99},
+      failLoad: true,
+    );
+    final bloc = FeedBloc(
+      repository: _TestFeedRepository((_, _) async => _page(1)),
+      bookmarkStore: store,
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await _flush();
+    bloc.add(const FeedBookmarkToggled(1));
+    await _flush();
+
+    expect(store.savedPostIds, {99});
+    expect(store.saveCalls, 0);
+    expect(bloc.state.notice, "Couldn't load saved bookmarks. Try again.");
+  });
+
+  test(
+    'a disclosure write failure does not roll back a saved bookmark',
+    () async {
+      final store = _BookmarkStore(failNoticeWrite: true);
+      final bloc = FeedBloc(
+        repository: _TestFeedRepository((_, _) async => _page(1)),
+        bookmarkStore: store,
+      );
+      addTearDown(bloc.close);
+
+      bloc.add(const FeedStarted());
+      await _flush();
+      bloc.add(const FeedBookmarkToggled(1));
+      await _flush();
+
+      expect(store.savedPostIds, {1});
+      expect(bloc.state.bookmarkedPostIds, {1});
+      expect(bloc.state.notice, 'Saved on this device.');
+    },
+  );
+
+  test('rapid bookmark taps share one load and retain toggle order', () async {
+    final loadBarrier = Completer<void>();
+    final store = _BookmarkStore(loadBarrier: loadBarrier);
+    final bloc = FeedBloc(
+      repository: _TestFeedRepository((_, _) async => _page(1)),
+      bookmarkStore: store,
+    );
+    addTearDown(bloc.close);
+
+    bloc
+      ..add(const FeedStarted())
+      ..add(const FeedBookmarkToggled(1))
+      ..add(const FeedBookmarkToggled(1));
+    await _flush();
+    expect(store.loadCalls, 1);
+
+    loadBarrier.complete();
+    await _flush();
+    await _flush();
+
+    expect(store.loadCalls, 1);
+    expect(store.savedPostIds, isEmpty);
+    expect(bloc.state.bookmarkedPostIds, isEmpty);
+    expect(store.saveCalls, 2);
+  });
+}
+
+Future<void> _flush() async {
+  await Future<void>.delayed(Duration.zero);
+  await Future<void>.delayed(Duration.zero);
 }
 
 final class _TestFeedRepository extends FeedRepository {
@@ -187,6 +413,121 @@ final class _TestFeedRepository extends FeedRepository {
     String? cursor,
     int limit = 10,
   }) => _load(filter, cursor);
+}
+
+final class _EngagementRepository extends FeedRepository {
+  _EngagementRepository({this.invalidateBarrier}) : super(client: Dio());
+
+  final likeRequests = <({bool liked, Completer<LikeResult> result})>[];
+  final Completer<void>? invalidateBarrier;
+  int invalidateCalls = 0;
+
+  @override
+  Future<FeedLoadResult> loadPage({
+    required FeedFilter filter,
+    String? cursor,
+    int limit = 10,
+  }) async => _page(1);
+
+  @override
+  Future<LikeResult> setPostLiked({
+    required int postId,
+    required bool liked,
+  }) {
+    final result = Completer<LikeResult>();
+    likeRequests.add((liked: liked, result: result));
+    return result.future;
+  }
+
+  @override
+  Future<void> invalidateFeed() async {
+    invalidateCalls++;
+    await invalidateBarrier?.future;
+  }
+}
+
+final class _RefreshRaceRepository extends FeedRepository {
+  _RefreshRaceRepository() : super(client: Dio());
+
+  int loadCalls = 0;
+  final refreshes = <Completer<FeedLoadResult>>[];
+  final likeResult = Completer<LikeResult>();
+
+  @override
+  Future<FeedLoadResult> loadPage({
+    required FeedFilter filter,
+    String? cursor,
+    int limit = 10,
+  }) {
+    loadCalls++;
+    if (loadCalls == 1) return Future.value(_page(1));
+    final result = Completer<FeedLoadResult>();
+    refreshes.add(result);
+    return result.future;
+  }
+
+  @override
+  Future<LikeResult> setPostLiked({
+    required int postId,
+    required bool liked,
+  }) => likeResult.future;
+
+  @override
+  Future<void> invalidateFeed() async {}
+}
+
+final class _BookmarkStore implements BookmarkStore {
+  _BookmarkStore({
+    this.savedPostIds = const {},
+    this.failLoad = false,
+    this.failNoticeWrite = false,
+    this.loadBarrier,
+  });
+
+  Set<int> savedPostIds;
+  final bool failLoad;
+  final bool failNoticeWrite;
+  final Completer<void>? loadBarrier;
+  bool noticeShown = false;
+  int loadCalls = 0;
+  int saveCalls = 0;
+
+  @override
+  Future<bool> hasShownDeviceOnlyNotice() async => noticeShown;
+
+  @override
+  Future<Set<int>> load() async {
+    loadCalls++;
+    await loadBarrier?.future;
+    if (failLoad) throw StateError('read failed');
+    return {...savedPostIds};
+  }
+
+  @override
+  Future<void> markDeviceOnlyNoticeShown() async {
+    if (failNoticeWrite) throw StateError('notice write failed');
+    noticeShown = true;
+  }
+
+  @override
+  Future<void> save(Set<int> postIds) async {
+    saveCalls++;
+    savedPostIds = {...postIds};
+  }
+}
+
+FeedLoadResult _likedPage() {
+  final original = _page(1);
+  return FeedLoadResult(
+    posts: [
+      original.posts.single.withEngagement(
+        likedByCurrentUser: true,
+        likeCount: 1,
+      ),
+    ],
+    nextCursor: null,
+    source: FeedDataSource.network,
+  );
 }
 
 FeedLoadResult _page(

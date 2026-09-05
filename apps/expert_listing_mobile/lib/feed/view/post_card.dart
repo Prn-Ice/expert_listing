@@ -20,10 +20,22 @@ class PostCard extends StatelessWidget {
     required this.post,
     required this.onNotice,
     super.key,
+    this.bookmarked = false,
+    this.onLike,
+    this.onComments,
+    this.onShare,
+    this.onBookmark,
+    this.onOptions,
   });
 
   final FeedPost post;
   final ValueChanged<String> onNotice;
+  final bool bookmarked;
+  final VoidCallback? onLike;
+  final VoidCallback? onComments;
+  final ValueChanged<BuildContext>? onShare;
+  final VoidCallback? onBookmark;
+  final VoidCallback? onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +59,11 @@ class PostCard extends StatelessWidget {
             _postInset,
             0,
           ),
-          child: _PostHeader(post: post, onNotice: onNotice),
+          child: _PostHeader(
+            post: post,
+            onNotice: onNotice,
+            onOptions: onOptions,
+          ),
         ),
         Padding(
           padding: const EdgeInsets.only(
@@ -80,6 +96,11 @@ class PostCard extends StatelessWidget {
             key: ValueKey<String>('post-actions-${post.id}'),
             post: post,
             onNotice: onNotice,
+            bookmarked: bookmarked,
+            onLike: onLike,
+            onComments: onComments,
+            onShare: onShare,
+            onBookmark: onBookmark,
           ),
         ),
         if (post.commentCount > 0)
@@ -96,9 +117,11 @@ class PostCard extends StatelessWidget {
                 alignment: Alignment.centerLeft,
                 child: AppButton(
                   key: ValueKey<String>('post-comments-${post.id}'),
-                  onPressed: () => onNotice(
-                    'Comments are part of the next preview step.',
-                  ),
+                  onPressed:
+                      onComments ??
+                      () => onNotice(
+                        'Comments are part of the next preview step.',
+                      ),
                   minimumSize: const Size.square(
                     AppIconSize.textButtonTapTarget,
                   ),
@@ -124,10 +147,15 @@ class PostCard extends StatelessWidget {
 }
 
 final class _PostHeader extends StatelessWidget {
-  const _PostHeader({required this.post, required this.onNotice});
+  const _PostHeader({
+    required this.post,
+    required this.onNotice,
+    this.onOptions,
+  });
 
   final FeedPost post;
   final ValueChanged<String> onNotice;
+  final VoidCallback? onOptions;
 
   void _showProfileNotice() =>
       onNotice('Profiles are not part of this preview.');
@@ -207,9 +235,11 @@ final class _PostHeader extends StatelessWidget {
             icon: AppIcons.postOverflow,
             iconSize: AppIconSize.small,
             tooltip: 'Post options',
-            onPressed: () => onNotice(
-              'Post options are part of the next preview step.',
-            ),
+            onPressed:
+                onOptions ??
+                () => onNotice(
+                  'Post options are part of the next preview step.',
+                ),
           ),
         ],
       ),

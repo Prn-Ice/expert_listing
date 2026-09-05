@@ -597,6 +597,38 @@ void main() {
       expect(find.text('Second notice.'), findsOneWidget);
     });
 
+    testWidgets('an Android notice exposes one working recovery action', (
+      tester,
+    ) async {
+      var restored = false;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => AppNotice.show(
+                  context,
+                  'Post hidden.',
+                  actionLabel: 'Undo',
+                  onAction: () => restored = true,
+                ),
+                child: const Text('hide'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('hide'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Undo'));
+      await tester.pump();
+
+      expect(restored, isTrue);
+    });
+
     testWidgets('iOS answers with the restrained native dialog', (
       tester,
     ) async {

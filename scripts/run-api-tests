@@ -38,6 +38,7 @@ SUPABASE_URL="$api_url" \
 SUPABASE_SERVICE_ROLE_KEY="$service_role_key" \
 deno task --config supabase/functions/api/deno.json test \
   tests/health_test.ts \
+  tests/engagement_test.ts \
   tests/feed_test.ts \
   tests/search_test.ts \
   tests/profile_test.ts
