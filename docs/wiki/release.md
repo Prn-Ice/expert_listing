@@ -25,15 +25,16 @@ evidence.
 
 | Name | Kind | Purpose |
 | --- | --- | --- |
-| `PUBLIC_API_BASE_URL` | variable | Required only for artifact release builds; it must exactly equal `https://chvhwausefhvaceygppc.supabase.co/functions/v1/api` |
-| `ANDROID_KEYSTORE_BASE64` | secret | Release keystore encoded as base64 |
-| `ANDROID_KEYSTORE_PASSWORD` | secret | Keystore password |
-| `ANDROID_KEY_ALIAS` | secret | Signing key alias |
-| `ANDROID_KEY_PASSWORD` | secret | Key password |
+| `PUBLIC_API_BASE_URL` | repository variable | Required only for artifact release builds; it must exactly equal `https://chvhwausefhvaceygppc.supabase.co/functions/v1/api` |
+| `ANDROID_KEYSTORE_BASE64` | `android-release` environment secret | Release keystore encoded as base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | `android-release` environment secret | Keystore password |
+| `ANDROID_KEY_ALIAS` | `android-release` environment secret | Signing key alias |
+| `ANDROID_KEY_PASSWORD` | `android-release` environment secret | Key password |
 
-The public API URL is a variable, not a secret. The Android and TestFlight
-artifact jobs reject any other value so a signed build cannot target a lookalike
-or unrelated hosted API.
+The `release` job references `android-release`; reusable CI and `release-gate`
+jobs do not. `PUBLIC_API_BASE_URL` stays a shared repository variable because it
+is public configuration used by both artifact jobs. They reject any other value
+so a signed build cannot target a lookalike or unrelated hosted API.
 
 ## Android signing
 
@@ -77,14 +78,17 @@ keystore nor its passwords enters Git.
 
 | Name | Kind | Purpose |
 | --- | --- | --- |
-| `PUBLIC_API_BASE_URL` | variable | Must exactly equal the canonical deployed API URL above |
-| `APPLE_TEAM_ID` | variable | Apple Developer team ID; it must match the App Store profile |
-| `APP_STORE_CONNECT_KEY_ID` | secret | App Store Connect API key ID |
-| `APP_STORE_CONNECT_ISSUER_ID` | secret | App Store Connect API issuer ID |
-| `APP_STORE_CONNECT_PRIVATE_KEY` | secret | Full downloaded `.p8` contents |
-| `IOS_DISTRIBUTION_CERTIFICATE_BASE64` | secret | Base64 Apple Distribution `.p12` with its private key |
-| `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD` | secret | `.p12` password |
-| `IOS_PROVISIONING_PROFILE_BASE64` | secret | Base64 explicit App Store `.mobileprovision` for `com.prnice.expertListing` |
+| `PUBLIC_API_BASE_URL` | repository variable | Must exactly equal the canonical deployed API URL above |
+| `APPLE_TEAM_ID` | `testflight` environment variable | Apple Developer team ID; it must match the App Store profile |
+| `APP_STORE_CONNECT_KEY_ID` | `testflight` environment secret | App Store Connect API key ID |
+| `APP_STORE_CONNECT_ISSUER_ID` | `testflight` environment secret | App Store Connect API issuer ID |
+| `APP_STORE_CONNECT_PRIVATE_KEY` | `testflight` environment secret | Full downloaded `.p8` contents |
+| `IOS_DISTRIBUTION_CERTIFICATE_BASE64` | `testflight` environment secret | Base64 Apple Distribution `.p12` with its private key |
+| `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD` | `testflight` environment secret | `.p12` password |
+| `IOS_PROVISIONING_PROFILE_BASE64` | `testflight` environment secret | Base64 explicit App Store `.mobileprovision` for `com.prnice.expertListing` |
+
+The `upload` job references `testflight`; the reusable CI and `release-gate`
+jobs do not receive Apple signing or upload credentials.
 
 The Apple Distribution certificate and App Store profile sign the archive. The
 App Store Connect API key only authorizes `altool` validation and upload; it
@@ -104,13 +108,15 @@ removed by an `always()` cleanup step. No IPA artifact is retained automatically
    intended Apple Developer team.
 2. Create the matching App Store Connect app record and complete required app
    metadata, agreements, and access.
-3. Set the developer team ID as `APPLE_TEAM_ID` and create an App Store Connect
-   API key with the least Apple role that permits build uploads.
+3. Set the developer team ID as the `testflight` environment variable
+   `APPLE_TEAM_ID` and create an App Store Connect API key with the least Apple
+   role that permits build uploads.
 4. Export a password-protected Apple Distribution `.p12` with its private key.
 5. Create an explicit App Store profile for that bundle ID and certificate. It
    must have `get-task-allow` set to false and no device list.
-6. Add the table's values as repository variables and secrets. Apple offers the
-   API private key for download once; keep no credential file in Git.
+6. Add the table's values to the named environments; only
+   `PUBLIC_API_BASE_URL` is a shared repository variable. Apple offers the API
+   private key for download once; keep no credential file in Git.
 7. Complete TestFlight test information, export-compliance requirements, and the
    intended tester group in App Store Connect.
 
