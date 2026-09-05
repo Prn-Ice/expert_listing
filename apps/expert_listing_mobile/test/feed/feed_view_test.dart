@@ -250,7 +250,10 @@ void main() {
       expect(find.text('Abba'), findsOneWidget);
       expect(find.text('Lekki two bedroom flat'), findsOneWidget);
       expect(find.byType(PropertyMedia), findsOneWidget);
-      expect(find.byType(PostActions), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('post-actions-1')),
+        findsOneWidget,
+      );
 
       // Scroll to build post metadata, property media, and action rows.
       for (var drag = 0; drag < 3; drag++) {

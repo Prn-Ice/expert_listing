@@ -39,18 +39,21 @@ final class _PropertyMediaState extends State<PropertyMedia> {
   Widget build(BuildContext context) {
     final images = widget.images.where((image) => image.url != null).toList();
     if (images.isEmpty) return const SizedBox.shrink();
+    final reducedMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final indicatorDuration = reducedMotion ? Duration.zero : AppMotion.medium;
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // Figma's property media box is 388 by 260 at the reference width.
         final height = constraints.maxWidth * 260 / 388;
-        return Column(
-          children: [
-            SizedBox(
-              height: height,
-              child: ClipRRect(
-                borderRadius: AppRadii.image,
-                child: PageView.builder(
+        return SizedBox(
+          height: height,
+          child: ClipRRect(
+            borderRadius: AppRadii.image,
+            child: Stack(
+              children: [
+                PageView.builder(
                   key: PageStorageKey<String>(
                     'property-media-${images.first.id}',
                   ),
@@ -83,32 +86,57 @@ final class _PropertyMediaState extends State<PropertyMedia> {
                     );
                   },
                 ),
-              ),
-            ),
-            if (images.length > 1) ...[
-              const SizedBox(height: AppSpacing.xsmall),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  images.length,
-                  (index) => Container(
-                    key: ValueKey<String>(
-                      'property-media-${images.first.id}-indicator-$index',
-                    ),
-                    width: 6,
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
-                    decoration: BoxDecoration(
-                      color: index == _page
-                          ? AppColors.of(context).brandDeep
-                          : AppColors.of(context).border,
-                      shape: BoxShape.circle,
+                if (images.length > 1)
+                  Positioned(
+                    bottom: 10,
+                    left: 0,
+                    right: 0,
+                    child: Center(
+                      child: DecoratedBox(
+                        key: ValueKey<String>(
+                          'property-media-${images.first.id}-indicators',
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.42),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 5,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: List.generate(
+                              images.length,
+                              (index) => AnimatedContainer(
+                                key: ValueKey<String>(
+                                  'property-media-${images.first.id}'
+                                  '-indicator-$index',
+                                ),
+                                duration: indicatorDuration,
+                                curve: AppMotion.curve,
+                                width: index == _page ? 14 : 6,
+                                height: 6,
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(
+                                    alpha: index == _page ? 1 : 0.62,
+                                  ),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         );
       },
     );

@@ -581,9 +581,13 @@ void main() {
 
     await tester.drag(find.byType(PageView), const Offset(-350, 0));
     await tester.pumpAndSettle();
+    final media = find.byType(PropertyMedia);
+    final indicatorBackdrop = find.byKey(
+      const ValueKey<String>('property-media-11-indicators'),
+    );
     Color activeIndicatorColor() =>
         (tester
-                    .widget<Container>(
+                    .widget<AnimatedContainer>(
                       find.byKey(
                         const ValueKey<String>('property-media-11-indicator-1'),
                       ),
@@ -593,7 +597,26 @@ void main() {
             .color!;
     expect(
       activeIndicatorColor(),
-      AppColors.light.brandDeep,
+      Colors.white,
+    );
+    expect(
+      tester
+          .widget<AnimatedContainer>(
+            find.byKey(
+              const ValueKey<String>('property-media-11-indicator-1'),
+            ),
+          )
+          .duration,
+      AppMotion.medium,
+    );
+    expect(tester.getSize(media), const Size(388, 260));
+    expect(
+      tester.getBottomRight(indicatorBackdrop).dy,
+      lessThan(tester.getBottomRight(media).dy),
+    );
+    expect(
+      tester.getTopLeft(indicatorBackdrop).dy,
+      greaterThan(tester.getTopLeft(media).dy),
     );
 
     setHostState(() => showCarousel = false);
@@ -605,7 +628,7 @@ void main() {
 
     expect(
       activeIndicatorColor(),
-      AppColors.light.brandDeep,
+      Colors.white,
     );
   });
 }
