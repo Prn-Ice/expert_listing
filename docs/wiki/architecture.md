@@ -1,15 +1,11 @@
 # Architecture
 
-**Status:** M4 implements the feed read path. Comments, create-post, likes, and
-bookmarks remain separate feature work; check code and tests before treating
-those layers as implemented.
-
 ## The whole path
 
 ~~~mermaid
 flowchart TD
     UI[Flutter widgets] --> Providers[Riverpod / Riverbloc providers]
-    Providers --> Logic[FeedBloc / CommentsCubit / CreatePostCubit]
+    Providers --> Logic[Feature Bloc or Cubit]
     Logic --> Repo[Feature repositories]
     Repo --> Client[Dio API client]
     Repo <--> Cache[Durable read cache]
@@ -50,32 +46,26 @@ late first-page response from replacing a newer filter, and an in-flight guard
 prevents duplicate cursor requests. Stable post IDs preserve feed identity
 across refresh and page merges.
 
-Desired-state likes, returned-post insertion, local bookmarks, and session
-hide or undo are owned by later feature work.
-
-CommentsCubit and CreatePostCubit will be smaller command-oriented flows.
-Comments are scoped by post ID. Create-post state lives for one opened flow and
-retains retryable input after recoverable failure.
+`FeedBloc` also owns desired-state likes, returned-post insertion, local bookmark
+overlays, and session hide or undo. `CommentsCubit` is scoped by post ID;
+`CreatePostCubit` lives for one opened flow and retains retryable input after a
+recoverable failure. `NotificationsBloc` owns recipient-scoped activity loading
+and read-state reconciliation.
 
 Riverbloc providers must create each Bloc or Cubit from provider-owned
 repositories and close it exactly once when the scope is disposed.
 
 ## Data and cache flow
 
-Flutter will call one public Hono base URL. Only Hono performs JSON data
+Flutter calls one public Hono base URL. Only Hono performs JSON data
 operations and mutations against Supabase. Flutter never imports a Supabase
 client, constructs object paths, or receives a service credential.
 
-A feed request is network-first. After a validated live `/posts` response,
-`FeedRepository` asks `FeedCache` to persist it under the full request URI.
-`FeedCache` owns one seven-day, 32-object `CacheManager`; it only reads through
-cache-only `getFileFromCache` and never initiates a fetch.
-
-The repository classifies a connection, timeout, or selected service failure
-before asking `FeedCache` for the matching saved entry. This preserves the
-reason needed for truthful offline provenance. Only a successful first-page
-network response for the active filter may clear saved state. Mutations are
-never cached or silently queued.
+Feed reads are network-first. `FeedRepository` decides when a failed request may
+fall back to a matching saved response; `FeedCache` owns only persistence
+mechanics. Mutations are never cached or silently queued. See
+[Offline and cache](offline-and-cache.md) for freshness, invalidation, and
+fallback details.
 
 Hono returns environment-correct public media URLs. `app_ui` owns public image
 rendering through `AppNetworkImage` and `AppAvatar`; image bytes remain separate

@@ -5,24 +5,18 @@ and work safely with local or linked Supabase projects.
 
 ## Quick start
 
-Enter the project environment once. With the direnv shell hook installed:
+Flutter, Xcode, and the Android SDK and device tools are installed directly on
+the development machine. Verify that host toolchain first:
 
 ~~~sh
-direnv allow
+flutter doctor
 ~~~
 
-Without the hook, open a Nix development shell instead:
-
-~~~sh
-nix develop
-~~~
-
-Then start OrbStack on macOS and verify the app toolchain, function runtime,
-Supabase CLI, and container engine:
+Start OrbStack on macOS, then verify the backend command-line tools and
+container engine:
 
 ~~~sh
 orb start
-flutter doctor
 deno --version
 supabase --version
 docker info
@@ -30,24 +24,20 @@ docker info
 
 On Linux, start Docker Engine instead of running `orb start`.
 
-These commands verify both executable discovery and the running container
-engine.
+Nix and direnv are optional. The current Nix setup is incomplete and is not a
+prerequisite for running, building, or testing the repository. No documented
+command depends on either tool. If you choose to use the optional shell, verify
+each required command rather than assuming it supplies the complete toolchain.
 
 ## Tool ownership
 
-| Nix provides | The host provides |
+| Installed directly on the host | Directly installed or optionally supplied by Nix |
 | --- | --- |
-| Deno, Supabase CLI, Docker CLI, PostgreSQL client, JDK 21, GitHub CLI, resvg, pngcrush, and direnv | Flutter/Dart, Android SDK and device assets, standard Xcode, Docker daemon state, and account authentication |
-| OrbStack CLI on macOS | OrbStack VM state and Docker Compose integration |
+| Flutter/Dart, Android SDK and device assets, `adb`, standard Xcode, OrbStack and its VM state, and account authentication | Deno, Supabase CLI, Docker CLI, PostgreSQL client, JDK 21, GitHub CLI, resvg, pngcrush, and direnv |
 
-The flake supports Apple Silicon macOS and x86-64 Linux. macOS uses OrbStack;
-Linux uses Docker Engine. Flutter, Android tools, emulators, system images, and
-Xcode remain host prerequisites and are never downloaded when entering the
-shell. `adb` is a host prerequisite before device or emulator work.
-
-On macOS, `.envrc` clears Nix's Apple SDK overrides so Flutter continues to use
-the standard host-selected Xcode. The reasoning behind this boundary is recorded
-once in [decisions.md](decisions.md#what-belongs-to-nix-and-what-remains-on-the-host).
+The optional flake targets Apple Silicon macOS and x86-64 Linux, but it does not
+own Flutter, Android tooling, emulator assets, system images, or Xcode. macOS
+uses OrbStack; Linux uses Docker Engine.
 
 ## Local Supabase
 
@@ -61,26 +51,21 @@ Project-specific ports allow local stacks to coexist:
 | Studio | http://127.0.0.1:56323 |
 | Mailpit | http://127.0.0.1:56324 |
 
-Start the stack and serve the Hono function in separate terminals:
+Start the local stack from the repository root:
 
 ~~~sh
 supabase start
-supabase functions serve api --no-verify-jwt
 ~~~
 
 The Profile destination advertises the same four public demo personas locally
 and on the hosted assessment backend. Selecting one sends its fixed alias on
 subsequent requests; no UUID or credential is stored in the app.
 
-`supabase start` already serves the function at the address above, but its
-runtime caches worker code; after editing `supabase/functions/api/`, either
-restart the runtime container (`docker restart
-supabase_edge_runtime_expert_listing`) or use the separate `functions serve`
-terminal, which reloads on change.
-
-Run real local API checks from another terminal:
+The started stack serves the Hono function at the address above. Run the real
+local database and API checks from another terminal:
 
 ~~~sh
+supabase test db --local
 scripts/run-api-tests
 ~~~
 
@@ -113,51 +98,48 @@ marker is useful context, not a substitute for the exact reference check:
 supabase projects list
 ~~~
 
-After the exact check passes, run only the required command:
+After the exact check passes, choose and run only the required mutation.
+
+Apply migrations:
 
 ~~~sh
 supabase db push
+~~~
+
+Seed Storage fixtures:
+
+~~~sh
 supabase seed buckets --linked
+~~~
+
+Deploy the API function:
+
+~~~sh
 supabase functions deploy api
 ~~~
 
-No other linked mutation is approved. Never run a remote reset or delete, and
-never print credentials while checking the public project reference.
+Repeat the exact reference check immediately before any later mutation. No other
+linked mutation is approved. Never run a remote reset or delete, and never print
+credentials while checking the public project reference.
 
 ## Flutter and devices
 
-Run Flutter checks from `apps/expert_listing_mobile`:
+Run Flutter checks directly from each package:
 
 ~~~sh
 cd apps/expert_listing_mobile
 flutter analyze
 flutter test
+cd ../../packages/app_ui
+flutter analyze
+flutter test
 ~~~
 
-Run the app from the same directory with an explicit public Hono endpoint:
-
-~~~sh
-flutter run --dart-define=API_BASE_URL=http://127.0.0.1:56321/functions/v1/api
-~~~
+Run the app from `apps/expert_listing_mobile` against the hosted public API:
 
 ~~~sh
 flutter run --dart-define=API_BASE_URL=https://chvhwausefhvaceygppc.supabase.co/functions/v1/api
 ~~~
 
-The local command requires the local Supabase stack. The hosted command uses
-only the public API URL and contains no credential.
-
-On Android, `127.0.0.1` refers to the device rather than the development
-computer. When testing against local Supabase, forward the app's local port to
-the same port on the computer:
-
-~~~sh
-adb reverse tcp:56321 tcp:56321
-~~~
-
-Run this after connecting the device or emulator. It is not used with the
-hosted backend or in release builds.
-
-Cleartext access is permitted only by the Android debug manifest. A physical iOS
-device uses the deployed HTTPS backend. Standard host Xcode remains the iOS
-toolchain.
+The URL is public configuration and contains no credential. Local Supabase
+verification is performed by the host-run database and API checks above.

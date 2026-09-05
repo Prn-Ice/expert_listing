@@ -3,6 +3,69 @@
 This page records measured design facts and shared UI contracts. Product scope
 is defined by the [assessment specification](../spec/expert-listing-assessment.md).
 
+Paths on this page are relative to the repository root. The implementation
+lives in `packages/app_ui`. It owns visual and interaction rules that repeat
+across features: semantic tokens, light and dark themes, committed assets, and
+shared controls. Feature packages still own product state, content, and geometry
+that appears only once.
+
+## Start here
+
+Import the package's public library rather than files under `lib/src`:
+
+~~~dart
+import 'package:app_ui/app_ui.dart';
+~~~
+
+When building or changing a screen:
+
+1. Read colours from `AppColors.of(context)` and use the `AppSpacing`,
+   `AppRadii`, `AppTypography`, `AppIcons`, `AppIconSize`, and `AppMotion`
+   tokens.
+2. Reuse a suitable shared component from the table below.
+3. If no shared component fits, use Flutter's standard Material or Cupertino
+   control before creating a custom control.
+4. Keep one-off measured geometry in the feature widget with a descriptive
+   local constant and a Figma-node comment. Add a shared token only when the
+   value expresses a repeated contract.
+5. Check light and dark appearances, text scaling, semantics, focus, keyboard
+   insets, safe areas, and reduced motion before treating the UI as complete.
+
+Do not put repositories, Bloc/Cubit state, API models, or feature-specific copy
+in `app_ui`.
+
+## Where to look
+
+| Need | Source |
+| --- | --- |
+| Public API | `packages/app_ui/lib/app_ui.dart` |
+| Light and dark themes | `packages/app_ui/lib/src/theme/app_theme.dart` |
+| Colours, type, spacing, radii, icons, and motion | `packages/app_ui/lib/src/tokens/` |
+| Shared controls | `packages/app_ui/lib/src/widgets/` |
+| Shared wordmark, icon, and font assets | `packages/app_ui/assets/` |
+| App-owned brand mark and reference images | `apps/expert_listing_mobile/assets/` |
+| Feature-specific layout | `apps/expert_listing_mobile/lib/` |
+
+## Component chooser
+
+| Component | Use it for |
+| --- | --- |
+| `AppIcon` | A committed vector or raster icon with correct semantics |
+| `AppIconButton` | An icon action, optionally with a count, inside a 48 by 48 logical-pixel target |
+| `AppButton` | A compact labelled action using native iOS or Android press behaviour |
+| `AppPressable` | A composed branded row, tile, or image that needs native press behaviour without owned layout |
+| `AppScaffold` | An adaptive page surface with optional bottom navigation |
+| `AppSheet` | A Cupertino or Material route with safe-area, keyboard, and dismissal handling; callers own Android scrollable content |
+| `AppNotice` | One replacing, safe-area-aware transient notice |
+| `OfflineStatusBar` | Persistent saved-feed provenance with an optional Retry action; the feature owns its state |
+| `AppNetworkImage` | Bounded network imagery with stable loading, error, decode, and semantic behaviour |
+| `AppAvatar` | A public avatar or initials fallback, with a 48-pixel target when interactive |
+| `AppBrandWordmark` | The exact Expert Listing wordmark; the caller owns its action and hit target |
+
+Ordinary buttons and fields use themed Flutter controls. In product language,
+the feed entry is `CreatePostPrompt` and the opened surface is
+`CreatePostSheet`; avoid the ambiguous term "composer."
+
 ## Design source and provenance
 
 The primary reference is the Figma “iPhone 14 Plus - 1312” mobile frame at 428
@@ -11,23 +74,23 @@ distinct mark.
 
 Use that frame for measurements, variables, screenshots, and exact exports. The
 local screenshot at
-`../../apps/expert_listing_mobile/assets/design/[private reference removed]` is an
+`apps/expert_listing_mobile/assets/design/[private reference removed]` is an
 overlay aid, never an app asset.
 
-Captured SVG icons live under `../../packages/app_ui/assets/icons/`; reference
-imagery remains under `../../apps/expert_listing_mobile/assets/images/`.
+Captured SVG icons live under `packages/app_ui/assets/icons/`; reference
+imagery remains under `apps/expert_listing_mobile/assets/images/`.
 Widgets use semantic asset names, not design-tool identifiers. Do not substitute
 or redraw the committed exports.
 
 | Semantic asset | Source file | Provenance |
 | --- | --- | --- |
-| Brand mark | `../../apps/expert_listing_mobile/assets/brand/brand-mark.svg` | User-supplied header export |
-| Full wordmark | `../../packages/app_ui/assets/brand/expert-listing-wordmark.svg` | User-supplied header export |
-| Search navigation | `../../packages/app_ui/assets/icons/search.svg` | Figma MagnifyingGlass export retrieved with the feed design context |
-| For Sale tag | `../../packages/app_ui/assets/icons/for-sale.png` | Complete Figma Tag export at 4x |
-| Looking to Buy tag | `../../packages/app_ui/assets/icons/looking-to-buy.png` | Complete Figma Tag export at 4x |
-| For Rent tag | `../../packages/app_ui/assets/icons/for-rent.png` | Complete Figma Key export at 4x |
-| Looking to Rent tag | `../../packages/app_ui/assets/icons/looking-to-rent.png` | Complete Figma Key export at 4x |
+| Brand mark | `apps/expert_listing_mobile/assets/brand/brand-mark.svg` | User-supplied header export |
+| Full wordmark | `packages/app_ui/assets/brand/expert-listing-wordmark.svg` | User-supplied header export |
+| Search navigation | `packages/app_ui/assets/icons/search.svg` | Figma MagnifyingGlass export retrieved with the feed design context |
+| For Sale tag | `packages/app_ui/assets/icons/for-sale.png` | Complete Figma Tag export at 4x |
+| Looking to Buy tag | `packages/app_ui/assets/icons/looking-to-buy.png` | Complete Figma Tag export at 4x |
+| For Rent tag | `packages/app_ui/assets/icons/for-rent.png` | Complete Figma Key export at 4x |
+| Looking to Rent tag | `packages/app_ui/assets/icons/looking-to-rent.png` | Complete Figma Key export at 4x |
 
 The four status glyphs are 48-pixel raster exports of the complete Figma
 Tag/Key components. No complete vector export is obtainable for these
@@ -35,61 +98,8 @@ components, so they render as tinted rasters sized from the measured 12px
 glyph geometry. Do not redraw or substitute them.
 
 Open Runde weights 400, 500, 600, and 700 plus its OFL 1.1 licence are bundled
-at `../../packages/app_ui/assets/fonts/open_runde/`. `app_ui` registers them as
+at `packages/app_ui/assets/fonts/open_runde/`. `app_ui` registers them as
 the `Open Runde` family and intentionally provides no fallback family.
-
-Native splash and launcher rasters are generated from `brand-mark.svg` with the
-dev shell's `resvg` renderer. Android uses adaptive foreground, background, and
-monochrome layers. iOS uses Xcode's single-size App Icon slot with light, dark,
-and tinted 1024-pixel appearances. The default iOS asset is opaque; its dark
-variant has a transparent background, and its tinted artwork is grayscale, as
-required by Apple's current asset-catalog guidance.
-
-Regenerate native rasters from the repository root with the dev-shell tools.
-These commands preserve the committed safe-zone geometry and write to the
-committed destinations. The generated dark mark uses the existing lime brand
-role (`#a8dc66`) in place of the source export's deep green (`#105b48`); the
-tinted mark uses white:
-
-~~~sh
-perl -pe 's/#105B48/#A8DC66/g' apps/expert_listing_mobile/assets/brand/brand-mark.svg > /tmp/brand-mark-dark.svg
-perl -pe 's/#105B48/#FFFFFF/g' apps/expert_listing_mobile/assets/brand/brand-mark.svg > /tmp/brand-mark-tinted.svg
-resvg --width 144 --height 144 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/brand_mark_light.png
-resvg --width 144 --height 144 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/brand_mark_dark.png
-resvg --width 180 --height 180 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/adaptive-light.png
-sips --padToHeightWidth 432 432 /tmp/adaptive-light.png --out apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
-resvg --width 180 --height 180 /tmp/brand-mark-tinted.svg /tmp/adaptive-monochrome.png
-sips --padToHeightWidth 432 432 /tmp/adaptive-monochrome.png --out apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
-resvg --width 117 --height 117 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/legacy-light.png
-sips --padToHeightWidth 192 192 /tmp/legacy-light.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
-sips --resampleHeightWidth 144 144 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
-sips --resampleHeightWidth 96 96 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
-sips --resampleHeightWidth 72 72 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
-sips --resampleHeightWidth 48 48 apps/expert_listing_mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
-resvg --width 60 --height 60 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light.png
-resvg --width 120 --height 120 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light@2x.png
-resvg --width 180 --height 180 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light@3x.png
-resvg --width 60 --height 60 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark.png
-resvg --width 120 --height 120 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark@2x.png
-resvg --width 180 --height 180 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark@3x.png
-resvg --width 512 --height 512 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/app-icon-light.png
-sips --padToHeightWidth 1024 1024 --padColor ffffff /tmp/app-icon-light.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
-pngcrush -ow -c 2 -rem alla apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
-resvg --width 512 --height 512 /tmp/brand-mark-dark.svg /tmp/app-icon-dark.png
-sips --padToHeightWidth 1024 1024 /tmp/app-icon-dark.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Dark-1024x1024@1x.png
-resvg --width 512 --height 512 /tmp/brand-mark-tinted.svg /tmp/app-icon-tinted.png
-sips --padToHeightWidth 1024 1024 /tmp/app-icon-tinted.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Tinted-1024x1024@1x.png
-~~~
-
-Use the dark source for Android dark splash and adaptive output. Android API
-31+ uses the committed `drawable/splash_mark_light.xml` and
-`drawable/splash_mark_dark.xml` VectorDrawables: their 432-pixel viewport
-centers a 144-pixel mark so system masking cannot blur or clip it. Pre-31 uses
-the 144-pixel mark directly. Downsample the 192-pixel legacy source to 144, 96,
-72, and 48 pixels with `sips --resampleHeightWidth`. The commands strip unused
-alpha only from the opaque default iOS asset and retain transparency for dark
-and tinted variants. Validate the generated output's canvas, safe-zone, and
-active appearance before commit.
 
 ## Semantic colour roles
 
@@ -123,29 +133,29 @@ colour literals.
 
 The warm text role deliberately deepens the observed light Figma value
 `#b07800`, which measures 3.6:1 on its tint. `#8a5b00` measures 5.6:1 on the
-warm tint and canvas so Looking to Rent tag copy meets WCAG AA. Revisit if the
-reference design publishes an accessible amber.
+warm tint and 5.87:1 on the canvas, so Looking to Rent tag copy meets WCAG AA.
+Revisit if the reference design publishes an accessible amber.
 
 Light mode is the Figma target. Dark mode follows system brightness and reuses
 the same semantic roles without per-widget inversion or an invented theme
 selector. The dark canvas/surface are deliberately neutral-green (`#101211` /
 `#1c1e1c`) so the lime brand remains recognisable without a bright launch or
-sheet flash. Text-facing tag colours are lightened for dark surfaces.
+sheet flash. Text-facing tag colours are lightened for dark surfaces. Contrast
+is measured on the canvas unless the table names another background.
 
-| Dark role | Value | Contrast on canvas |
+| Dark role | Value | Contrast |
 | --- | --- | --- |
 | Primary text | #f3f4f3 | 17.06:1 |
 | Secondary text | #b9bbb9 | 9.74:1 |
 | Tertiary text | #7e807e | 4.72:1 |
 | Brand text | #c7ec96 | 14.21:1 |
 | Accent text | #c9b8f5 | 10.44:1 |
-| Warm text | #ffcf72 | 9.00:1 |
+| Warm text | #ffcf72 | 9.00:1 on warm tint |
 | On-brand text | #101211 on #a8dc66 | 11.73:1 |
 
 Contrast values use the WCAG sRGB relative-luminance formula. `AppTheme` also
 sets canvas-coloured status/navigation bars with brightness-appropriate icons;
-the native splash must use the same active appearance once the mark is
-available.
+the native splash uses the same active appearance.
 
 ## Native platform roots
 
@@ -238,52 +248,12 @@ to the top; the device safe-area inset supplies the space reserved for the home
 indicator.
 
 Define finite spacing, radius, border, icon, and interaction scales from
-repeated measurements. Keep one-off geometry as a named local constant with its
-source measurement described.
+repeated measurements. Keep one-off geometry as a named local constant with a
+Figma-node comment.
 
 Motion tokens remain small and explain touch feedback, state, or continuity.
 Reduced-motion settings remove translation, scale, bounce, shimmer, and
 repetitive animation.
-
-## Shared component contracts
-
-Implement these only where the repeated contract is used:
-
-- AppIcon renders committed vector and raster icons with correct semantics.
-- AppIconButton preserves the Figma glyph size inside at least a 48 by 48
-  logical-pixel hit region, including focus, tooltip, semantics, platform press
-  feedback, and an optional count beside the glyph.
-- AppButton renders a labelled action with the active platform's text button:
-  restrained iOS press opacity, contained Android ink, focus, and the
-  TextButton disabled state. Call sites own their text styles and resolved
-  geometry through the measured minimum size, padding, and tap-target rule.
-- AppPressable adds platform press behaviour to composed branded surfaces
-  (rows, tiles, imagery) without owning their layout: contained Android ink on
-  the supplied radius and restrained iOS press opacity, with one button
-  semantic node per control.
-- AppScaffold is the adaptive page surface: CupertinoPageScaffold on iOS,
-  Scaffold everywhere else; the optional bottom bar fills the Material slot on
-  Android and composes beneath the body on iOS.
-- AppBrandWordmark owns the exact 169 by 22 Expert Listing wordmark asset;
-  feature widgets own its surrounding hit target and action.
-- AppSheet uses `showCupertinoSheet` on iOS and `showModalBottomSheet` elsewhere,
-  preserving the supplied native scroll controller, keyboard insets, safe areas,
-  and drag dismissal. The filter sheet occupies the bottom 40% on iOS because
-  the native 92% default leaves excessive empty space; longer and
-  keyboard-compressed states scroll.
-- AppNotice provides one safe-area-aware transient message and prevents
-  queues: the themed Android SnackBar and a restrained dismissible iOS dialog.
-- OfflineStatusBar persistently describes saved-feed provenance.
-- AppNetworkImage is the only production owner of `CachedNetworkImage`; it
-  derives decode dimensions from finite layout constraints and device pixel
-  ratio, supports stable loading/error surfaces, reduced-motion fades, and one
-  optional image semantic label.
-- AppAvatar renders a 40px circular public image or initials fallback, and wraps
-  an interactive avatar in a 48px semantic hit target.
-
-Ordinary buttons and fields use themed semantic Flutter controls. The product
-feature is create_post: the feed row is CreatePostPrompt and the opened surface
-is CreatePostSheet. Avoid the ambiguous term composer.
 
 ## Interaction quality
 
@@ -314,3 +284,57 @@ restrained platform-appropriate design is an explicit assumption and must reuse
 the shared tokens.
 
 Use manual overlays plus behaviour and semantics tests for assessment evidence.
+
+## Native asset regeneration
+
+Native splash and launcher rasters are generated from `brand-mark.svg` with
+`resvg`. Android uses adaptive foreground, background, and monochrome layers.
+iOS uses Xcode's single-size App Icon slot with light, dark, and tinted
+1024-pixel appearances. The default iOS asset is opaque; its dark variant has a
+transparent background, and its tinted artwork is grayscale.
+
+This regeneration recipe is macOS-only because it uses `sips`. Run it from the
+repository root with `resvg`, `sips`, and `pngcrush` available. The generated
+dark mark uses the lime brand role (`#a8dc66`) in place of the source export's
+deep green (`#105b48`); the tinted mark uses white:
+
+~~~sh
+perl -pe 's/#105B48/#A8DC66/g' apps/expert_listing_mobile/assets/brand/brand-mark.svg > /tmp/brand-mark-dark.svg
+perl -pe 's/#105B48/#FFFFFF/g' apps/expert_listing_mobile/assets/brand/brand-mark.svg > /tmp/brand-mark-tinted.svg
+resvg --width 144 --height 144 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/brand_mark_light.png
+resvg --width 144 --height 144 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/brand_mark_dark.png
+resvg --width 180 --height 180 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/adaptive-light.png
+sips --padToHeightWidth 432 432 /tmp/adaptive-light.png --out apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/ic_launcher_foreground.png
+resvg --width 180 --height 180 /tmp/brand-mark-tinted.svg /tmp/adaptive-monochrome.png
+sips --padToHeightWidth 432 432 /tmp/adaptive-monochrome.png --out apps/expert_listing_mobile/android/app/src/main/res/drawable-nodpi/ic_launcher_monochrome.png
+resvg --width 117 --height 117 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/legacy-light.png
+sips --padToHeightWidth 192 192 /tmp/legacy-light.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+sips --resampleHeightWidth 144 144 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+sips --resampleHeightWidth 96 96 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png
+sips --resampleHeightWidth 72 72 apps/expert_listing_mobile/android/app/src/main/res/mipmap-xhdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png
+sips --resampleHeightWidth 48 48 apps/expert_listing_mobile/android/app/src/main/res/mipmap-hdpi/ic_launcher.png --out apps/expert_listing_mobile/android/app/src/main/res/mipmap-mdpi/ic_launcher.png
+resvg --width 60 --height 60 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light.png
+resvg --width 120 --height 120 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light@2x.png
+resvg --width 180 --height 180 apps/expert_listing_mobile/assets/brand/brand-mark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-light@3x.png
+resvg --width 60 --height 60 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark.png
+resvg --width 120 --height 120 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark@2x.png
+resvg --width 180 --height 180 /tmp/brand-mark-dark.svg apps/expert_listing_mobile/ios/Runner/Assets.xcassets/LaunchMark.imageset/launch-mark-dark@3x.png
+resvg --width 512 --height 512 apps/expert_listing_mobile/assets/brand/brand-mark.svg /tmp/app-icon-light.png
+sips --padToHeightWidth 1024 1024 --padColor ffffff /tmp/app-icon-light.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
+pngcrush -ow -c 2 -rem alla apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png
+resvg --width 512 --height 512 /tmp/brand-mark-dark.svg /tmp/app-icon-dark.png
+sips --padToHeightWidth 1024 1024 /tmp/app-icon-dark.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Dark-1024x1024@1x.png
+resvg --width 512 --height 512 /tmp/brand-mark-tinted.svg /tmp/app-icon-tinted.png
+sips --padToHeightWidth 1024 1024 /tmp/app-icon-tinted.png --out apps/expert_listing_mobile/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-Tinted-1024x1024@1x.png
+~~~
+
+Use the dark source for the Android dark splash. The adaptive icon uses the
+light foreground and tinted monochrome source generated above. Android API 31+
+uses the committed `drawable/splash_mark_light.xml` and
+`drawable/splash_mark_dark.xml` VectorDrawables: their 432-pixel viewport
+centres a 144-pixel mark so system masking cannot blur or clip it. Pre-31 uses
+the 144-pixel mark directly. Downsample the 192-pixel legacy source to 144, 96,
+72, and 48 pixels with `sips --resampleHeightWidth`. The commands strip unused
+alpha only from the opaque default iOS asset and retain transparency for dark
+and tinted variants. Validate the generated output's canvas, safe zone, and
+active appearance before committing it.

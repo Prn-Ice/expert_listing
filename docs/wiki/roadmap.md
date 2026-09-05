@@ -1,13 +1,13 @@
 # Deferred roadmap
 
-All items below begin only after `v0.1.0` is published and independently
-verified. Active work belongs in Beads. Dark mode is required for the assessment
-and is not deferred.
+All items below begin only after the current required scope is published in a
+subsequent release and independently verified. Active work belongs in Beads.
+Dark mode is required for the assessment and is not deferred.
 
 ## Golden tests
 
 Early baselines would preserve screen churn rather than confidence. Start after
-all three real journeys pass and the manual Figma overlay is accepted.
+the required real journeys pass and the manual Figma overlay is accepted.
 
 The smallest complete slice covers stable feed, post card, filter, comments,
 create-post, offline, empty, error, light, and dark states at 428 and 360 logical

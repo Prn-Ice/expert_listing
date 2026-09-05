@@ -68,19 +68,20 @@ This simplifies viewing but is not a production privacy model. Revisit before
 real user or private listing data, when authentication, ownership policies,
 signed URLs, abuse controls, and retention rules must be designed together.
 
-## What belongs to Nix and what remains on the host?
+## Why are mobile tools installed directly?
 
-Nix provides the command-line toolchain. Flutter, Android tooling, emulator
-assets, Xcode, and container runtime state remain on the host so entering the
-project does not download mobile SDKs or start services.
+Flutter, Android tooling, emulator assets, Xcode, and OrbStack are managed on
+the host. Nix and direnv are optional, and the current Nix setup is incomplete;
+neither may gate running, building, testing, or completing the repository.
 
-The trade-off is weaker fresh-machine reproduction of the mobile toolchain.
-Revisit when onboarding a machine without a working host setup.
+The optional flake can still provide selected backend command-line tools. The
+trade-off is weaker fresh-machine reproduction. Revisit only after the flake is
+proven to supply the complete intended toolset without overriding host Xcode or
+downloading mobile SDKs.
 
 ## Why are tests selected by promise rather than coverage?
 
-Test the browse/filter/paginate, create-and-reopen-images, and
-like/comment/persistence journeys against real boundaries. Repository fakes are
+Test the required mobile journeys against real boundaries. Repository fakes are
 appropriate for state-machine tests; Hono, Postgres, Storage, and disk
 persistence need integration evidence.
 
@@ -89,10 +90,10 @@ same contract. Coverage percentage is not the goal.
 
 ## Why is the database surface security-definer functions only?
 
-Feed tables carry no direct grants to API roles. `create_post` and `feed_page`
-are security-definer functions executable only by `service_role`, so the entire
-database surface reachable through PostgREST is those two vetted contracts. This
-also repaired a latent defect: a security-invoker `create_post` would have
+Feed tables carry no direct grants to API roles. The PostgREST surface is limited
+to vetted security-definer functions executable only by `service_role`; the
+current function inventory belongs in [API and data](api-and-data.md#relational-data).
+This also repaired a latent defect: a security-invoker `create_post` would have
 failed through PostgREST because `service_role` has no table privileges.
 
 The trade-off is discipline inside the functions: each pins `search_path` so
@@ -107,8 +108,9 @@ states still need realistic verification. All Flutter builds may therefore send
 one of four aliases advertised by the local and hosted APIs. Hono maps it to a
 known fixture UUID for that request only, and Riverpod recreates actor-sensitive
 clients, repositories, and state. Feed cache keys include the alias so saved
-viewer state cannot cross personas. The client never receives or submits a
-fixture UUID, and unknown aliases are rejected.
+viewer state cannot cross personas. The client never submits a fixture UUID as
+request identity, and unknown aliases are rejected. Feed DTOs may still carry
+author UUIDs as post data; profile and notification DTOs omit them.
 
 This intentionally lets any assessor impersonate any fixture persona and make
 mutations as that persona. It is acceptable only for the public assessment demo
@@ -143,9 +145,3 @@ This costs one small append-only table and explicit recipient indexes, but it
 avoids notifications disappearing after they have been seen and makes read
 state stable. Revisit derived notifications only if the product explicitly
 decides that activity should mirror current like state and removes read history.
-
-## Why are goldens, Realtime, video posts, and queued writes deferred?
-
-They add baseline churn, ordering complexity, media failure modes, or conflict
-behaviour before the core is proven. Do not scaffold them during the
-assessment; [roadmap.md](roadmap.md) defines their entry and completion gates.

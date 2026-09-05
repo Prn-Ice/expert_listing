@@ -30,7 +30,8 @@ queue.
 The feed labels connection fallback as `Offline · Showing saved posts` and
 service fallback as `Showing saved posts`, both with Retry. A live first-page
 request for the active filter is the only operation that clears that label.
-Later pages, health checks, and future mutations cannot clear saved provenance.
+Later pages, health checks, and mutation responses cannot clear saved
+provenance.
 
 ## Image bytes
 

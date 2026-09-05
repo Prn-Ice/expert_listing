@@ -90,10 +90,11 @@ win. Ask before changing an explicit product decision.
 - State tests replace repository boundaries, not Dio internals. Widget tests
   normally retain real provider and Bloc/Cubit wiring while overriding the
   repository. Mocked Bloc streams are only for narrow visual-state tests.
-- Do not replace Hono, Postgres, Storage, durable disk persistence, or the three
-  main user journeys with mocks and then claim those boundaries work.
-- Golden tests begin only after the verified v0.1.0 release, required journeys,
-  and manual Figma overlay pass. Until then, use valuable behaviour, semantics,
+- Do not replace Hono, Postgres, Storage, durable disk persistence, or the
+  required user journeys with mocks and then claim those boundaries work.
+- Golden tests begin only after the current required scope is published and
+  independently verified, the required journeys pass, and the manual Figma
+  overlay is accepted. Until then, use valuable behaviour, semantics,
   integration, manual overlay, and named-device evidence.
 - Generic skill defaults such as Widgetbook, Formz, code generation, exhaustive
   widget tests, or universal API documentation are opt-in only when an active
@@ -104,15 +105,15 @@ win. Ask before changing an explicit product decision.
 - Before adding or upgrading a dependency, verify its current stable API and
   resolve the latest mutually compatible stable graph. Prove and lock that graph
   before relying on it.
-- Enter the environment with direnv; shell entry must not start daemons, mutate
-  data, open GUIs, or download emulator or system-image assets.
-- Keep the default Nix shell lean. Flutter, Android tooling, existing emulator
-  assets, and Xcode are host prerequisites for this assessment. macOS uses the
-  flake's OrbStack package with host-managed daemon/VM state; Linux uses Docker
-  Engine. Never add Colima.
-- Verify only the tools needed by the active work. Agents may use
-  `direnv exec . <command>` for isolated non-interactive execution. Require
-  `adb` only for device or emulator work.
+- Use the directly installed host tools. Flutter, Android tooling, existing
+  emulator assets, Xcode, and OrbStack are host-managed on macOS; Linux uses
+  Docker Engine. Never add Colima.
+- Nix and direnv are optional, and the current Nix setup is incomplete. They
+  must never gate running, building, testing, or completing the repository.
+  Optional shell entry must not start daemons, mutate data, open GUIs, or
+  download emulator or system-image assets.
+- Verify only the tools needed by the active work and run their commands
+  directly. Require `adb` only for device or emulator work.
 - Use Context7 (`ctx7` CLI or MCP) for version-sensitive APIs. Use the accepted
   Figma MCP when existing captures do not answer the design question, and record
   provenance for new measurements or exports. If either tool is unavailable
@@ -147,5 +148,5 @@ win. Ask before changing an explicit product decision.
 ## Sources
 
 - Product contract: `docs/spec/expert-listing-assessment.md`
-- Documentation map: `docs/wiki/README.md`
+- Documentation map: `README.md`
 - Full Beads workflow: `bd prime`

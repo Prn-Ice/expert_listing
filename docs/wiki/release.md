@@ -46,26 +46,32 @@ CI reconstructs the secret keystore in `$RUNNER_TEMP`, writes that ignored file
 for the current runner, and removes both after the job. The disposable CI probe
 uses the same `key.properties` contract with a generated temporary keystore.
 
-For a local build, work from the mobile app directory and point the ignored file
-at signing material outside Git:
+For a local build, create ignored `apps/expert_listing_mobile/android/key.properties`
+with restrictive permissions. Use an editor or secure automation that does not
+place secret values in shell history:
+
+~~~properties
+storeFile=/absolute/path/to/expert-listing-release.jks
+storePassword=<secret>
+keyAlias=<key-alias>
+keyPassword=<secret>
+~~~
+
+Then build from the mobile app directory:
 
 ~~~sh
 cd apps/expert_listing_mobile
-cat > android/key.properties <<'EOF'
-storeFile=/absolute/path/to/expert-listing-release.jks
-storePassword=...
-keyAlias=...
-keyPassword=...
-EOF
+chmod 600 android/key.properties
 flutter pub get --enforce-lockfile
 flutter build apk --release \
   --dart-define=API_BASE_URL=https://chvhwausefhvaceygppc.supabase.co/functions/v1/api
 ~~~
 
-Verify the APK and obtain the matching keystore digest:
+Set `ANDROID_SDK_ROOT` to the directly installed Android SDK. Verify the APK and
+obtain the matching keystore digest:
 
 ~~~sh
-~/Library/Android/sdk/build-tools/<version>/apksigner verify \
+"$ANDROID_SDK_ROOT/build-tools/<version>/apksigner" verify \
   --print-certs build/app/outputs/flutter-apk/app-release.apk
 keytool -list -v -keystore /absolute/path/to/expert-listing-release.jks \
   -alias <key-alias> | sed -n 's/.*SHA256: //p'
@@ -96,11 +102,13 @@ cannot sign code or replace the certificate/profile pair.
 
 The workflow imports an Apple Distribution identity into a temporary keychain,
 rejects profiles with debugging enabled or registered devices, and installs the
-matching profile at Xcode's current user profile directory only for the job. It
-passes `DEVELOPMENT_TEAM`, manual signing, Apple Distribution, and the decoded
-profile name through Flutter's `FLUTTER_XCODE_` build-setting bridge. The `.p8`,
-`.p12`, and profile stay in `$RUNNER_TEMP` or the temporary keychain and are
-removed by an `always()` cleanup step. No IPA artifact is retained automatically.
+matching profile at Xcode's current user profile directory only for the job.
+The Xcode Release configuration owns manual signing and the Apple Distribution
+identity. The workflow supplies the team through
+`FLUTTER_XCODE_DEVELOPMENT_TEAM` and the decoded profile name through
+`RUNNER_PROVISIONING_PROFILE_SPECIFIER`. The `.p8`, `.p12`, and profile stay in
+`$RUNNER_TEMP` or the temporary keychain and are removed by an `always()` cleanup
+step. No IPA artifact is retained automatically.
 
 ## One-time Apple setup
 
@@ -148,14 +156,15 @@ launched. Check export compliance and Beta App Review where applicable.
 | Duplicate or rejected build number | Start a new workflow dispatch; do not reuse an accepted number. |
 | Successful upload but no tester install | Check processing, export compliance, TestFlight information, group assignment, and Beta App Review. |
 
-## Final verification checklist
+## Post-publication verification
 
-1. Before the required Android release, confirm the reusable gate is green,
-   `docs/releases/v0.1.0.md` is committed, the exact API variable and Android
-   secrets are configured, then push only the `v0.1.0` tag. The workflow creates
-   the named APK and `SHA256SUMS.txt` with the built-in GitHub token.
-2. Download the published APK, verify its checksum, install it, and launch it
-   against the hosted API. A locally built APK is not equivalent release evidence.
-3. If optional TestFlight delivery is used, complete the Apple steps above and
-   record signed-build, processing, tester assignment, installation, and launch
-   evidence separately. App Store publication remains out of scope.
+The `v0.1.0` GitHub Release already contains the signed Android APK,
+`SHA256SUMS.txt`, and both walkthrough recordings. The remaining Android check
+is to download those published files, verify the checksum, install that APK, and
+launch it against the hosted API. A locally built APK is not equivalent release
+evidence.
+
+If optional TestFlight delivery is used, record signed-build upload, processing,
+tester assignment, installation, and launch evidence separately. A green upload
+workflow proves only that App Store Connect accepted the upload. App Store
+publication remains out of scope.

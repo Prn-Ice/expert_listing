@@ -42,7 +42,13 @@ Build the smallest complete product that satisfies this specification. The resul
 
 Dark mode is required in P0 even though the supplied Figma frame represents light mode.
 
-Do not start post-release roadmap work before the required `v0.1.0` release is published and independently verified.
+Do not start deferred roadmap work before the current required scope is
+published and independently verified.
+
+`v0.1.0` is an immutable historical release. It does not contain post creation
+or activity notifications. Requirements implemented after that tag belong to
+current `main` and a subsequent release; never describe them as shipped in
+`v0.1.0`.
 
 ## 3. Assessment brief
 
@@ -61,7 +67,7 @@ Build the core Expert Listing mobile experience in Flutter:
 
 Likes, viewing and adding comments, and filters must work rather than merely appear interactive.
 
-The required backend surface is:
+The original assessment's minimum backend surface is:
 
 - `GET /posts`;
 - `POST /posts`;
@@ -71,6 +77,9 @@ The required backend surface is:
 - Supabase Postgres relational storage;
 - direct Flutter-to-Hono API use for the feed and interactions;
 - basic, useful error handling.
+
+The expanded current contract also includes `GET /search/suggestions`,
+`GET /notifications`, `POST /notifications/:id/read`, and `GET /profile`.
 
 The original assessment explicitly requires relational Users, Posts, Comments, and Likes. This implementation also includes property requests, properties, and `property_images`, because requests and properties own different data and only properties can own ordered images.
 
@@ -149,7 +158,8 @@ In addition to the required user journeys, P0 includes:
 - complete interaction outcomes, accessibility, and native platform behaviour;
 - launcher icons, native splash, and named-device performance evidence;
 - valuable tests across real database, API, Storage, cache, and mobile boundaries;
-- reproducible local development with Nix and OrbStack on macOS;
+- reproducible local development with directly installed tools and OrbStack on
+  macOS;
 - hosted verification, assessor documentation, walkthrough, signed APK,
   checksum, and GitHub Release.
 
@@ -321,6 +331,17 @@ Use an actor-scoped event Bloc for the activity destination. It owns:
 The provider watches the actor-scoped HTTP client, so switching demo persona
 recreates the repository and Bloc rather than retaining another recipient's
 activity.
+
+Foreground notification delivery uses the native local-notification service.
+After notification permission is requested, an actor-scoped monitor polls the
+bounded activity endpoint every 30 seconds only while the app is resumed. Its
+first successful load without a prior cursor establishes a silent baseline.
+Later unread event IDs produce one default-sound notification each, oldest
+first, and a persisted highest-seen cursor prevents duplicate alerts across
+refreshes and app restarts.
+Read events advance the cursor without sound. Permission denial and native alert
+failure never block browsing, and switching demo persona uses an independent
+cursor. Background and terminated push delivery remain out of scope.
 
 ### Riverbloc lifecycle proof
 
@@ -718,6 +739,7 @@ UUID strings; post, comment, and image IDs are JSON numbers.
 - Successful `GET /posts`: `Cache-Control: private, max-age=0`.
 - Successful `GET /search/suggestions`: `Cache-Control: private, max-age=0`.
 - Successful `GET /notifications`: `Cache-Control: private, max-age=0`.
+- Successful `GET /profile`: `Cache-Control: private, max-age=0`.
 - Mutations: `Cache-Control: no-store`.
 - Errors: `Cache-Control: no-store`.
 
@@ -968,6 +990,27 @@ Response `200`:
 A missing notification and another recipient's notification both return the
 same safe `NOT_FOUND` response.
 
+### `GET /profile`
+
+Returns the server-resolved current persona and the available fixed preview
+aliases. It accepts no query parameters and never exposes fixture UUIDs.
+
+Response `200`:
+
+```json
+{
+  "profile": {
+    "handle": "prince",
+    "displayName": "Prince Adeyemi",
+    "role": "Realtor",
+    "avatarUrl": "https://assets.example.invalid/avatars/prince.webp"
+  },
+  "previewActors": ["prince", "ayo", "ifeoma", "bizzaro"]
+}
+```
+
+An unknown alias or any identity query parameter returns `VALIDATION_ERROR`.
+
 ### Errors
 
 Use correct HTTP status codes and one stable envelope:
@@ -1213,7 +1256,7 @@ Every visually interactive element must respond. Static labels such as location,
 | Add images | Open native picker; ordered previews; removal; four-image limit |
 | Close populated create sheet | Adaptive `Discard this post?` confirmation with `Keep editing` and `Discard` |
 | Publish | Stable-size progress; real request; retain draft on failure; insert returned post |
-| Author avatar or name | `Profiles aren’t part of this preview.` |
+| Author avatar or name | `Author profiles aren’t part of this preview.` |
 | Post overflow | `Copy post details`; `Hide this post` for session with `Undo` |
 | Single image | Full-screen preview with native back behaviour |
 | Multiple images | Swipe carousel, stable height, understated page indicator |
@@ -1481,24 +1524,16 @@ The Android emulator configuration and optional CI job may be checked in but rem
 
 Golden tests remain deferred until after the required release, required journeys, and manual overlay pass.
 
-## 23. Nix, OrbStack, and local development
+## 23. Local development
 
-Use a lean Nix shell for Deno, Supabase CLI, Docker CLI, PostgreSQL client, JDK,
-GitHub CLI, direnv, and the OrbStack CLI on macOS. Flutter, Android tooling,
-emulator assets, Xcode, and container runtime state remain host prerequisites.
+Flutter, Android tooling, emulator assets, Xcode, and OrbStack are installed and
+managed directly on macOS. Linux uses Docker Engine. Never add Colima.
 
-macOS uses OrbStack and standard host Xcode; never add Colima. Linux uses Docker
-Engine. Entering the shell must not start services, reset data, open a GUI, or
-download mobile SDK or emulator assets.
-
-`.envrc`:
-
-- enters the flake;
-- clears Nix's `DEVELOPER_DIR` and `SDKROOT` overrides on macOS so Flutter uses
-  the standard host-selected Xcode;
-- loads `.env.local` only when it exists;
-- does not start a daemon;
-- does not mutate data.
+Nix and direnv are optional, and the current Nix setup is incomplete. They must
+not gate running, building, testing, or completing the repository. If an
+optional shell is used, entering it must not start services, reset data, open a
+GUI, download mobile SDK or emulator assets, or override the host-selected
+Xcode.
 
 Commit `.env.example`. Ignore `.env.local`, signing material, tokens, and every secret.
 
@@ -1527,14 +1562,6 @@ reset, delete, guess, or automatically relink a remote target. Local reset is
 allowed only for an unlinked config whose project id is `expert_listing`, using
 the explicit `--local` flag.
 
-### Mobile routing
-
-Android local development uses `adb reverse` for the local Supabase port, including public Storage URLs returned by Hono. Cleartext permission exists only in the debug manifest.
-
-The iOS Simulator may use host loopback with only a narrow local exception. A physical iOS device uses the deployed HTTPS API.
-
-Every release build uses deployed HTTPS and contains no broad cleartext exception.
-
 ## 24. Documentation
 
 Documentation preserves information that is expensive or unsafe to recover from
@@ -1555,7 +1582,6 @@ Create phase-specific pages only with the behaviour they describe:
 |---|---|
 | `api-and-data.md` | Schema and HTTP implementation |
 | `offline-and-cache.md` | Persisted cache and freshness behaviour |
-| `testing.md` | Actual commands, environments, and evidence |
 | `release.md` | Deployment, signing, artifacts, and install evidence |
 
 A wiki entry must preserve a non-obvious decision, invariant, reproducible
@@ -1604,16 +1630,24 @@ A checked-in Android-emulator job may remain commented out. Do not call the mobi
 
 GitHub Actions must use current stable releases resolved at implementation time and pin each third-party action to a full commit SHA with a version comment.
 
-## 26. GitHub Release
+## 26. GitHub releases
 
-The first release is:
+The published first release is:
 
 ```text
 Tag: v0.1.0
 Flutter version: 0.1.0+1
 ```
 
-A tag-triggered workflow must:
+Its actual shipped scope and remaining verification are recorded in
+`docs/releases/v0.1.0.md`. Because it predates post creation and activity
+notifications, it does not satisfy the expanded current contract. Do not move or
+rewrite that tag. Approve a subsequent version before claiming the current
+assessment complete.
+
+Before a subsequent Android release, update the release workflow's currently
+fixed `v0.1.0` trigger and the application version. The tag-triggered workflow
+must then:
 
 1. check out the existing tag;
 2. install the exact selected Flutter SDK;
@@ -1623,7 +1657,7 @@ A tag-triggered workflow must:
 6. reconstruct the assessment keystore from GitHub environment secrets;
 7. build one release-mode universal APK against the deployed API;
 8. verify signing;
-9. name the artifact `expert-listing-v0.1.0-android.apk`;
+9. name the artifact `expert-listing-<tag>-android.apk`;
 10. generate `SHA256SUMS.txt`;
 11. create the GitHub Release and attach both assets in the same release command.
 
@@ -1635,7 +1669,7 @@ Workflow permissions:
 - use the built-in GitHub token;
 - do not use a personal access token.
 
-The release body comes from `docs/releases/v0.1.0.md` and includes:
+The release body comes from the matching `docs/releases/<tag>.md` and includes:
 
 - short product description;
 - two screenshots, including appropriate light and dark evidence;
@@ -1683,7 +1717,8 @@ A cleanup failure blocks release. Remediate by exact ID or path. Never reseed, t
 Post-release options are golden tests, Supabase Realtime, post video support,
 and an offline mutation outbox. Their entry and completion gates are maintained
 in the [deferred roadmap](../wiki/roadmap.md). Do not scaffold them during the
-assessment; start only after `v0.1.0` is published and independently verified.
+assessment; start only after the current required scope is published in a
+subsequent release and independently verified.
 
 Everything else excluded by [Scope](#6-scope) remains out of scope.
 
@@ -1708,7 +1743,7 @@ performance gate may use the explicitly permitted unverified outcome.
 
 | Gate | Required evidence |
 |---|---|
-| Reproducible environment | Current compatible dependencies and committed lockfiles; a fresh Nix shell with required CLIs; healthy OrbStack and local Supabase |
+| Reproducible environment | Current compatible dependencies and committed lockfiles; directly runnable required tools; healthy OrbStack on macOS or Docker Engine on Linux; healthy local Supabase |
 | Data | Applied migrations and deterministic seed; configured Storage bucket; passing pgTAP tests |
 | API | Passing Deno checks and real Hono tests for health, feed pagination boundaries, insertion between pages, filters, post creation and ordered images, idempotent likes, comments, validation, media rejection, not-found responses, and error envelopes |
 | Flutter | Passing analysis and selected package, Bloc, Cubit, widget, provider, cache, and semantics tests, each mapped to a promise or invariant; all four mobile journeys pass against the real local backend |
@@ -1716,8 +1751,8 @@ performance gate may use the explicitly permitted unverified outcome.
 | Design and native behaviour | Committed Figma asset provenance; recorded 428-pixel light overlay, 360-pixel light viewport, dark feed and core sheets at both widths, and live system-theme transition; picker, share, keyboard, back, splash, and icon checks on a named device |
 | Performance | Profile trace on named hardware, or high-refresh performance explicitly marked unverified |
 | Hosted backend | Health and feed smoke checks plus the mutation smoke test and exact cleanup from [Hosted verification](#27-hosted-verification) |
-| Submission | Assessor README, indexed wiki, final screenshots, walkthrough, and externally accessible links checked in a logged-out or private browser where relevant |
-| Release | Matching tag and app version; signed APK and checksum published; the downloaded APK checksum verified, then installed and launched against the hosted backend |
+| Submission | Assessor README, focused supporting documentation, final screenshots, walkthrough, and externally accessible links checked in a logged-out or private browser where relevant |
+| Release | A subsequent matching tag and app version containing the current required scope; signed APK and checksum published; the downloaded APK checksum verified, then installed and launched against the hosted backend |
 
 Do not claim visual fidelity, device behaviour, test success, release success, installability, or high-refresh performance without corresponding evidence.
 

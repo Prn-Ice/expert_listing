@@ -2,7 +2,7 @@
 
 This page records the implemented relational, media, and HTTP contract. The
 assessment specification remains the authority for required behaviour; this page
-describes what exists and how to run it.
+describes what exists. See [Development](development.md) for local commands.
 
 ## HTTP endpoints
 
@@ -17,6 +17,9 @@ Implemented now:
 | `GET /api/health` | `200 {"status":"ok"}` |
 | `GET /api/posts` | Cursor-paginated, server-side filtered feed of hydrated, variant-discriminated post DTOs |
 | `POST /api/posts` | Validated multipart creation for general, request, and property posts; properties accept up to four ordered images |
+| `POST /api/posts/:id/like` | Idempotently sets the current preview actor's desired like state |
+| `GET /api/posts/:id/comments` | Returns persistent comments oldest first |
+| `POST /api/posts/:id/comments` | Creates one persistent comment for the current preview actor |
 | `GET /api/notifications` | Returns the latest bounded like activity addressed to the current preview actor |
 | `POST /api/notifications/:id/read` | Idempotently records the current actor's first read timestamp |
 | `GET /api/search/suggestions` | Bounded property and location autocomplete |
@@ -93,6 +96,10 @@ property-status filtering, case-insensitive location substring search on each
 location owner, comment order, property image order, and uncovered foreign
 keys.
 
+The deterministic seed is repeat-safe for its known fixture IDs, advances
+identity sequences, and does not delete unrelated rows. It includes fixed Lagos
+users, every post variant, engagement, notifications, and public media fixtures.
+
 All exposed tables have RLS enabled, no anonymous write policy, and no direct
 grants to API roles. Security-definer functions are the entire database surface
 reachable by `service_role`:
@@ -104,6 +111,10 @@ reachable by `service_role`:
 - `feed_page` returns one hydrated feed page — author, variant payload,
   engagement counts, and the viewer's like state — in a single round trip, with
   cursor keyset filtering and literal, escaped location matching;
+- `set_post_like` sets desired like state and records eligible notification
+  events atomically;
+- `list_post_comments` returns one post's comments oldest first;
+- `create_post_comment` creates and hydrates one comment;
 - `property_search_suggestions` returns ranked, bounded property autocomplete;
 - `list_notifications` returns at most 20 recipient-isolated activity rows in deterministic newest-first order;
 - `mark_notification_read` records one recipient-owned event's first read timestamp;
@@ -129,24 +140,3 @@ The picker bounds the longest edge to 2048 pixels while preserving aspect
 ratio, and Hono stores the resulting bytes unchanged. Feed media uses an
 aspect-preserving cover crop; full-screen media uses contain, adding empty space
 when needed rather than stretching the image.
-
-## Local reconstruction
-
-These commands were verified on the local unlinked stack on 2026-09-05 after
-confirming that `supabase/config.toml` has `project_id = "expert_listing"` and
-that `supabase/.temp/project-ref` is absent:
-
-~~~sh
-direnv exec . supabase db reset --local
-direnv exec . supabase seed buckets --local
-direnv exec . supabase test db --local
-direnv exec . scripts/run-api-tests
-~~~
-
-The reset applies all committed migrations, loads fixed Lagos fixtures from
-`supabase/seed.sql`, and uploads nine media fixtures. A direct second SQL seed
-application succeeded, and the pgTAP and API suites passed against real local
-Postgres and Storage, including one request through the served local Edge
-Function. The
-seed is repeat-safe for its known fixture IDs, advances
-identity sequences, and does not delete unrelated rows.
