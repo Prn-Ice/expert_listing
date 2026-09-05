@@ -110,12 +110,64 @@ values
   (1001, '00000000-0000-0000-0000-000000000001', '2026-09-02T12:07:00Z'),
   (1001, '00000000-0000-0000-0000-000000000003', '2026-09-02T12:08:00Z'),
   (1003, '00000000-0000-0000-0000-000000000001', '2026-09-02T11:36:00Z'),
-  (1008, '00000000-0000-0000-0000-000000000001', '2026-09-02T10:35:00Z')
+  (1006, '00000000-0000-0000-0000-000000000002', '2026-09-02T11:07:00Z'),
+  (1008, '00000000-0000-0000-0000-000000000001', '2026-09-02T10:35:00Z'),
+  (1011, '00000000-0000-0000-0000-000000000003', '2026-09-02T09:50:00Z')
 on conflict (post_id, user_id) do update
 set created_at = excluded.created_at;
+
+with fixtures (event_type, recipient_id, actor_id, post_id, created_at, read_at) as (
+  values
+    ('post_like', '00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 1001::bigint, '2026-09-02T12:07:00Z'::timestamptz, '2026-09-02T12:10:00Z'::timestamptz),
+    ('post_like', '00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000003'::uuid, 1001::bigint, '2026-09-02T12:08:00Z'::timestamptz, null::timestamptz),
+    ('post_like', '00000000-0000-0000-0000-000000000004'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 1003::bigint, '2026-09-02T11:36:00Z'::timestamptz, null::timestamptz),
+    ('post_like', '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000002'::uuid, 1006::bigint, '2026-09-02T11:07:00Z'::timestamptz, null::timestamptz),
+    ('post_like', '00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 1008::bigint, '2026-09-02T10:35:00Z'::timestamptz, '2026-09-02T10:40:00Z'::timestamptz),
+    ('post_like', '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000003'::uuid, 1011::bigint, '2026-09-02T09:50:00Z'::timestamptz, '2026-09-02T10:00:00Z'::timestamptz)
+)
+update public.notification_events notification
+set read_at = fixture.read_at
+from fixtures fixture
+where notification.event_type = fixture.event_type
+  and notification.recipient_id = fixture.recipient_id
+  and notification.actor_id = fixture.actor_id
+  and notification.post_id = fixture.post_id
+  and notification.created_at = fixture.created_at;
+
+insert into public.notification_events (
+  id,
+  event_type,
+  recipient_id,
+  actor_id,
+  post_id,
+  created_at,
+  read_at
+)
+overriding system value
+select *
+from (
+  values
+    (6001::bigint, 'post_like', '00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 1001::bigint, '2026-09-02T12:07:00Z'::timestamptz, '2026-09-02T12:10:00Z'::timestamptz),
+    (6002::bigint, 'post_like', '00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000003'::uuid, 1001::bigint, '2026-09-02T12:08:00Z'::timestamptz, null::timestamptz),
+    (6003::bigint, 'post_like', '00000000-0000-0000-0000-000000000004'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 1003::bigint, '2026-09-02T11:36:00Z'::timestamptz, null::timestamptz),
+    (6004::bigint, 'post_like', '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000002'::uuid, 1006::bigint, '2026-09-02T11:07:00Z'::timestamptz, null::timestamptz),
+    (6005::bigint, 'post_like', '00000000-0000-0000-0000-000000000002'::uuid, '00000000-0000-0000-0000-000000000001'::uuid, 1008::bigint, '2026-09-02T10:35:00Z'::timestamptz, '2026-09-02T10:40:00Z'::timestamptz),
+    (6006::bigint, 'post_like', '00000000-0000-0000-0000-000000000001'::uuid, '00000000-0000-0000-0000-000000000003'::uuid, 1011::bigint, '2026-09-02T09:50:00Z'::timestamptz, '2026-09-02T10:00:00Z'::timestamptz)
+) as fixture(id, event_type, recipient_id, actor_id, post_id, created_at, read_at)
+where not exists (
+  select 1
+  from public.notification_events notification
+  where notification.event_type = fixture.event_type
+    and notification.recipient_id = fixture.recipient_id
+    and notification.actor_id = fixture.actor_id
+    and notification.post_id = fixture.post_id
+    and notification.created_at = fixture.created_at
+)
+on conflict (id) do nothing;
 
 select setval(pg_get_serial_sequence('public.posts', 'id'), greatest((select max(id) from public.posts), 1), true);
 select setval(pg_get_serial_sequence('public.property_requests', 'id'), greatest((select max(id) from public.property_requests), 1), true);
 select setval(pg_get_serial_sequence('public.properties', 'id'), greatest((select max(id) from public.properties), 1), true);
 select setval(pg_get_serial_sequence('public.property_images', 'id'), greatest((select max(id) from public.property_images), 1), true);
 select setval(pg_get_serial_sequence('public.comments', 'id'), greatest((select max(id) from public.comments), 1), true);
+select setval(pg_get_serial_sequence('public.notification_events', 'id'), greatest((select max(id) from public.notification_events), 1), true);

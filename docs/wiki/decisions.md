@@ -131,6 +131,19 @@ The trade-off is trusting gateway headers that Supabase controls on both local
 and hosted paths. Revisit if the hosted gateway stops sending forwarded headers
 or if the API gains non-gateway callers that must not influence URL generation.
 
+## Why are like notifications durable events?
+
+Notification history records that another persona liked a post, not merely the
+current contents of the `likes` table. A new non-self like therefore appends an
+event atomically with the like. Repeating the same desired state adds nothing,
+unlike leaves the historical event intact, and a later relike records a new
+transition. Read state belongs to the event and preserves its first timestamp.
+
+This costs one small append-only table and explicit recipient indexes, but it
+avoids notifications disappearing after they have been seen and makes read
+state stable. Revisit derived notifications only if the product explicitly
+decides that activity should mirror current like state and removes read history.
+
 ## Why are goldens, Realtime, video posts, and queued writes deferred?
 
 They add baseline churn, ordering complexity, media failure modes, or conflict

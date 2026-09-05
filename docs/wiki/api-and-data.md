@@ -17,6 +17,8 @@ Implemented now:
 | `GET /api/health` | `200 {"status":"ok"}` |
 | `GET /api/posts` | Cursor-paginated, server-side filtered feed of hydrated, variant-discriminated post DTOs |
 | `POST /api/posts` | Validated multipart creation for general, request, and property posts; properties accept up to four ordered images |
+| `GET /api/notifications` | Returns the latest bounded like activity addressed to the current preview actor |
+| `POST /api/notifications/:id/read` | Idempotently records the current actor's first read timestamp |
 | `GET /api/search/suggestions` | Bounded property and location autocomplete |
 | `GET /api/profile` | Server-resolved current user's display name, handle, role, and public avatar URL |
 
@@ -38,6 +40,12 @@ bytes that are not JPEG, PNG, or WebP regardless of their supplied filename or
 MIME header. Successful responses are complete post DTOs with `201` and
 `Cache-Control: no-store`.
 
+`GET /api/notifications` accepts only an optional `limit` from 1 through 20.
+It returns deterministic newest-first activity with safe actor and post fields,
+but no recipient or actor UUID. `POST /api/notifications/:id/read` can update
+only the request actor's event and preserves the first read timestamp. Missing
+and other-recipient IDs share the same safe not-found response.
+
 Configuration is environment-based:
 
 - `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected by the Edge
@@ -55,7 +63,7 @@ Configuration is environment-based:
 
 ## Relational data
 
-The `public` schema contains seven RLS-enabled tables:
+The `public` schema contains eight RLS-enabled tables:
 
 | Table | Identity and relationship contract |
 | --- | --- |
@@ -66,6 +74,7 @@ The `public` schema contains seven RLS-enabled tables:
 | `property_images` | Generated bigint primary key; belongs to `properties` and deletes with it |
 | `comments` | Generated bigint primary key; belongs to a post and author |
 | `likes` | `(post_id, user_id)` primary key; both foreign keys delete with their parent |
+| `notification_events` | Generated bigint primary key; durable non-self like activity belongs to one recipient, actor, and post |
 
 Posts and comments reject blank or out-of-range trimmed text. General posts own
 `posts.location`. Request posts reference a `property_requests` row, which owns
@@ -96,8 +105,15 @@ reachable by `service_role`:
   engagement counts, and the viewer's like state — in a single round trip, with
   cursor keyset filtering and literal, escaped location matching;
 - `property_search_suggestions` returns ranked, bounded property autocomplete;
+- `list_notifications` returns at most 20 recipient-isolated activity rows in deterministic newest-first order;
+- `mark_notification_read` records one recipient-owned event's first read timestamp;
 - `user_profile` returns one user's public profile fields without exposing the
   UUID in the HTTP response.
+
+`set_post_like` appends a notification event in the same transaction only when
+a non-self `liked: true` request creates a new like row. Repeated desired-state
+likes create no duplicate, unlike retains history, and a later relike appends a
+new activity event.
 
 ## Media storage
 

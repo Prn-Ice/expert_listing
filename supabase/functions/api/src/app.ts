@@ -4,6 +4,7 @@ import { ApiError, errorResponse } from "./errors.ts";
 import { createPostComment, getPostComments } from "./comments.ts";
 import { getPosts } from "./feed.ts";
 import { setPostLike } from "./likes.ts";
+import { getNotifications, markNotificationRead } from "./notifications.ts";
 import { getProfile } from "./profile.ts";
 import { createPost } from "./posts.ts";
 import { getSearchSuggestions } from "./search.ts";
@@ -29,6 +30,8 @@ app.post(
 app.post("/posts/:id/like", setPostLike);
 app.get("/posts/:id/comments", getPostComments);
 app.post("/posts/:id/comments", createPostComment);
+app.get("/notifications", getNotifications);
+app.post("/notifications/:id/read", markNotificationRead);
 app.get("/profile", getProfile);
 app.get("/search/suggestions", getSearchSuggestions);
 

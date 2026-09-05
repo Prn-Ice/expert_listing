@@ -3,6 +3,7 @@ import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/dashboard/destination_switcher.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/listings/view/listings_view.dart';
+import 'package:expert_listing/notifications/view/notifications_view.dart';
 import 'package:expert_listing/profile/view/profile_view.dart';
 import 'package:expert_listing/search/view/search_view.dart';
 import 'package:flutter/material.dart';
@@ -60,6 +61,10 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
                   "Property details aren't part of this preview.",
                 ),
               ),
+              NotificationsView(
+                isActive:
+                    _selectedDestination == _DashboardDestination.notifications,
+              ),
               ProfileView(
                 isActive: _selectedDestination == _DashboardDestination.profile,
               ),
@@ -74,10 +79,12 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
             onListingsPressed: () => setState(
               () => _selectedDestination = _DashboardDestination.listings,
             ),
+            onNotificationsPressed: () => setState(
+              () => _selectedDestination = _DashboardDestination.notifications,
+            ),
             onProfilePressed: () => setState(
               () => _selectedDestination = _DashboardDestination.profile,
             ),
-            onNotice: (message) => AppNotice.show(context, message),
           ),
         ),
       ),
@@ -93,7 +100,7 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
   }
 }
 
-enum _DashboardDestination { feed, search, listings, profile }
+enum _DashboardDestination { feed, search, listings, notifications, profile }
 
 final class _DashboardNavigation extends StatelessWidget {
   const _DashboardNavigation({
@@ -101,16 +108,16 @@ final class _DashboardNavigation extends StatelessWidget {
     required this.onFeedPressed,
     required this.onSearchPressed,
     required this.onListingsPressed,
+    required this.onNotificationsPressed,
     required this.onProfilePressed,
-    required this.onNotice,
   });
 
   final _DashboardDestination selectedDestination;
   final VoidCallback onFeedPressed;
   final VoidCallback onSearchPressed;
   final VoidCallback onListingsPressed;
+  final VoidCallback onNotificationsPressed;
   final VoidCallback onProfilePressed;
-  final ValueChanged<String> onNotice;
 
   @override
   Widget build(BuildContext context) {
@@ -161,8 +168,10 @@ final class _DashboardNavigation extends StatelessWidget {
                 child: _NavigationItem(
                   icon: AppIcons.navNotifications,
                   label: 'Notification',
-                  onPressed: () =>
-                      onNotice('Notifications are not part of this preview.'),
+                  selected:
+                      selectedDestination ==
+                      _DashboardDestination.notifications,
+                  onPressed: onNotificationsPressed,
                 ),
               ),
               Expanded(

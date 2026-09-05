@@ -13,6 +13,9 @@ import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/models/post_types.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/notifications/models/activity_notification.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
+import 'package:expert_listing/notifications/notifications_repository.dart';
 import 'package:expert_listing/profile/models/profile.dart';
 import 'package:expert_listing/profile/profile_providers.dart';
 import 'package:expert_listing/profile/profile_repository.dart';
@@ -63,7 +66,7 @@ void main() {
   });
 
   testWidgets(
-    'implemented destinations select and unavailable ones name their boundary',
+    'implemented destinations select and preserve their state',
     (
       tester,
     ) async {
@@ -81,6 +84,9 @@ void main() {
             feedRepositoryProvider.overrideWithValue(repository),
             searchRepositoryProvider.overrideWithValue(_SearchRepository()),
             recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
+            notificationsRepositoryProvider.overrideWithValue(
+              _NotificationsRepository(),
+            ),
             profileRepositoryProvider.overrideWithValue(_ProfileRepository()),
           ],
           child: const ExpertListingApp(),
@@ -104,6 +110,15 @@ void main() {
             .flagsCollection
             .isSelected,
         Tristate.isFalse,
+      );
+      expect(
+        tester.getSize(
+          find.descendant(
+            of: find.bySemanticsLabel('Notification'),
+            matching: find.byType(AppIcon),
+          ),
+        ),
+        const Size.square(24),
       );
       expect(
         tester
@@ -237,13 +252,24 @@ void main() {
         findsOneWidget,
       );
 
-      // Notifications remain an explicit preview boundary.
+      // Notifications select a real actor-scoped activity destination.
       await tester.tap(find.bySemanticsLabel('Notification'));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
       expect(
-        find.text('Notifications are not part of this preview.'),
+        find.text('Notifications'),
         findsOneWidget,
+      );
+      expect(
+        find.textContaining('Ayo Balogun', findRichText: true),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Notification'))
+            .flagsCollection
+            .isSelected,
+        Tristate.isTrue,
       );
 
       await tester.tap(find.bySemanticsLabel('Profile'));
@@ -278,6 +304,9 @@ Widget _platformHarness(TargetPlatform platform) => ProviderScope(
     feedRepositoryProvider.overrideWithValue(_CountingRepository()),
     searchRepositoryProvider.overrideWithValue(_SearchRepository()),
     recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
+    notificationsRepositoryProvider.overrideWithValue(
+      _NotificationsRepository(),
+    ),
     profileRepositoryProvider.overrideWithValue(_ProfileRepository()),
   ],
   child: ExpertListingApp(platformOverride: platform),
@@ -332,6 +361,17 @@ final class _ProfileRepository extends ProfileRepository {
   );
 }
 
+final class _NotificationsRepository extends NotificationsRepository {
+  _NotificationsRepository() : super(client: Dio());
+
+  @override
+  Future<List<ActivityNotification>> load() async => [_notification];
+
+  @override
+  Future<DateTime> markRead(int notificationId) async =>
+      DateTime.utc(2026, 9, 5, 12, 5);
+}
+
 final class _RecentSearchStore implements RecentSearchStore {
   @override
   Future<void> clear() async {}
@@ -345,6 +385,19 @@ final class _RecentSearchStore implements RecentSearchStore {
   @override
   Future<List<String>> save(String query) async => [query];
 }
+
+final _notification = ActivityNotification(
+  id: 6004,
+  createdAt: DateTime.utc(2026, 9, 5, 12),
+  readAt: null,
+  actor: const ActivityActor(
+    handle: 'ayo',
+    displayName: 'Ayo Balogun',
+    role: 'Property Consultant',
+    avatarUrl: null,
+  ),
+  post: const ActivityPost(id: 1006, body: 'A useful property update.'),
+);
 
 FeedLoadResult _page() => FeedLoadResult(
   posts: [

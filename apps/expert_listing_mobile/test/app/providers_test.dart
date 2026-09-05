@@ -5,6 +5,7 @@ import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/listings/listings_providers.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
 import 'package:expert_listing/profile/profile_providers.dart';
 import 'package:expert_listing/search/search_providers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -79,6 +80,7 @@ void main() {
         final client = container.read(httpClientProvider);
         final feed = container.read(feedBlocProvider.bloc);
         final listings = container.read(listingsBlocProvider.bloc);
+        final notifications = container.read(notificationsBlocProvider.bloc);
         final search = container.read(searchBlocProvider.bloc);
         final profile = container.read(profileCubitProvider.bloc);
         final recentSearches = container.read(recentSearchStoreProvider);
@@ -91,6 +93,13 @@ void main() {
         expect(identical(feed, container.read(feedBlocProvider.bloc)), isFalse);
         expect(
           identical(listings, container.read(listingsBlocProvider.bloc)),
+          isFalse,
+        );
+        expect(
+          identical(
+            notifications,
+            container.read(notificationsBlocProvider.bloc),
+          ),
           isFalse,
         );
         expect(

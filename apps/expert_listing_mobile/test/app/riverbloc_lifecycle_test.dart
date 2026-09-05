@@ -7,6 +7,10 @@ import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
+import 'package:expert_listing/notifications/bloc/notifications_bloc.dart';
+import 'package:expert_listing/notifications/models/activity_notification.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
+import 'package:expert_listing/notifications/notifications_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:riverbloc/riverbloc.dart';
 
@@ -81,6 +85,33 @@ void main() {
   );
 
   test(
+    'NotificationsBloc emits state and closes once with its provider',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          notificationsRepositoryProvider.overrideWithValue(
+            _LifecycleNotificationsRepository(),
+          ),
+        ],
+      );
+      final subscription = container.listen<NotificationsState>(
+        notificationsBlocProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      final bloc = container.read(notificationsBlocProvider.bloc)
+        ..add(const NotificationsStarted());
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(notificationsBlocProvider).notifications, isEmpty);
+      subscription.close();
+      container.dispose();
+
+      expect(bloc.isClosed, isTrue);
+    },
+  );
+
+  test(
     'CreatePostCubit emits state and closes with its provider scope',
     () async {
       final container = ProviderContainer(
@@ -112,6 +143,13 @@ final class _LifecycleImagePicker implements PostImagePicker {
   @override
   Future<List<CreatePostImage>> pickImages({required int limit}) async =>
       const [];
+}
+
+final class _LifecycleNotificationsRepository extends NotificationsRepository {
+  _LifecycleNotificationsRepository() : super(client: Dio());
+
+  @override
+  Future<List<ActivityNotification>> load() async => const [];
 }
 
 final class _LifecycleFeedRepository extends FeedRepository {

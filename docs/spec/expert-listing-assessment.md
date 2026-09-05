@@ -308,6 +308,20 @@ The feature name is `create_post`.
 
 The feed entry control is `CreatePostPrompt`. The opened surface is `CreatePostSheet`.
 
+#### NotificationsBloc
+
+Use an actor-scoped event Bloc for the activity destination. It owns:
+
+- the bounded latest notification load;
+- pull-to-refresh while retaining visible activity;
+- server-confirmed read state;
+- duplicate read-request suppression;
+- useful loading, empty, retry, and mutation-failure states.
+
+The provider watches the actor-scoped HTTP client, so switching demo persona
+recreates the repository and Bloc rather than retaining another recipient's
+activity.
+
 ### Riverbloc lifecycle proof
 
 Every Riverbloc or Riverpod upgrade must run a provider lifecycle smoke test that:
@@ -500,6 +514,24 @@ Likes set a desired state:
 
 Never use a blind toggle or select-then-insert race.
 
+### `notification_events`
+
+| Column | Contract |
+|---|---|
+| `id` | `bigint generated always as identity primary key` |
+| `event_type` | currently only `post_like` |
+| `recipient_id` | references the post author in `users` with cascade delete |
+| `actor_id` | references the liking user in `users` with cascade delete; must differ from the recipient |
+| `post_id` | references `posts` with cascade delete |
+| `created_at` | `timestamptz not null default now()` |
+| `read_at` | nullable `timestamptz`, never earlier than `created_at` |
+
+A new non-self false-to-true like transition appends one durable event in the
+same transaction as the like. Repeated `liked: true` requests do not duplicate
+that transition. Unlike removes only current like state; it never removes
+activity history. A later relike is a new transition and appends a new event.
+Self-likes remain valid like state but do not create notification noise.
+
 ### Indexes and query behaviour
 
 Enable `pg_trgm`.
@@ -513,6 +545,7 @@ Indexes must support:
   and property location columns with `pg_trgm` GIN indexes;
 - comments by `(post_id, created_at, id)`;
 - images by `(property_id, position)`;
+- notifications by `(recipient_id, created_at desc, id desc)`;
 - every foreign key not already covered by a leading primary or unique key.
 
 Do not issue one database request per post when hydrating authors, images, counts, and current-user like state. Use one relational query/RPC or a fixed number of batched queries.
@@ -684,6 +717,7 @@ UUID strings; post, comment, and image IDs are JSON numbers.
 
 - Successful `GET /posts`: `Cache-Control: private, max-age=0`.
 - Successful `GET /search/suggestions`: `Cache-Control: private, max-age=0`.
+- Successful `GET /notifications`: `Cache-Control: private, max-age=0`.
 - Mutations: `Cache-Control: no-store`.
 - Errors: `Cache-Control: no-store`.
 
@@ -884,6 +918,55 @@ Request:
 ```
 
 Trim the body and require 1 through 1000 characters. Return the hydrated comment with `201`.
+
+### `GET /notifications`
+
+The optional `limit` is an integer from 1 through 20 and defaults to 20.
+Unknown parameters fail with `VALIDATION_ERROR`. Hono resolves the recipient
+from the fixed request actor alias; no recipient or user ID is accepted from
+the client.
+
+Response `200`:
+
+```json
+{
+  "notifications": [
+    {
+      "id": 6004,
+      "type": "postLike",
+      "createdAt": "2026-09-02T11:07:00.000Z",
+      "readAt": null,
+      "actor": {
+        "handle": "ayo",
+        "displayName": "Ayo Balogun",
+        "role": "Property Consultant",
+        "avatarUrl": "https://assets.example.invalid/avatars/ayo.webp"
+      },
+      "post": {
+        "id": 1006,
+        "body": "Two-bedroom apartment with a walkable route to cafes and the waterfront."
+      }
+    }
+  ]
+}
+```
+
+Rows are bounded and ordered by `created_at desc, id desc`. DTOs omit recipient
+and actor UUIDs and expose only the actor and post fields required by the UI.
+
+### `POST /notifications/:id/read`
+
+Marks one notification belonging to the server-resolved current actor as read.
+The first read timestamp is retained across repeated requests.
+
+Response `200`:
+
+```json
+{"id":6004,"readAt":"2026-09-05T12:05:00.000Z"}
+```
+
+A missing notification and another recipient's notification both return the
+same safe `NOT_FOUND` response.
 
 ### Errors
 
@@ -1146,7 +1229,7 @@ Every visually interactive element must respond. Static labels such as location,
 | Search property | Save the query locally; `Property details aren’t part of this preview.` |
 | List | Select List and open the network-first property catalog |
 | Property catalog card | `Property details aren’t part of this preview.` |
-| Notifications | `Notifications aren’t part of this preview.` without selecting it |
+| Notifications | Select Notifications and load server-backed like activity addressed to the current persona; unread rows can be marked read |
 | Profile | Select Profile and load the server-resolved current user's public details |
 | Demo persona | In any build, switch to one of four advertised aliases and recreate actor-sensitive feature state |
 
@@ -1628,7 +1711,7 @@ performance gate may use the explicitly permitted unverified outcome.
 | Reproducible environment | Current compatible dependencies and committed lockfiles; a fresh Nix shell with required CLIs; healthy OrbStack and local Supabase |
 | Data | Applied migrations and deterministic seed; configured Storage bucket; passing pgTAP tests |
 | API | Passing Deno checks and real Hono tests for health, feed pagination boundaries, insertion between pages, filters, post creation and ordered images, idempotent likes, comments, validation, media rejection, not-found responses, and error envelopes |
-| Flutter | Passing analysis and selected package, Bloc, Cubit, widget, provider, cache, and semantics tests, each mapped to a promise or invariant; all three mobile journeys pass against the real local backend |
+| Flutter | Passing analysis and selected package, Bloc, Cubit, widget, provider, cache, and semantics tests, each mapped to a promise or invariant; all four mobile journeys pass against the real local backend |
 | Product behaviour | Interaction inventory passes; saved-feed fallback with and without cached data and reconnection behaviour are proven |
 | Design and native behaviour | Committed Figma asset provenance; recorded 428-pixel light overlay, 360-pixel light viewport, dark feed and core sheets at both widths, and live system-theme transition; picker, share, keyboard, back, splash, and icon checks on a named device |
 | Performance | Profile trace on named hardware, or high-refresh performance explicitly marked unverified |

@@ -40,6 +40,7 @@ deno task --config supabase/functions/api/deno.json test \
   tests/health_test.ts \
   tests/create_post_test.ts \
   tests/engagement_test.ts \
+  tests/notifications_test.ts \
   tests/feed_test.ts \
   tests/search_test.ts \
   tests/profile_test.ts
