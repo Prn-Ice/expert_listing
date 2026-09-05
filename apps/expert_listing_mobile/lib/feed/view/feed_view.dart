@@ -68,7 +68,12 @@ class FeedViewState extends ConsumerState<FeedView> {
                 onPressed: _openFilters,
               ),
             ),
-            SliverToBoxAdapter(child: CreatePostPrompt(onNotice: _showNotice)),
+            SliverToBoxAdapter(
+              child: CreatePostPrompt(
+                onNotice: _showNotice,
+                showInvitation: state.posts.isNotEmpty,
+              ),
+            ),
             if (state.isShowingSavedPosts)
               SliverPersistentHeader(
                 pinned: true,
