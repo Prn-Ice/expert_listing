@@ -2,6 +2,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/dashboard/dashboard_page.dart';
+import 'package:expert_listing/notifications/view/notification_alert_lifecycle.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -37,7 +38,7 @@ class ExpertListingApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return _NativeRoot(
       platformOverride: platformOverride,
-      home: const DashboardPage(),
+      home: const NotificationAlertLifecycle(child: DashboardPage()),
     );
   }
 }

@@ -80,10 +80,17 @@ void main() {
         final client = container.read(httpClientProvider);
         final feed = container.read(feedBlocProvider.bloc);
         final listings = container.read(listingsBlocProvider.bloc);
+        final notificationAlerts = container.read(
+          notificationAlertsCubitProvider.bloc,
+        );
         final notifications = container.read(notificationsBlocProvider.bloc);
         final search = container.read(searchBlocProvider.bloc);
         final profile = container.read(profileCubitProvider.bloc);
         final recentSearches = container.read(recentSearchStoreProvider);
+        final alertService = container.read(notificationAlertServiceProvider);
+        final alertCursors = container.read(
+          notificationAlertCursorStoreProvider,
+        );
 
         container.read(previewActorProvider.notifier).select('ayo');
 
@@ -93,6 +100,13 @@ void main() {
         expect(identical(feed, container.read(feedBlocProvider.bloc)), isFalse);
         expect(
           identical(listings, container.read(listingsBlocProvider.bloc)),
+          isFalse,
+        );
+        expect(
+          identical(
+            notificationAlerts,
+            container.read(notificationAlertsCubitProvider.bloc),
+          ),
           isFalse,
         );
         expect(
@@ -112,6 +126,20 @@ void main() {
         );
         expect(
           identical(recentSearches, container.read(recentSearchStoreProvider)),
+          isTrue,
+        );
+        expect(
+          identical(
+            alertService,
+            container.read(notificationAlertServiceProvider),
+          ),
+          isTrue,
+        );
+        expect(
+          identical(
+            alertCursors,
+            container.read(notificationAlertCursorStoreProvider),
+          ),
           isTrue,
         );
       },

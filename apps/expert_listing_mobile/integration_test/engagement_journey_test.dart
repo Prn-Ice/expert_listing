@@ -5,11 +5,14 @@ import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/feed/data/bookmark_store.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'support/disabled_notification_alert_service.dart';
 
 /// The engagement journey through real Hono, Postgres, and device preferences.
 void main() {
@@ -158,7 +161,12 @@ Finder _action(int postId, String label) => find.descendant(
 Future<void> _pumpApp(WidgetTester tester, AppConfig config) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appConfigProvider.overrideWithValue(config)],
+      overrides: [
+        appConfigProvider.overrideWithValue(config),
+        notificationAlertServiceProvider.overrideWithValue(
+          DisabledNotificationAlertService(),
+        ),
+      ],
       child: const ExpertListingApp(),
     ),
   );

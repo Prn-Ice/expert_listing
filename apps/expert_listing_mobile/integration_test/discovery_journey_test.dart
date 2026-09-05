@@ -9,12 +9,15 @@ import 'package:expert_listing/listings/view/listing_card.dart';
 import 'package:expert_listing/listings/view/listings_view.dart';
 import 'package:expert_listing/main.dart';
 import 'package:expert_listing/notifications/models/activity_notification.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
 import 'package:expert_listing/notifications/notifications_repository.dart';
 import 'package:expert_listing/search/recent_search_store.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'support/disabled_notification_alert_service.dart';
 
 /// The implemented discovery portion of the required journey through the
 /// production provider graph and real Hono/Postgres/preferences boundaries.
@@ -351,6 +354,9 @@ Future<void> _pumpApp(WidgetTester tester, AppConfig config) async {
         // the device test has already completed.
         feedRepositoryProvider.overrideWith(
           (ref) => FeedRepository(client: ref.watch(httpClientProvider)),
+        ),
+        notificationAlertServiceProvider.overrideWithValue(
+          DisabledNotificationAlertService(),
         ),
       ],
       child: const ExpertListingApp(),

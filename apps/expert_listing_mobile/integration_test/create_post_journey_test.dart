@@ -7,11 +7,14 @@ import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'support/disabled_notification_alert_service.dart';
 
 /// The required creation journey through Flutter multipart serialization,
 /// real Hono, Storage, and Postgres. It intentionally creates durable rows and
@@ -185,6 +188,9 @@ Future<void> _pumpApp(
       key: ValueKey<String>(key),
       overrides: [
         appConfigProvider.overrideWithValue(config),
+        notificationAlertServiceProvider.overrideWithValue(
+          DisabledNotificationAlertService(),
+        ),
         postImagePickerProvider.overrideWithValue(picker),
       ],
       child: const ExpertListingApp(),

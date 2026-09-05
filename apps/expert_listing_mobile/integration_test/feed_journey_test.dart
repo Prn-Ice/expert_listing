@@ -3,10 +3,13 @@ import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/main.dart';
+import 'package:expert_listing/notifications/notifications_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+
+import 'support/disabled_notification_alert_service.dart';
 
 /// The required feed journey through the production provider graph against
 /// the real local Hono/Postgres stack:
@@ -134,7 +137,12 @@ void main() {
 Future<void> _pumpApp(WidgetTester tester, AppConfig config) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [appConfigProvider.overrideWithValue(config)],
+      overrides: [
+        appConfigProvider.overrideWithValue(config),
+        notificationAlertServiceProvider.overrideWithValue(
+          DisabledNotificationAlertService(),
+        ),
+      ],
       child: const ExpertListingApp(),
     ),
   );
