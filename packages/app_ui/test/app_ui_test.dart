@@ -71,6 +71,33 @@ void main() {
     test('subtle light surface preserves the documented alpha', () {
       expect(AppColors.light.subtleSurface, const Color(0x05000000));
     });
+
+    test('the Cupertino themes are built from the shared palettes', () {
+      final light = AppTheme.cupertino(Brightness.light);
+      final dark = AppTheme.cupertino(Brightness.dark);
+
+      expect(light.scaffoldBackgroundColor, AppColors.light.canvas);
+      expect(dark.scaffoldBackgroundColor, AppColors.dark.canvas);
+      expect(light.primaryColor, AppColors.light.brand);
+      expect(dark.primaryColor, AppColors.dark.brand);
+      expect(light.textTheme.textStyle.fontFamily, AppTypography.fontFamily);
+    });
+
+    test('the material helper selects brightness and platform', () {
+      final light = AppTheme.material(
+        Brightness.light,
+        platform: TargetPlatform.iOS,
+      );
+      final dark = AppTheme.material(
+        Brightness.dark,
+        platform: TargetPlatform.iOS,
+      );
+
+      expect(light.platform, TargetPlatform.iOS);
+      expect(dark.platform, TargetPlatform.iOS);
+      expect(light.extension<AppColors>(), AppColors.light);
+      expect(dark.extension<AppColors>(), AppColors.dark);
+    });
   });
 
   group('AppIconButton', () {

@@ -4,18 +4,44 @@ library;
 import 'package:app_ui/src/tokens/colors.dart';
 import 'package:app_ui/src/tokens/radii.dart';
 import 'package:app_ui/src/tokens/typography.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 /// Builds the light and dark appearances from the shared semantic roles.
 abstract final class AppTheme {
   /// The Figma-faithful light appearance. This is the design reference.
-  static ThemeData light() => _build(AppColors.light, Brightness.light);
+  static ThemeData light({TargetPlatform? platform}) {
+    return _buildMaterial(AppColors.light, Brightness.light, platform);
+  }
 
   /// The deliberate dark appearance derived from the same semantic roles.
-  static ThemeData dark() => _build(AppColors.dark, Brightness.dark);
+  static ThemeData dark({TargetPlatform? platform}) {
+    return _buildMaterial(AppColors.dark, Brightness.dark, platform);
+  }
 
-  static ThemeData _build(AppColors colors, Brightness brightness) {
+  /// The Material appearance for [brightness] on [platform].
+  static ThemeData material(
+    Brightness brightness, {
+    TargetPlatform? platform,
+  }) => brightness == Brightness.dark
+      ? dark(platform: platform)
+      : light(platform: platform);
+
+  /// The Cupertino appearance built from the same semantic roles.
+  ///
+  /// The text style keeps the committed Open Runde family so branded content
+  /// reads the same under either native root.
+  static CupertinoThemeData cupertino(Brightness brightness) =>
+      brightness == Brightness.dark
+      ? _buildCupertino(AppColors.dark)
+      : _buildCupertino(AppColors.light);
+
+  static ThemeData _buildMaterial(
+    AppColors colors,
+    Brightness brightness,
+    TargetPlatform? platform,
+  ) {
     final isDark = brightness == Brightness.dark;
     final textTheme = TextTheme(
       titleMedium: AppTypography.title(colors),
@@ -83,6 +109,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
+      platform: platform,
       fontFamily: AppTypography.fontFamily,
       scaffoldBackgroundColor: colors.canvas,
       canvasColor: colors.canvas,
@@ -125,6 +152,19 @@ abstract final class AppTheme {
         shape: const RoundedRectangleBorder(borderRadius: AppRadii.sheet),
       ),
       extensions: [colors],
+    );
+  }
+
+  static CupertinoThemeData _buildCupertino(AppColors colors) {
+    return CupertinoThemeData(
+      primaryColor: colors.brand,
+      primaryContrastingColor: colors.onBrand,
+      scaffoldBackgroundColor: colors.canvas,
+      barBackgroundColor: colors.canvas,
+      textTheme: CupertinoTextThemeData(
+        primaryColor: colors.brand,
+        textStyle: AppTypography.body(colors),
+      ),
     );
   }
 }

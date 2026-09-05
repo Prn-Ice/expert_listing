@@ -147,6 +147,32 @@ sets canvas-coloured status/navigation bars with brightness-appropriate icons;
 the native splash must use the same active appearance once the mark is
 available.
 
+## Native platform roots
+
+`AppColors.light` and `AppColors.dark` are the single palette sources. Pure
+`AppTheme` builders turn them into Material `ThemeData` and
+`CupertinoThemeData`; no other theme state exists.
+
+The application selects its native root from `defaultTargetPlatform` at the
+root widget, never `Platform.isIOS`: iOS builds a `CupertinoApp` and receives
+its active Cupertino theme directly; every other platform builds a
+`MaterialApp` with `theme` and `darkTheme` passed directly. Tests inject the
+platform through the root widgets' override parameter instead of reaching
+into the tree, and the configuration-error surface follows the same policy.
+The root reads the system appearance from the root view's `MediaQuery`, so a
+brightness change restyles both native roots.
+
+`CupertinoApp.builder` installs a standard Flutter `Theme` built from the
+active palette and selected platform. It supplies the shared semantic
+`AppColors` extension and platform lookup for the Material widgets still
+hosted under the Cupertino root; it is configuration only and does not turn
+Cupertino controls into Material controls.
+
+Branded feed content keeps the committed Open Runde family and supplied
+tokens under either root; genuinely native platform surfaces may use platform
+typography unless the design explicitly fixes it. Subtrees below the roots
+select behaviour with `Theme.of(context).platform`, never `Platform.isIOS`.
+
 ## Spacing, type, shape, and motion
 
 Observed roles use Open Runde: caption 13/500 at 1.2 (owned locations, status
