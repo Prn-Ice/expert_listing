@@ -213,6 +213,41 @@ void main() {
     }
   });
 
+  testWidgets('Material uses a compact leading outlined filter button', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _harness(_page(), platform: TargetPlatform.android),
+    );
+    await tester.pump();
+
+    final button = find.byKey(const ValueKey<String>('feed-filters'));
+    final pill = find.byKey(const ValueKey<String>('feed-filters-pill'));
+    final icon = find.descendant(of: button, matching: find.byType(AppIcon));
+    final outlinedButton = tester.widget<OutlinedButton>(button);
+    final style = outlinedButton.style!;
+    expect(tester.getTopLeft(button).dx, AppSpacing.xxlarge);
+    expect(tester.getRect(button).height, greaterThanOrEqualTo(48));
+    expect(tester.getSize(icon), const Size.square(AppIconSize.small));
+    expect(
+      tester.getRect(button).width,
+      tester.getRect(pill).width + (AppSpacing.medium * 2),
+    );
+    expect(
+      style.padding!.resolve(<WidgetState>{}),
+      const EdgeInsets.symmetric(
+        horizontal: AppSpacing.medium,
+        vertical: AppSpacing.small,
+      ),
+    );
+    expect(style.side!.resolve(<WidgetState>{})!.width, 1);
+    expect(style.shape!.resolve(<WidgetState>{}), const StadiumBorder());
+
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(find.byType(TextField), findsOneWidget);
+  });
+
   testWidgets('each platform uses its native refresh control', (tester) async {
     for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
       await tester.pumpWidget(_harness(_page(), platform: platform));

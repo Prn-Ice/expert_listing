@@ -362,6 +362,33 @@ final class _FilterControl extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
+    final label = activeCount == 0 ? 'Filters' : 'Filters ($activeCount)';
+    final semanticsLabel = activeCount == 0
+        ? 'Filters'
+        : 'Filters, $activeCount active';
+    final content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppIcon(
+          AppIcons.filter,
+          size: AppIconSize.small,
+          color: colors.textSecondary,
+        ),
+        const SizedBox(width: AppSpacing.small),
+        Text(
+          label,
+          style: AppTypography.postBody(
+            colors,
+            color: colors.textSecondary,
+          ),
+        ),
+      ],
+    );
+    final borderRadius = BorderRadius.circular(AppIconSize.tapTarget / 2);
+    final borderSide = BorderSide(
+      color: colors.textPrimary.withValues(alpha: 0.1),
+    );
+
     return Padding(
       // Measured filter row: 24px side insets, 16px above the pill, and no
       // bottom padding because the create-post prompt supplies the gap.
@@ -373,53 +400,61 @@ final class _FilterControl extends StatelessWidget {
       ),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: AppPressable(
-          key: const ValueKey<String>('feed-filters'),
-          onPressed: onPressed,
-          semanticLabel: activeCount == 0
-              ? 'Filters'
-              : 'Filters, $activeCount active',
-          borderRadius: BorderRadius.circular(AppIconSize.tapTarget / 2),
-          child: Container(
-            // The genuine 48px activation region surrounds the measured
-            // 36px pill without moving visible content.
-            constraints: const BoxConstraints(
-              minHeight: AppIconSize.tapTarget,
-            ),
-            alignment: Alignment.centerLeft,
-            child: Container(
-              key: const ValueKey<String>('feed-filters-pill'),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.medium,
-                vertical: AppSpacing.small,
-              ),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppIconSize.tapTarget / 2),
-                border: Border.all(
-                  color: colors.textPrimary.withValues(alpha: 0.1),
+        child: context.isIos
+            ? AppPressable(
+                key: const ValueKey<String>('feed-filters'),
+                onPressed: onPressed,
+                semanticLabel: semanticsLabel,
+                borderRadius: borderRadius,
+                child: Container(
+                  constraints: const BoxConstraints(
+                    minHeight: AppIconSize.tapTarget,
+                  ),
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    key: const ValueKey<String>('feed-filters-pill'),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.medium,
+                      vertical: AppSpacing.small,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: borderRadius,
+                      border: Border.fromBorderSide(borderSide),
+                    ),
+                    child: content,
+                  ),
                 ),
-              ),
-              child: Row(
+              )
+            : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  AppIcon(
-                    AppIcons.filter,
-                    size: AppIconSize.small,
-                    color: colors.textSecondary,
-                  ),
-                  const SizedBox(width: AppSpacing.small),
-                  Text(
-                    activeCount == 0 ? 'Filters' : 'Filters ($activeCount)',
-                    style: AppTypography.postBody(
-                      colors,
-                      color: colors.textSecondary,
+                  Semantics(
+                    label: semanticsLabel,
+                    button: true,
+                    enabled: true,
+                    excludeSemantics: true,
+                    child: OutlinedButton(
+                      key: const ValueKey<String>('feed-filters'),
+                      onPressed: onPressed,
+                      style: OutlinedButton.styleFrom(
+                        minimumSize: Size.zero,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.medium,
+                          vertical: AppSpacing.small,
+                        ),
+                        tapTargetSize: MaterialTapTargetSize.padded,
+                        foregroundColor: colors.textSecondary,
+                        side: borderSide,
+                        shape: const StadiumBorder(),
+                      ),
+                      child: KeyedSubtree(
+                        key: const ValueKey<String>('feed-filters-pill'),
+                        child: content,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ),
-        ),
       ),
     );
   }
