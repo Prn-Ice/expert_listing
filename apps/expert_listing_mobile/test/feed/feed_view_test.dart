@@ -12,8 +12,10 @@ import 'package:expert_listing/feed/models/feed_comment.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/feed/view/post_actions.dart';
+import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/feed/view/property_media.dart';
 import 'package:expert_listing/main.dart';
 import 'package:expert_listing/search/recent_search_store.dart';
@@ -48,6 +50,39 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Post type'), findsOneWidget);
     expect(find.text('Apply'), findsOneWidget);
+  });
+
+  testWidgets('aligns prompt and post avatar and text columns', (tester) async {
+    await tester.pumpWidget(_harness(_page()));
+    await tester.pump();
+
+    final prompt = find.byType(CreatePostPrompt);
+    final post = find.byType(PostCard).first;
+    final promptAvatar = find.descendant(
+      of: prompt,
+      matching: find.byType(AppAvatar),
+    );
+    final postAvatar = find
+        .descendant(of: post, matching: find.byType(AppAvatar))
+        .first;
+    final promptText = find.descendant(
+      of: prompt,
+      matching: find.text(
+        'Share a property, Make a request or say something...',
+      ),
+    );
+    final postTitle = find.descendant(
+      of: post,
+      matching: find.text('Prince'),
+    );
+
+    expect(tester.getSize(promptAvatar), const Size.square(40));
+    expect(tester.getSize(postAvatar), const Size.square(40));
+    expect(
+      tester.getTopLeft(promptAvatar).dx,
+      tester.getTopLeft(postAvatar).dx,
+    );
+    expect(tester.getTopLeft(promptText).dx, tester.getTopLeft(postTitle).dx);
   });
 
   testWidgets('comment action opens the shared persistent comments sheet', (

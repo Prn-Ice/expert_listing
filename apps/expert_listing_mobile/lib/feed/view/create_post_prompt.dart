@@ -118,7 +118,7 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.small,
+                AppSpacing.xsmall,
                 AppSpacing.small,
                 12,
                 AppSpacing.small,
@@ -129,7 +129,7 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
                     assetName: 'assets/images/current-user.jpg',
                     displayName: 'Prince Adeyemi',
                   ),
-                  const SizedBox(width: AppSpacing.xsmall),
+                  const SizedBox(width: AppSpacing.small),
                   Expanded(
                     child: Text(
                       'Share a property, Make a request or say something...',
