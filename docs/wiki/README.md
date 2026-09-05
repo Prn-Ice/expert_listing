@@ -12,6 +12,7 @@ contracts, development workflows, and deliberately deferred work.
 | [Development](development.md) | Starting services, running checks, or working with Supabase |
 | [Design system](design-system.md) | Implementing themes, assets, shared controls, or interaction geometry |
 | [Offline and cache](offline-and-cache.md) | Changing network-first reads, saved provenance, or image retention |
+| [Release](release.md) | Preparing CI, signing, artifacts, or delivery evidence |
 | [Deferred roadmap](roadmap.md) | Considering work outside the assessment release |
 
 Create phase-specific documentation only alongside the behaviour it describes.

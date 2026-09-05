@@ -17,4 +17,5 @@ APK, visual-overlay, and named-device evidence remain incomplete or unverified.
 - [Architecture](docs/wiki/architecture.md): ownership and data flow.
 - [Design system](docs/wiki/design-system.md): Figma measurements, assets, and
   shared UI contracts.
+- [Release](docs/wiki/release.md): CI, signing, artifact, and delivery evidence.
 - [Wiki index](docs/wiki/README.md): decisions and deferred work.

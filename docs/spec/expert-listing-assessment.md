@@ -166,8 +166,13 @@ Do not implement:
 - messages;
 - notifications;
 - profiles;
-- TestFlight or App Store publication;
+- App Store publication;
 - tablet or desktop layouts.
+
+TestFlight CI is an owner-approved optional delivery channel after Apple Developer
+Program enrollment. It does not replace the required signed Android GitHub
+Release, does not block that assessment delivery, and is not verification until a
+signed build is uploaded, processed, assigned to testers, installed, and launched.
 
 Out-of-scope controls still require a useful response.
 
@@ -1514,7 +1519,10 @@ The release body comes from `docs/releases/v0.1.0.md` and includes:
 - source commit;
 - checksum instructions.
 
-TestFlight is out of scope. Do not attach an unsigned IPA; document verified iOS run status honestly.
+App Store publication remains out of scope. TestFlight CI is an owner-approved
+optional delivery channel and does not replace the required signed Android GitHub
+Release. Do not attach an unsigned IPA or claim TestFlight verification until a
+signed build is uploaded, processed, assigned to testers, installed, and launched.
 
 Before sharing the release:
 

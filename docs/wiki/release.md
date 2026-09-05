@@ -1,142 +1,155 @@
 # Release
 
-This page is the runbook for the checked-in CI and release machinery. It
-describes what exists and how the final `v0.1.0` release is produced. The
-assessment specification remains the authority for required behaviour.
+This runbook covers the required Android GitHub Release and the owner-approved,
+optional TestFlight delivery channel. The assessment specification remains the
+authority: App Store publication is out of scope, and TestFlight never replaces
+or blocks the signed Android release.
 
-## Continuous integration
+## Release gate
 
-`.github/workflows/ci.yml` runs on pushes to `main` and on pull requests with
-three jobs:
+`.github/workflows/ci.yml` runs for pushes to `main` and pull requests. It is
+also called by both release workflows before they build an artifact.
 
-| Job | What it runs |
+| Job | Evidence |
 | --- | --- |
-| Flutter and Dart checks | `dart format --output=none --set-exit-if-changed`, `flutter analyze`, and `flutter test` in `apps/expert_listing_mobile` and `packages/app_ui` |
-| Hono and Supabase checks | `deno fmt --check`, `deno lint`, `deno check`, then the local stack: `supabase start`, `supabase db reset --local`, `supabase seed buckets --local`, `supabase test db --local`, and `scripts/run-api-tests` |
-| Release APK build probe | builds a release APK against a disposable CI-generated keystore and verifies the APK signature matches that keystore |
+| Flutter and Dart checks | Enforced mobile and `app_ui` lockfiles, formatting, analysis, and tests |
+| Hono and Supabase checks | Enforced Deno lockfile, formatting, lint, frozen type-checking, local migrations, deterministic seed, pgTAP, and real API tests |
+| Release APK build probe | A disposable keystore signs a release APK; its signer digest must match the generated keystore |
 
-The commands are the documented development commands, run with Flutter
-3.47.0 (Dart 3.13.0), Deno 2.9.5, and Supabase CLI 2.111.0. A tree that was
-not formatted with the same toolchain fails the formatting gates.
+The probe intentionally has no deployed API URL. It proves that a release APK
+can be built and signed, not that a hosted backend works at runtime. CI does not
+run the required named-device journeys; those remain separately required
+evidence.
 
-No Android emulator job is checked in. The three named device journeys run on
-a local device; CI never claims them.
-
-## GitHub configuration
+## Android GitHub configuration
 
 | Name | Kind | Purpose |
 | --- | --- | --- |
-| `PUBLIC_API_BASE_URL` | variable | The deployed HTTPS Hono URL, injected into release builds as `--dart-define=API_BASE_URL` and validated to be an HTTPS URL ending with `/functions/v1/api` |
-| `ANDROID_KEYSTORE_BASE64` | secret | The release keystore encoded as base64 |
-| `ANDROID_KEYSTORE_PASSWORD` | secret | The keystore password |
-| `ANDROID_KEY_ALIAS` | secret | The signing key alias |
-| `ANDROID_KEY_PASSWORD` | secret | The key password |
+| `PUBLIC_API_BASE_URL` | variable | Required only for artifact release builds; it must exactly equal `https://chvhwausefhvaceygppc.supabase.co/functions/v1/api` |
+| `ANDROID_KEYSTORE_BASE64` | secret | Release keystore encoded as base64 |
+| `ANDROID_KEYSTORE_PASSWORD` | secret | Keystore password |
+| `ANDROID_KEY_ALIAS` | secret | Signing key alias |
+| `ANDROID_KEY_PASSWORD` | secret | Key password |
 
-The public API URL is a variable, not a secret: it is sent to every client
-and carries no credential.
+The public API URL is a variable, not a secret. The Android and TestFlight
+artifact jobs reject any other value so a signed build cannot target a lookalike
+or unrelated hosted API.
 
-## Android release signing
+## Android signing
 
-`apps/expert_listing_mobile/android/app/build.gradle.kts` signs release
-builds from either source, in this order:
+Gradle reads only ignored `android/key.properties` with `storeFile`,
+`storePassword`, `keyAlias`, and `keyPassword`. Release builds fail closed when
+any value is missing; debug builds keep their normal debug signing.
 
-1. `android/key.properties` with `storeFile`, `storePassword`, `keyAlias`,
-   and `keyPassword` (`storeFile` may be an absolute path or a path relative
-   to `android/app`);
-2. the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-   `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` environment variables, with
-   the base64 value decoded to a temporary file.
+CI reconstructs the secret keystore in `$RUNNER_TEMP`, writes that ignored file
+for the current runner, and removes both after the job. The disposable CI probe
+uses the same `key.properties` contract with a generated temporary keystore.
 
-Debug builds keep debug signing and never read either source. A release build
-with no signing configuration fails immediately with instructions instead of
-falling back to the debug key. The repository ignores `key.properties`,
-`*.jks`, and `*.keystore`; the keystore and its passwords never enter Git.
-
-The release workflow reconstructs the keystore inside the runner's
-`$RUNNER_TEMP` directory: it decodes `ANDROID_KEYSTORE_BASE64` to
-`$RUNNER_TEMP/expert-listing-release.jks`, writes `android/key.properties`
-pointing at that absolute path, and confirms the password with `keytool`
-before building. The file lives only for the workflow run.
-
-The CI probe instead generates a disposable keystore in `$RUNNER_TEMP` with
-`keytool`, exports it through the same environment variables, and deletes
-nothing from Git because nothing was written to the repository.
-
-## Building a release APK locally
-
-A developer with signing material outside the repository can reproduce the
-release build:
+For a local build, work from the mobile app directory and point the ignored file
+at signing material outside Git:
 
 ~~~sh
-export ANDROID_KEYSTORE_BASE64="$(base64 -i /path/to/keystore.jks | tr -d '\n')"
-export ANDROID_KEYSTORE_PASSWORD=...
-export ANDROID_KEY_ALIAS=...
-export ANDROID_KEY_PASSWORD=...
-flutter build apk --release --dart-define=API_BASE_URL=https://<project-ref>.supabase.co/functions/v1/api
+cd apps/expert_listing_mobile
+cat > android/key.properties <<'EOF'
+storeFile=/absolute/path/to/expert-listing-release.jks
+storePassword=...
+keyAlias=...
+keyPassword=...
+EOF
+flutter pub get --enforce-lockfile
+flutter build apk --release --no-pub \
+  --dart-define=API_BASE_URL=https://chvhwausefhvaceygppc.supabase.co/functions/v1/api
 ~~~
 
-Verify the signature against the keystore:
+Verify the APK and obtain the matching keystore digest:
 
 ~~~sh
 ~/Library/Android/sdk/build-tools/<version>/apksigner verify \
   --print-certs build/app/outputs/flutter-apk/app-release.apk
+keytool -list -v -keystore /absolute/path/to/expert-listing-release.jks \
+  -alias <key-alias> | sed -n 's/.*SHA256: //p'
 ~~~
 
-The printed certificate SHA-256 digest must match the keystore's own
-certificate. Compare digests with colons, spaces, and case normalized away.
+The repository ignores `key.properties`, `*.jks`, and `*.keystore`; neither the
+keystore nor its passwords enters Git.
 
-## What triggers a release
+## TestFlight GitHub configuration
 
-Pushing a `v*` tag starts `.github/workflows/release.yml`. The workflow:
+| Name | Kind | Purpose |
+| --- | --- | --- |
+| `PUBLIC_API_BASE_URL` | variable | Must exactly equal the canonical deployed API URL above |
+| `APPLE_TEAM_ID` | variable | Apple Developer team ID; it must match the App Store profile |
+| `APP_STORE_CONNECT_KEY_ID` | secret | App Store Connect API key ID |
+| `APP_STORE_CONNECT_ISSUER_ID` | secret | App Store Connect API issuer ID |
+| `APP_STORE_CONNECT_PRIVATE_KEY` | secret | Full downloaded `.p8` contents |
+| `IOS_DISTRIBUTION_CERTIFICATE_BASE64` | secret | Base64 Apple Distribution `.p12` with its private key |
+| `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD` | secret | `.p12` password |
+| `IOS_PROVISIONING_PROFILE_BASE64` | secret | Base64 explicit App Store `.mobileprovision` for `com.prnice.expertListing` |
 
-1. checks out the exact tag;
-2. rejects the run when the tag does not match the application version
-   (`v0.1.0` requires `version: 0.1.0+1` in `apps/expert_listing_mobile/pubspec.yaml`)
-   or when `docs/releases/v0.1.0.md` is not committed — that file is the
-   release body and must contain the final record before tagging;
-3. installs Flutter 3.47.0 and runs the same non-device checks as CI:
-   formatting, analysis, package tests, Deno checks, local Supabase
-   migrations, deterministic seed, pgTAP, and the real HTTP API tests;
-4. reconstructs the keystore into `$RUNNER_TEMP` as described above;
-5. builds one universal release APK against `PUBLIC_API_BASE_URL`;
-6. verifies the APK signature certificate matches the reconstructed keystore;
-7. names the artifact `expert-listing-v0.1.0-android.apk` (the tag is spliced
-   in: `expert-listing-<tag>-android.apk`);
-8. writes `SHA256SUMS.txt` with `sha256sum` next to the artifact;
-9. creates one GitHub Release with both assets and
-   `docs/releases/v0.1.0.md` as the body, using the built-in `GITHUB_TOKEN`.
+The Apple Distribution certificate and App Store profile sign the archive. The
+App Store Connect API key only authorizes `altool` validation and upload; it
+cannot sign code or replace the certificate/profile pair.
 
-Top-level workflow permission is `contents: read`; only the release job
-receives `contents: write`. No personal access token is involved. Until the
-final tag is pushed, the workflow is inert.
+The workflow imports an Apple Distribution identity into a temporary keychain,
+rejects profiles with debugging enabled or registered devices, and installs the
+matching profile at Xcode's current user profile directory only for the job. It
+passes `DEVELOPMENT_TEAM`, manual signing, Apple Distribution, and the decoded
+profile name through Flutter's `FLUTTER_XCODE_` build-setting bridge. The `.p8`,
+`.p12`, and profile stay in `$RUNNER_TEMP` or the temporary keychain and are
+removed by an `always()` cleanup step. No IPA artifact is retained automatically.
 
-## Preparing the final release
+## One-time Apple setup
 
-The release owner, after the feature and verification milestones close:
+1. Register or confirm the explicit App ID `com.prnice.expertListing` under the
+   intended Apple Developer team.
+2. Create the matching App Store Connect app record and complete required app
+   metadata, agreements, and access.
+3. Set the developer team ID as `APPLE_TEAM_ID` and create an App Store Connect
+   API key with the least Apple role that permits build uploads.
+4. Export a password-protected Apple Distribution `.p12` with its private key.
+5. Create an explicit App Store profile for that bundle ID and certificate. It
+   must have `get-task-allow` set to false and no device list.
+6. Add the table's values as repository variables and secrets. Apple offers the
+   API private key for download once; keep no credential file in Git.
+7. Complete TestFlight test information, export-compliance requirements, and the
+   intended tester group in App Store Connect.
 
-1. commit the final `docs/releases/v0.1.0.md` — product description, light and
-   dark screenshots, Android install steps, backend and health URL, feature
-   highlights, walkthrough link, tested device, scope notes, source commit,
-   and checksum instructions;
-2. set the `PUBLIC_API_BASE_URL` variable and the four Android secrets on the
-   GitHub repository;
-3. confirm CI is green on the release commit, including the formatting gates
-   and the release APK probe;
-4. push the `v0.1.0` tag;
-5. wait for the release workflow to publish, then verify the published
-   artifact end to end:
+## TestFlight upload and states
 
-~~~sh
-curl -L -o expert-listing-v0.1.0-android.apk <release-asset-url>
-curl -L -o SHA256SUMS.txt <release-asset-url>
-sha256sum -c SHA256SUMS.txt      # or: shasum -a 256 -c SHA256SUMS.txt
-adb install -r expert-listing-v0.1.0-android.apk
-~~~
+Use **Actions → TestFlight → Run workflow** from the intended commit. It is
+`workflow_dispatch` only; merges and Android release tags cannot upload iOS
+builds. The workflow waits for the reusable release gate and serializes uploads.
+Its run number becomes `CFBundleVersion`; start a new dispatch instead of
+rerunning an upload that may have reached App Store Connect.
 
-Launch the installed app and confirm the feed loads from the hosted HTTPS
-backend. A locally built APK is not equivalent evidence; only the downloaded
-release artifact counts.
+| State | Meaning |
+| --- | --- |
+| Upload completed | CI and `altool` accepted the signed IPA. Apple processing has started. |
+| Processing completed | The build appears under **App Store Connect → TestFlight → Builds** without a processing state or failure. |
+| Internal testing available | Required compliance work is complete and the build is assigned to the internal tester group. |
+| External testing available | The external group is configured and Beta App Review has passed when Apple requires it. |
 
-The release owner also owns everything this machinery deliberately does not
-do: creating the real keystore and its secrets, deploying the backend and its
-hosted smoke checks, the walkthrough and screenshots, and pushing the tag.
+A green workflow proves upload completion only. Do not claim TestFlight
+verification until the build is processed, assigned to testers, installed, and
+launched. Check export compliance and Beta App Review where applicable.
+
+| Symptom | Check first |
+| --- | --- |
+| No valid signing identity or codesign error | The `.p12` must include its private key and an Apple Distribution identity for the profile's team. |
+| Profile, team, or bundle mismatch | Recreate the explicit App Store profile for `com.prnice.expertListing` and `APPLE_TEAM_ID`. |
+| Profile rejected before archive | Use an App Store profile with `get-task-allow` false and no registered devices. |
+| API-key authentication error | Confirm key ID, issuer ID, `.p8` text, key status, and access to the app record. |
+| Duplicate or rejected build number | Start a new workflow dispatch; do not reuse an accepted number. |
+| Successful upload but no tester install | Check processing, export compliance, TestFlight information, group assignment, and Beta App Review. |
+
+## Final verification checklist
+
+1. Before the required Android release, confirm the reusable gate is green,
+   `docs/releases/v0.1.0.md` is committed, the exact API variable and Android
+   secrets are configured, then push only the `v0.1.0` tag. The workflow creates
+   the named APK and `SHA256SUMS.txt` with the built-in GitHub token.
+2. Download the published APK, verify its checksum, install it, and launch it
+   against the hosted API. A locally built APK is not equivalent release evidence.
+3. If optional TestFlight delivery is used, complete the Apple steps above and
+   record signed-build, processing, tester assignment, installation, and launch
+   evidence separately. App Store publication remains out of scope.

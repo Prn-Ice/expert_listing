@@ -1,20 +1,16 @@
 name: CI
 
 on:
+  workflow_call:
   push:
     branches: [main]
   pull_request:
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 permissions:
   contents: read
 
-# The three named device journeys run on a local emulator or device per the
-# assessment. A checked-in Android emulator job is deliberately omitted; CI
-# must never claim device journeys it did not execute.
+# The three named device journeys are separately required evidence. CI does not
+# run or claim them.
 jobs:
   flutter-checks:
     name: Flutter and Dart checks
@@ -26,29 +22,29 @@ jobs:
           flutter-version: 3.47.0
           channel: stable
           cache: true
-      - name: Verify mobile formatting
-        run: dart format --output=none --set-exit-if-changed .
+      - name: Restore the committed app_ui dependency graph
+        run: flutter pub get --enforce-lockfile
+        working-directory: packages/app_ui
+      - name: Restore the committed mobile dependency graph
+        run: flutter pub get --enforce-lockfile
         working-directory: apps/expert_listing_mobile
       - name: Verify app_ui formatting
         run: dart format --output=none --set-exit-if-changed .
         working-directory: packages/app_ui
-      - name: Resolve app_ui dependencies
-        run: flutter pub get
-        working-directory: packages/app_ui
-      - name: Resolve mobile dependencies
-        run: flutter pub get
+      - name: Verify mobile formatting
+        run: dart format --output=none --set-exit-if-changed .
         working-directory: apps/expert_listing_mobile
       - name: Analyze app_ui
-        run: flutter analyze
+        run: flutter analyze --no-pub
         working-directory: packages/app_ui
       - name: Analyze mobile
-        run: flutter analyze
+        run: flutter analyze --no-pub
         working-directory: apps/expert_listing_mobile
       - name: Run app_ui tests
-        run: flutter test
+        run: flutter test --no-pub
         working-directory: packages/app_ui
       - name: Run mobile tests
-        run: flutter test
+        run: flutter test --no-pub
         working-directory: apps/expert_listing_mobile
 
   backend-checks:
@@ -66,12 +62,15 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y postgresql-client
+      - name: Restore the committed API dependency graph
+        run: deno ci
+        working-directory: supabase/functions/api
       - name: Check formatting
         run: deno fmt --check supabase/functions
       - name: Lint
         run: deno lint supabase/functions
       - name: Type-check
-        run: deno check index.ts tests/health_test.ts tests/feed_test.ts
+        run: deno check --frozen index.ts tests/health_test.ts tests/feed_test.ts
         working-directory: supabase/functions/api
       - name: Apply migrations, deterministic seed and bucket fixtures
         run: |
@@ -97,7 +96,10 @@ jobs:
           flutter-version: 3.47.0
           channel: stable
           cache: true
-      - name: Create disposable probe keystore
+      - name: Restore the committed mobile dependency graph
+        run: flutter pub get --enforce-lockfile
+        working-directory: apps/expert_listing_mobile
+      - name: Create a disposable probe keystore
         run: |
           keytool -genkeypair \
             -keystore "$RUNNER_TEMP/probe-release.jks" \
@@ -106,23 +108,22 @@ jobs:
             -keyalg RSA -keysize 2048 -validity 3 \
             -storepass probe-store-password -keypass probe-store-password \
             -dname "CN=Expert Listing CI Probe, OU=Probe, O=Expert Listing, L=Lagos, ST=Lagos, C=NG"
-          echo "ANDROID_KEYSTORE_BASE64=$(base64 -w0 "$RUNNER_TEMP/probe-release.jks")" >> "$GITHUB_ENV"
-      - name: Build release APK with the disposable keystore
+          {
+            printf 'storeFile=%s\n' "$RUNNER_TEMP/probe-release.jks"
+            printf '%s\n' 'storePassword=probe-store-password'
+            printf '%s\n' 'keyAlias=probe-release'
+            printf '%s\n' 'keyPassword=probe-store-password'
+          } > apps/expert_listing_mobile/android/key.properties
+      - name: Build a release APK with the disposable keystore
+        run: flutter build apk --release --no-pub
         working-directory: apps/expert_listing_mobile
-        env:
-          PUBLIC_API_BASE_URL: ${{ vars.PUBLIC_API_BASE_URL }}
-          ANDROID_KEYSTORE_PASSWORD: probe-store-password
-          ANDROID_KEY_ALIAS: probe-release
-          ANDROID_KEY_PASSWORD: probe-store-password
-        run: |
-          build_args=(--release)
-          if [ -n "$PUBLIC_API_BASE_URL" ]; then
-            build_args+=(--dart-define=API_BASE_URL="$PUBLIC_API_BASE_URL")
-          fi
-          flutter build apk "${build_args[@]}"
       - name: Verify the APK is signed by the probe keystore
         run: |
-          apksigner="$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)"
+          apksigner="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner -print | sort -V | tail -n 1)"
+          if [ -z "$apksigner" ]; then
+            echo "::error::Could not find apksigner in the Android build tools."
+            exit 1
+          fi
           apk="apps/expert_listing_mobile/build/app/outputs/flutter-apk/app-release.apk"
           "$apksigner" verify "$apk"
           actual="$("$apksigner" verify --print-certs "$apk" \
@@ -134,3 +135,6 @@ jobs:
           echo "APK signer SHA-256: $actual"
           echo "Probe keystore SHA-256: $expected"
           test -n "$actual" && test "$actual" = "$expected"
+      - name: Remove disposable Android signing material
+        if: ${{ always() }}
+        run: rm -f apps/expert_listing_mobile/android/key.properties "$RUNNER_TEMP/probe-release.jks"

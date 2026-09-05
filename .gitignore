@@ -56,6 +56,12 @@ unlinked_spec.ds
 **/android/**/GeneratedPluginRegistrant.java
 **/android/key.properties
 *.jks
+*.keystore
+
+# iOS signing material
+*.p8
+*.p12
+*.mobileprovision
 
 # iOS/XCode related
 **/ios/**/*.mode1v3

@@ -87,7 +87,9 @@ function parseFilters(query: Record<string, string>) {
   const propertyStatus = query.propertyStatus;
   if (propertyStatus !== undefined) {
     if (postType !== "property") {
-      throw validationError("A property status only applies to property posts.");
+      throw validationError(
+        "A property status only applies to property posts.",
+      );
     }
     if (!PROPERTY_STATUSES.has(propertyStatus)) {
       throw validationError("Choose a valid property status.");
@@ -198,7 +200,9 @@ export async function getPosts(context: Context): Promise<Response> {
 
   const env = readEnv();
   if (!env) {
-    console.error("SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured.");
+    console.error(
+      "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not configured.",
+    );
     throw internalError();
   }
 

@@ -66,7 +66,9 @@ function assertPostIds(body: { posts: { id: number }[] }, expected: number[]) {
 
 function assertValidationError(result: ApiResult) {
   if (result.status !== 400) {
-    throw new Error(`Expected 400, received ${result.status}: ${result.rawBody}`);
+    throw new Error(
+      `Expected 400, received ${result.status}: ${result.rawBody}`,
+    );
   }
   if (result.body?.error?.code !== "VALIDATION_ERROR") {
     throw new Error(`Expected VALIDATION_ERROR, received ${result.rawBody}.`);
@@ -101,7 +103,9 @@ Deno.test("GET /api/posts returns the first page with the default limit", async 
   const result = await api("/posts");
 
   if (result.status !== 200) {
-    throw new Error(`Expected 200, received ${result.status}: ${result.rawBody}`);
+    throw new Error(
+      `Expected 200, received ${result.status}: ${result.rawBody}`,
+    );
   }
   if (result.headers.get("cache-control") !== "private, max-age=0") {
     throw new Error(
@@ -118,7 +122,9 @@ Deno.test("GET /api/posts honours the maximum limit and ends with JSON null", as
   const result = await api("/posts?limit=20");
 
   if (result.status !== 200) {
-    throw new Error(`Expected 200, received ${result.status}: ${result.rawBody}`);
+    throw new Error(
+      `Expected 200, received ${result.status}: ${result.rawBody}`,
+    );
   }
   assertPostIds(result.body, ALL_POST_IDS);
   if (result.body.nextCursor !== null) {
@@ -146,7 +152,9 @@ Deno.test("GET /api/posts walks every row once across tied timestamps", async ()
     const result: ApiResult = await api(path);
 
     if (result.status !== 200) {
-      throw new Error(`Expected 200, received ${result.status}: ${result.rawBody}`);
+      throw new Error(
+        `Expected 200, received ${result.status}: ${result.rawBody}`,
+      );
     }
     seen.push(...result.body.posts.map((post: { id: number }) => post.id));
     cursor = result.body.nextCursor;
@@ -167,7 +175,11 @@ Deno.test("GET /api/posts rejects invalid cursors instead of returning page one"
     encodeRawCursor({ v: 2, createdAt: "2026-09-02T11:45:00.000Z", id: 1002 }),
     encodeRawCursor({ createdAt: "2026-09-02T11:45:00.000Z", id: 1002 }),
     encodeRawCursor({ v: 1, createdAt: "not-a-date", id: 1002 }),
-    encodeRawCursor({ v: 1, createdAt: "2026-09-02T11:45:00.000Z", id: "1002" }),
+    encodeRawCursor({
+      v: 1,
+      createdAt: "2026-09-02T11:45:00.000Z",
+      id: "1002",
+    }),
     encodeRawCursor({ v: 1, createdAt: "2026-09-02T11:45:00.000Z", id: 0 }),
     encodeRawCursor([1, 2, 3]),
   ];
@@ -339,7 +351,9 @@ Deno.test("GET /api/posts returns stable discriminated DTO shapes", async () => 
     postType: string;
     request?: { type: string; location: string };
   };
-  if (request.postType !== "request") throw new Error("1002 must be a request.");
+  if (request.postType !== "request") {
+    throw new Error("1002 must be a request.");
+  }
   if (
     request.request?.type !== "looking_to_rent" ||
     request.request?.location !== "Yaba, Lagos"
@@ -359,21 +373,29 @@ Deno.test("GET /api/posts returns stable discriminated DTO shapes", async () => 
       images: { id: number; url: string; position: number }[];
     };
   };
-  if (property.postType !== "property") throw new Error("1001 must be a property.");
+  if (property.postType !== "property") {
+    throw new Error("1001 must be a property.");
+  }
   const propertyPayload = property.property;
   if (
     !propertyPayload || propertyPayload.id !== 5001 ||
     propertyPayload.status !== "for_sale" ||
     propertyPayload.location !== "Lekki Phase 1, Lagos"
   ) {
-    throw new Error("A property post carries property { id, status, location }.");
+    throw new Error(
+      "A property post carries property { id, status, location }.",
+    );
   }
   const positions = propertyPayload.images.map((image) => image.position);
   if (JSON.stringify(positions) !== "[0,1]") {
     throw new Error("Property images must be stably ordered by position.");
   }
   for (const image of propertyPayload.images) {
-    if (!image.url.startsWith(`${supabaseUrl}/storage/v1/object/public/media/properties/`)) {
+    if (
+      !image.url.startsWith(
+        `${supabaseUrl}/storage/v1/object/public/media/properties/`,
+      )
+    ) {
       throw new Error(`Unexpected image URL: ${image.url}`);
     }
   }
@@ -384,7 +406,9 @@ Deno.test("GET /api/posts returns stable discriminated DTO shapes", async () => 
   }
   if (
     typeof author.avatarUrl !== "string" ||
-    !author.avatarUrl.startsWith(`${supabaseUrl}/storage/v1/object/public/media/avatars/`)
+    !author.avatarUrl.startsWith(
+      `${supabaseUrl}/storage/v1/object/public/media/avatars/`,
+    )
   ) {
     throw new Error(`Unexpected avatar URL: ${author.avatarUrl}`);
   }
@@ -461,7 +485,10 @@ Deno.test("responses never carry the service credential", async () => {
       throw new Error("A response body contains the service credential.");
     }
     for (const [name, value] of result.headers) {
-      if (name.toLowerCase().includes("authorization") || value.includes(serviceRoleKey)) {
+      if (
+        name.toLowerCase().includes("authorization") ||
+        value.includes(serviceRoleKey)
+      ) {
         throw new Error("A response header contains the service credential.");
       }
     }
