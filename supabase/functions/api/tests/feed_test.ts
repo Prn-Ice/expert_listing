@@ -116,6 +116,26 @@ Deno.test("GET /api/posts returns the first page with the default limit", async 
   if (typeof result.body.nextCursor !== "string") {
     throw new Error("Expected a nextCursor string on a full page.");
   }
+  const previewPost = result.body.posts.find((post: { id: number }) =>
+    post.id === 1001
+  );
+  if (
+    previewPost?.likePreview?.length !== 2 ||
+    previewPost.likePreview[0]?.handle !== "ifeoma" ||
+    !previewPost.likePreview[0]?.avatarUrl?.endsWith("/avatars/ifeoma.jpg")
+  ) {
+    throw new Error(`Unexpected like preview: ${JSON.stringify(previewPost)}`);
+  }
+  if (
+    previewPost.latestComment?.id !== 3002 ||
+    previewPost.latestComment?.author?.handle !== "ifeoma" ||
+    previewPost.latestComment?.body !==
+      "The study could work well as a nursery too."
+  ) {
+    throw new Error(
+      `Unexpected latest comment: ${JSON.stringify(previewPost)}`,
+    );
+  }
 });
 
 Deno.test("GET /api/posts honours the maximum limit and ends with JSON null", async () => {

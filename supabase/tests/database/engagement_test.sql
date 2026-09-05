@@ -1,6 +1,6 @@
 begin;
 
-select plan(24);
+select plan(29);
 
 insert into public.posts (id, author_id, body, post_type, location)
 overriding system value
@@ -76,6 +76,16 @@ select ok(
   and has_function_privilege('service_role', 'public.create_post_comment(uuid,bigint,text)', 'execute'),
   'the service role can execute comment RPCs'
 );
+select ok(
+  not has_function_privilege('anon', 'public.feed_page(uuid,integer,timestamptz,bigint,post_type,request_type,property_status,text)', 'execute')
+  and not has_function_privilege('authenticated', 'public.feed_page(uuid,integer,timestamptz,bigint,post_type,request_type,property_status,text)', 'execute')
+  and not has_function_privilege('public', 'public.feed_page(uuid,integer,timestamptz,bigint,post_type,request_type,property_status,text)', 'execute'),
+  'clients and PUBLIC cannot execute the feed RPC'
+);
+select ok(
+  has_function_privilege('service_role', 'public.feed_page(uuid,integer,timestamptz,bigint,post_type,request_type,property_status,text)', 'execute'),
+  'the service role can execute the feed RPC'
+);
 
 select results_eq(
   $$select liked, like_count from public.set_post_like('00000000-0000-0000-0000-000000000001', 9901, true)$$,
@@ -120,6 +130,42 @@ select is(
   (select array_agg(body) from public.list_post_comments(9901)),
   array['First comment', 'Second comment'],
   'comments are listed oldest first with an ID tiebreaker'
+);
+
+insert into public.likes (post_id, user_id, created_at)
+select
+  9901,
+  id,
+  '2026-09-05T12:00:00Z'::timestamptz + row_number() over (order by id) * interval '1 second'
+from public.users;
+
+select is(
+  (
+    select jsonb_array_length(like_previews)
+    from public.feed_page('00000000-0000-0000-0000-000000000001', 20)
+    where id = 9901
+  ),
+  3,
+  'feed liker previews are bounded to three newest identities'
+);
+select is(
+  (
+    select array_agg(preview ->> 'handle' order by position)
+    from public.feed_page('00000000-0000-0000-0000-000000000001', 20) feed
+    cross join lateral jsonb_array_elements(feed.like_previews) with ordinality as previews(preview, position)
+    where feed.id = 9901
+  ),
+  array['bizzaro', 'ifeoma', 'ayo'],
+  'feed liker previews retain newest-first order at the three-item cap'
+);
+select is(
+  (
+    select latest_comment ->> 'body'
+    from public.feed_page('00000000-0000-0000-0000-000000000001', 20)
+    where id = 9901
+  ),
+  'Second comment',
+  'feed rows include the newest comment preview'
 );
 
 select throws_ok(

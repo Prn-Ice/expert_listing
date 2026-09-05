@@ -103,28 +103,30 @@ final class _CommentsSheetState extends ConsumerState<CommentsSheet> {
                   ),
                   const SizedBox(height: AppSpacing.small),
                 ],
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: _CommentInput(
-                        controller: _controller,
-                        enabled: !state.isSubmitting,
-                        onChanged: cubit.draftChanged,
-                        onSubmitted: () => _submit(cubit),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _CommentInput(
+                          controller: _controller,
+                          enabled: !state.isSubmitting,
+                          onChanged: cubit.draftChanged,
+                          onSubmitted: () => _submit(cubit),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.small),
-                    _SubmitButton(
-                      onPressed:
-                          state.isLoading ||
-                              state.isSubmitting ||
-                              state.draft.trim().isEmpty
-                          ? null
-                          : () => _submit(cubit),
-                      isSubmitting: state.isSubmitting,
-                    ),
-                  ],
+                      const SizedBox(width: AppSpacing.small),
+                      _SubmitButton(
+                        onPressed:
+                            state.isLoading ||
+                                state.isSubmitting ||
+                                state.draft.trim().isEmpty
+                            ? null
+                            : () => _submit(cubit),
+                        isSubmitting: state.isSubmitting,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -157,11 +159,14 @@ final class _CloseAction extends StatelessWidget {
       excludeSemantics: true,
       child: CupertinoButton(
         padding: EdgeInsets.zero,
-        minimumSize: const Size.square(AppIconSize.textButtonTapTarget),
+        minimumSize: const Size.square(AppIconSize.tapTarget),
         onPressed: onPressed,
-        child: Icon(
-          CupertinoIcons.xmark,
-          color: AppColors.of(context).textPrimary,
+        child: Text(
+          'Close',
+          style: AppTypography.bodyMedium(
+            AppColors.of(context),
+            color: AppColors.of(context).brandText,
+          ),
         ),
       ),
     );
@@ -185,31 +190,34 @@ final class _CommentInput extends StatelessWidget {
   Widget build(BuildContext context) {
     if (context.isIos) {
       final colors = AppColors.of(context);
-      return CupertinoTextField(
-        key: const ValueKey<String>('comment-input'),
-        controller: controller,
-        enabled: enabled,
-        minLines: 1,
-        maxLines: 4,
-        maxLength: 1000,
-        textCapitalization: TextCapitalization.sentences,
-        placeholder: 'Add a comment',
-        style: AppTypography.body(colors),
-        placeholderStyle: AppTypography.body(
-          colors,
-          color: colors.textTertiary,
+      return ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: AppIconSize.tapTarget),
+        child: CupertinoTextField(
+          key: const ValueKey<String>('comment-input'),
+          controller: controller,
+          enabled: enabled,
+          minLines: 1,
+          maxLines: 4,
+          maxLength: 1000,
+          textCapitalization: TextCapitalization.sentences,
+          placeholder: 'Add a comment',
+          style: AppTypography.body(colors),
+          placeholderStyle: AppTypography.body(
+            colors,
+            color: colors.textTertiary,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.medium,
+            vertical: AppSpacing.small,
+          ),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            border: Border.all(color: colors.border),
+            borderRadius: AppRadii.image,
+          ),
+          onChanged: onChanged,
+          onSubmitted: (_) => onSubmitted(),
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.medium,
-          vertical: AppSpacing.medium,
-        ),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          border: Border.all(color: colors.border),
-          borderRadius: AppRadii.image,
-        ),
-        onChanged: onChanged,
-        onSubmitted: (_) => onSubmitted(),
       );
     }
     return TextField(
@@ -238,26 +246,31 @@ final class _SubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final child = isSubmitting
-        ? const SizedBox.square(
-            dimension: AppIconSize.small,
-            child: CircularProgressIndicator.adaptive(strokeWidth: 2),
-          )
-        : const Text('Post');
     if (!context.isIos) {
       return FilledButton(
         key: const ValueKey<String>('comment-submit'),
         onPressed: onPressed,
-        child: child,
+        child: isSubmitting
+            ? const SizedBox.square(
+                dimension: AppIconSize.small,
+                child: CircularProgressIndicator.adaptive(strokeWidth: 2),
+              )
+            : const Text('Post'),
       );
     }
+    final colors = AppColors.of(context);
     return CupertinoButton(
       key: const ValueKey<String>('comment-submit'),
-      color: AppColors.of(context).brand,
-      minimumSize: const Size(64, AppIconSize.textButtonTapTarget),
+      color: colors.brand,
+      minimumSize: const Size(64, AppIconSize.tapTarget),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.medium),
       onPressed: onPressed,
-      child: child,
+      child: isSubmitting
+          ? CupertinoActivityIndicator(color: colors.onBrand)
+          : Text(
+              'Post',
+              style: AppTypography.bodyMedium(colors, color: colors.onBrand),
+            ),
     );
   }
 }

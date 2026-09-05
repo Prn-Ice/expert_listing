@@ -57,6 +57,30 @@ final class PropertyImage extends Equatable {
   List<Object?> get props => [id, url, position];
 }
 
+/// The newest comment included in a feed row for its compact preview.
+final class FeedCommentPreview extends Equatable {
+  const FeedCommentPreview({
+    required this.id,
+    required this.body,
+    required this.author,
+  });
+
+  factory FeedCommentPreview.fromJson(Map<String, dynamic> json) {
+    return FeedCommentPreview(
+      id: _requiredInt(json, 'id'),
+      body: _requiredString(json, 'body'),
+      author: FeedAuthor.fromJson(_requiredMap(json, 'author')),
+    );
+  }
+
+  final int id;
+  final String body;
+  final FeedAuthor author;
+
+  @override
+  List<Object?> get props => [id, body, author];
+}
+
 /// One discriminated post returned by the feed API.
 sealed class FeedPost extends Equatable {
   /// Creates shared feed post data.
@@ -69,6 +93,8 @@ sealed class FeedPost extends Equatable {
     required this.likeCount,
     required this.commentCount,
     required this.likedByCurrentUser,
+    required this.likePreview,
+    required this.latestComment,
     required this.author,
   });
 
@@ -80,6 +106,8 @@ sealed class FeedPost extends Equatable {
   final int likeCount;
   final int commentCount;
   final bool likedByCurrentUser;
+  final List<FeedAuthor> likePreview;
+  final FeedCommentPreview? latestComment;
   final FeedAuthor author;
 
   /// The server-side discriminator used by filters and presentation.
@@ -93,6 +121,8 @@ sealed class FeedPost extends Equatable {
     int? likeCount,
     int? commentCount,
     bool? likedByCurrentUser,
+    bool clearLikePreview = false,
+    bool clearLatestComment = false,
   }) {
     final common = _CommonPost(
       id: id,
@@ -103,6 +133,8 @@ sealed class FeedPost extends Equatable {
       likeCount: likeCount ?? this.likeCount,
       commentCount: commentCount ?? this.commentCount,
       likedByCurrentUser: likedByCurrentUser ?? this.likedByCurrentUser,
+      likePreview: clearLikePreview ? const [] : likePreview,
+      latestComment: clearLatestComment ? null : latestComment,
       author: author,
     );
     return switch (this) {
@@ -172,6 +204,8 @@ sealed class FeedPost extends Equatable {
     likeCount,
     commentCount,
     likedByCurrentUser,
+    likePreview,
+    latestComment,
     author,
   ];
 }
@@ -189,6 +223,8 @@ final class GeneralFeedPost extends FeedPost {
         likeCount: common.likeCount,
         commentCount: common.commentCount,
         likedByCurrentUser: common.likedByCurrentUser,
+        likePreview: common.likePreview,
+        latestComment: common.latestComment,
         author: common.author,
       );
 
@@ -218,6 +254,8 @@ final class RequestFeedPost extends FeedPost {
          likeCount: common.likeCount,
          commentCount: common.commentCount,
          likedByCurrentUser: common.likedByCurrentUser,
+         likePreview: common.likePreview,
+         latestComment: common.latestComment,
          author: common.author,
        );
 
@@ -250,6 +288,8 @@ final class PropertyFeedPost extends FeedPost {
          likeCount: common.likeCount,
          commentCount: common.commentCount,
          likedByCurrentUser: common.likedByCurrentUser,
+         likePreview: common.likePreview,
+         latestComment: common.latestComment,
          author: common.author,
        );
 
@@ -282,6 +322,8 @@ final class _CommonPost {
     required this.likeCount,
     required this.commentCount,
     required this.likedByCurrentUser,
+    required this.likePreview,
+    required this.latestComment,
     required this.author,
   });
 
@@ -293,6 +335,8 @@ final class _CommonPost {
   final int likeCount;
   final int commentCount;
   final bool likedByCurrentUser;
+  final List<FeedAuthor> likePreview;
+  final FeedCommentPreview? latestComment;
   final FeedAuthor author;
 
   factory _CommonPost.fromJson(Map<String, dynamic> json) {
@@ -310,9 +354,36 @@ final class _CommonPost {
       likeCount: _requiredInt(json, 'likeCount'),
       commentCount: _requiredInt(json, 'commentCount'),
       likedByCurrentUser: _requiredBool(json, 'likedByCurrentUser'),
+      likePreview: _likePreview(json),
+      latestComment: _latestComment(json),
       author: FeedAuthor.fromJson(_requiredMap(json, 'author')),
     );
   }
+}
+
+List<FeedAuthor> _likePreview(Map<String, dynamic> json) {
+  final value = json['likePreview'];
+  if (value == null) return const [];
+  if (value is! List) {
+    throw const FormatException('Feed post has an invalid like preview.');
+  }
+  return value
+      .map((author) {
+        if (author is! Map<String, dynamic>) {
+          throw const FormatException('Feed post has an invalid liker.');
+        }
+        return FeedAuthor.fromJson(author);
+      })
+      .toList(growable: false);
+}
+
+FeedCommentPreview? _latestComment(Map<String, dynamic> json) {
+  final value = json['latestComment'];
+  if (value == null) return null;
+  if (value is! Map<String, dynamic>) {
+    throw const FormatException('Feed post has an invalid comment preview.');
+  }
+  return FeedCommentPreview.fromJson(value);
 }
 
 List<PropertyImage> _propertyImages(Map<String, dynamic> property) {

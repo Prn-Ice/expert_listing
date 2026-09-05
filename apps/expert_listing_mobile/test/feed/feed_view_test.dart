@@ -89,10 +89,26 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.bySemanticsLabel('Close'), findsOneWidget);
+    expect(find.text('Close'), findsOneWidget);
     expect(
       find.byKey(const ValueKey<String>('comment-submit')).hitTestable(),
       findsOneWidget,
     );
+    final inputRect = tester.getRect(
+      find.byKey(const ValueKey<String>('comment-input')),
+    );
+    final submitRect = tester.getRect(
+      find.byKey(const ValueKey<String>('comment-submit')),
+    );
+    expect(inputRect.height, greaterThanOrEqualTo(AppIconSize.tapTarget));
+    expect(submitRect.height, inputRect.height);
+    final postLabel = tester.widget<Text>(
+      find.descendant(
+        of: find.byKey(const ValueKey<String>('comment-submit')),
+        matching: find.text('Post'),
+      ),
+    );
+    expect(postLabel.style?.color, AppColors.light.onBrand);
     expect(
       tester
           .getRect(find.byKey(const ValueKey<String>('comment-submit')))

@@ -241,6 +241,7 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
       post.withEngagement(
         likedByCurrentUser: desired,
         likeCount: (post.likeCount + (desired ? 1 : -1)).clamp(0, 1 << 31),
+        clearLikePreview: true,
       ),
     );
 
@@ -335,7 +336,10 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
     if (post == null) return;
     final count = post.commentCount + 1;
     _commentCountFloor[post.id] = count;
-    _replacePost(emit, post.withEngagement(commentCount: count));
+    _replacePost(
+      emit,
+      post.withEngagement(commentCount: count, clearLatestComment: true),
+    );
     await _retireFeedLoadsAndInvalidate(emit);
     if (!isClosed) add(const FeedRefreshed());
   }
@@ -377,6 +381,7 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
           if (countFloor != null && overlaidPost.commentCount < countFloor) {
             overlaidPost = overlaidPost.withEngagement(
               commentCount: countFloor,
+              clearLatestComment: true,
             );
           }
           return overlaidPost;

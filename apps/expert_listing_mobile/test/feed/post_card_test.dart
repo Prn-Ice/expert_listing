@@ -16,11 +16,15 @@ void main() {
   ) async {
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     try {
+      final post = FeedPost.fromJson({
+        ..._commonPost(id: 1),
+        'commentCount': 3,
+      });
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light(),
           home: Scaffold(
-            body: PostCard(post: _generalPost(), onNotice: (_) {}),
+            body: PostCard(post: post, onNotice: (_) {}),
           ),
         ),
       );
@@ -29,6 +33,18 @@ void main() {
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(TextButton), findsNothing);
       expect(find.byType(InkResponse), findsNothing);
+      expect(
+        tester.getTopLeft(find.text('View all 3 comments')).dx,
+        tester.getTopLeft(find.text('Post 1')).dx,
+      );
+      expect(
+        tester
+            .getSize(
+              find.byKey(const ValueKey<String>('post-comments-1')),
+            )
+            .height,
+        greaterThanOrEqualTo(AppIconSize.tapTarget),
+      );
     } finally {
       debugDefaultTargetPlatformOverride = null;
     }
@@ -378,17 +394,10 @@ void main() {
     final divider = find.byType(Divider);
     final commentsLabel = tester.widget<Text>(commentsText);
     expect(tester.getRect(comments).top, tester.getRect(actions).bottom);
-    expect(tester.getRect(comments).height, AppIconSize.textButtonTapTarget);
+    expect(tester.getRect(comments).height, AppIconSize.tapTarget);
     expect(tester.getRect(divider).top, tester.getRect(comments).bottom);
     expect(tester.getRect(commentsText).left, tester.getRect(body).left);
-    expect(
-      tester.getRect(comments).left,
-      tester.getRect(commentsText).left - AppSpacing.small,
-    );
-    expect(
-      tester.getRect(comments).right,
-      tester.getRect(commentsText).right + AppSpacing.small,
-    );
+    expect(tester.getRect(comments).left, tester.getRect(commentsText).left);
     expect(
       tester.getRect(commentsText).center.dy,
       tester.getRect(comments).center.dy,
@@ -397,6 +406,113 @@ void main() {
     expect(commentsLabel.style?.fontWeight, FontWeight.w500);
     expect(commentsLabel.style?.height, 1.2);
     expect(commentsLabel.style?.color, AppColors.light.textTertiary);
+  });
+
+  testWidgets('renders bounded liker and latest-comment previews', (
+    tester,
+  ) async {
+    var commentsOpened = 0;
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 8),
+      'likeCount': 2,
+      'commentCount': 2,
+      'likePreview': const [
+        <String, dynamic>{
+          'id': '00000000-0000-0000-0000-000000000003',
+          'handle': 'ifeoma',
+          'displayName': 'Ifeoma Nwosu',
+          'role': 'Architect',
+          'avatarUrl': 'https://example.test/ifeoma.jpg',
+        },
+        <String, dynamic>{
+          'id': '00000000-0000-0000-0000-000000000001',
+          'handle': 'prince',
+          'displayName': 'Prince Adeyemi',
+          'role': 'Realtor',
+          'avatarUrl': 'https://example.test/prince.jpg',
+        },
+      ],
+      'latestComment': const <String, dynamic>{
+        'id': 3002,
+        'body': 'The study could work well as a nursery too.',
+        'author': <String, dynamic>{
+          'id': '00000000-0000-0000-0000-000000000003',
+          'handle': 'ifeoma',
+          'displayName': 'Ifeoma Nwosu',
+          'role': 'Architect',
+          'avatarUrl': 'https://example.test/ifeoma.jpg',
+        },
+      },
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SizedBox(
+            width: 428,
+            child: PostCard(
+              post: post,
+              onNotice: (_) {},
+              onComments: () => commentsOpened++,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Liked by ifeoma and 1 other'), findsOneWidget);
+    final avatarGroup = find.byKey(
+      const ValueKey<String>('post-liker-avatars'),
+    );
+    final avatars = find.descendant(
+      of: avatarGroup,
+      matching: find.byType(AppAvatar),
+    );
+    final avatarFrames = find.descendant(
+      of: avatarGroup,
+      matching: find.byKey(
+        const ValueKey<String>('post-liker-avatar-0'),
+      ),
+    );
+    expect(avatars, findsNWidgets(2));
+    expect(tester.getSize(avatarGroup), const Size(42, 24));
+    expect(tester.getSize(avatarFrames), const Size.square(24));
+    expect(tester.getSize(avatars.at(0)), const Size.square(20));
+    final firstRing = tester.widget<DecoratedBox>(
+      find.byKey(const ValueKey<String>('post-liker-avatar-ring-0')),
+    );
+    expect(
+      firstRing.decoration,
+      const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+    );
+    expect(
+      tester.getRect(avatarFrames).right -
+          tester
+              .getRect(
+                find.byKey(
+                  const ValueKey<String>('post-liker-avatar-1'),
+                ),
+              )
+              .left,
+      6,
+    );
+    expect(find.text('ifeoma'), findsOneWidget);
+    expect(
+      find.text('The study could work well as a nursery too.'),
+      findsOneWidget,
+    );
+    expect(find.text('View all 2 comments'), findsOneWidget);
+
+    expect(
+      tester
+          .getSemantics(
+            find.byKey(const ValueKey<String>('post-comments-8')),
+          )
+          .label,
+      contains('The study could work well as a nursery too.'),
+    );
+    await tester.tap(find.byKey(const ValueKey<String>('post-comments-8')));
+    expect(commentsOpened, 1);
   });
 
   testWidgets('counted edge actions align with the property image', (
@@ -636,6 +752,26 @@ void main() {
       'commentCount': 32,
       'viewCount': 2400,
       'bookmarkCount': 17,
+      'likePreview': const [
+        <String, dynamic>{
+          'id': '00000000-0000-0000-0000-000000000003',
+          'handle': 'ifeoma',
+          'displayName': 'Ifeoma Nwosu',
+          'role': 'Architect',
+          'avatarUrl': null,
+        },
+      ],
+      'latestComment': const <String, dynamic>{
+        'id': 3002,
+        'body': 'The study could work well as a nursery too.',
+        'author': <String, dynamic>{
+          'id': '00000000-0000-0000-0000-000000000003',
+          'handle': 'ifeoma',
+          'displayName': 'Ifeoma Nwosu',
+          'role': 'Architect',
+          'avatarUrl': null,
+        },
+      },
       'author': {
         ...(_commonPost(id: 8)['author']! as Map<String, dynamic>),
         'displayName': 'Prince Adeyemi with a long profile name',
@@ -654,16 +790,19 @@ void main() {
             child: child!,
           ),
           home: Scaffold(
-            body: SingleChildScrollView(
-              child: Column(
-                children: [
-                  StoryStrip(onNotice: (_) {}),
-                  CreatePostPrompt(
-                    onNotice: (_) {},
-                    showInvitation: false,
-                  ),
-                  PostCard(post: post, onNotice: (_) {}),
-                ],
+            body: SizedBox(
+              width: 360,
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    StoryStrip(onNotice: (_) {}),
+                    CreatePostPrompt(
+                      onNotice: (_) {},
+                      showInvitation: false,
+                    ),
+                    PostCard(post: post, onNotice: (_) {}),
+                  ],
+                ),
               ),
             ),
           ),
@@ -675,6 +814,10 @@ void main() {
     }
 
     expect(tester.getSize(find.text('Your Story')).height, greaterThan(30));
+    expect(
+      tester.getSize(find.byKey(const ValueKey('post-like-preview'))).height,
+      greaterThan(24),
+    );
   });
 
   testWidgets('a property carousel restores its page after reconstruction', (

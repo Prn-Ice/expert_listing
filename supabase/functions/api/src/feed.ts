@@ -28,6 +28,20 @@ type PropertyImageRow = {
   position: number;
 };
 
+type PreviewAuthorRow = {
+  id: string;
+  handle: string;
+  displayName: string;
+  role: string;
+  avatarPath: string | null;
+};
+
+type CommentPreviewRow = {
+  id: number | string;
+  body: string;
+  author: PreviewAuthorRow;
+};
+
 type FeedRow = {
   id: number | string;
   body: string;
@@ -50,6 +64,8 @@ type FeedRow = {
   like_count: number | string;
   comment_count: number | string;
   liked_by_viewer: boolean;
+  like_previews: PreviewAuthorRow[] | null;
+  latest_comment: CommentPreviewRow | null;
 };
 
 function parseLimit(raw: string | undefined): number {
@@ -117,6 +133,16 @@ function mediaUrl(publicOrigin: string, path: string | null): string | null {
   return `${publicOrigin}/storage/v1/object/public/media/${path}`;
 }
 
+function previewAuthorDto(row: PreviewAuthorRow, origin: string) {
+  return {
+    id: row.id,
+    handle: row.handle,
+    displayName: row.displayName,
+    role: row.role,
+    avatarUrl: mediaUrl(origin, row.avatarPath),
+  };
+}
+
 // The externally reachable origin for DTO media URLs. Behind the Supabase
 // gateway the forwarded headers carry the public origin; direct request-level
 // use (tests) falls back to the request URL itself.
@@ -149,6 +175,16 @@ function toPostDto(row: FeedRow, origin: string) {
     likeCount: Number(row.like_count),
     commentCount: Number(row.comment_count),
     likedByCurrentUser: row.liked_by_viewer,
+    likePreview: (row.like_previews ?? []).map((author) =>
+      previewAuthorDto(author, origin)
+    ),
+    latestComment: row.latest_comment
+      ? {
+        id: Number(row.latest_comment.id),
+        body: row.latest_comment.body,
+        author: previewAuthorDto(row.latest_comment.author, origin),
+      }
+      : null,
     author: {
       id: row.author_id,
       handle: row.author_handle,

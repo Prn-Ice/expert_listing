@@ -277,15 +277,17 @@ void main() {
   });
 
   test('a failed latest like intent rolls back to confirmed state', () async {
-    final repository = _EngagementRepository();
+    final repository = _EngagementRepository(withPreviews: true);
     final bloc = FeedBloc(repository: repository);
     addTearDown(bloc.close);
 
     bloc.add(const FeedStarted());
     await _flush();
+    expect(bloc.state.posts.single.likePreview, isNotEmpty);
     bloc.add(const FeedLikeToggled(1));
     await _flush();
     expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
+    expect(bloc.state.posts.single.likePreview, isEmpty);
 
     repository.likeRequests.single.result.completeError(
       const EngagementFailure(),
@@ -293,9 +295,29 @@ void main() {
     await _flush();
 
     expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
-    expect(bloc.state.posts.single.likeCount, 0);
+    expect(bloc.state.posts.single.likeCount, 2);
     expect(bloc.state.notice, "Couldn't update your like. Try again.");
   });
+
+  test(
+    'a comment mutation suppresses a stale latest-comment preview',
+    () async {
+      final repository = _EngagementRepository(withPreviews: true);
+      final bloc = FeedBloc(repository: repository);
+      addTearDown(bloc.close);
+
+      bloc.add(const FeedStarted());
+      await _flush();
+      expect(bloc.state.posts.single.latestComment, isNotNull);
+
+      bloc.add(const FeedCommentAdded(1));
+      await _flush();
+      await _flush();
+
+      expect(bloc.state.posts.single.commentCount, 3);
+      expect(bloc.state.posts.single.latestComment, isNull);
+    },
+  );
 
   test('bookmarks persist locally and disclose device scope once', () async {
     final store = _BookmarkStore();
@@ -416,10 +438,12 @@ final class _TestFeedRepository extends FeedRepository {
 }
 
 final class _EngagementRepository extends FeedRepository {
-  _EngagementRepository({this.invalidateBarrier}) : super(client: Dio());
+  _EngagementRepository({this.invalidateBarrier, this.withPreviews = false})
+    : super(client: Dio());
 
   final likeRequests = <({bool liked, Completer<LikeResult> result})>[];
   final Completer<void>? invalidateBarrier;
+  final bool withPreviews;
   int invalidateCalls = 0;
 
   @override
@@ -427,7 +451,7 @@ final class _EngagementRepository extends FeedRepository {
     required FeedFilter filter,
     String? cursor,
     int limit = 10,
-  }) async => _page(1);
+  }) async => _page(1, withPreviews: withPreviews);
 
   @override
   Future<LikeResult> setPostLiked({
@@ -535,6 +559,7 @@ FeedLoadResult _page(
   String? nextCursor,
   FeedDataSource source = FeedDataSource.network,
   FeedFallbackReason? fallbackReason,
+  bool withPreviews = false,
 }) => FeedLoadResult(
   posts: [
     FeedPost.fromJson({
@@ -553,6 +578,30 @@ FeedLoadResult _page(
         'displayName': 'Prince',
         'role': 'Buyer',
         'avatarUrl': null,
+      },
+      if (withPreviews) ...{
+        'likeCount': 2,
+        'commentCount': 2,
+        'likePreview': const [
+          {
+            'id': '00000000-0000-0000-0000-000000000003',
+            'handle': 'ifeoma',
+            'displayName': 'Ifeoma Nwosu',
+            'role': 'Architect',
+            'avatarUrl': null,
+          },
+        ],
+        'latestComment': const {
+          'id': 3002,
+          'body': 'Existing comment',
+          'author': {
+            'id': '00000000-0000-0000-0000-000000000003',
+            'handle': 'ifeoma',
+            'displayName': 'Ifeoma Nwosu',
+            'role': 'Architect',
+            'avatarUrl': null,
+          },
+        },
       },
       'location': 'Yaba, Lagos',
     }),

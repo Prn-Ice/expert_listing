@@ -103,45 +103,194 @@ class PostCard extends StatelessWidget {
             onBookmark: onBookmark,
           ),
         ),
+        if (post.likeCount > 0 && post.likePreview.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: _postContentInset,
+            ),
+            child: _LikePreview(post: post),
+          ),
         if (post.commentCount > 0)
           Padding(
             padding: const EdgeInsets.only(
-              left: _postContentInset - AppSpacing.small,
+              left: _postContentInset,
               right: _postInset,
             ),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                minHeight: AppIconSize.textButtonTapTarget,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: AppButton(
-                  key: ValueKey<String>('post-comments-${post.id}'),
-                  onPressed:
-                      onComments ??
-                      () => onNotice(
-                        'Comments are part of the next preview step.',
-                      ),
-                  minimumSize: const Size.square(
-                    AppIconSize.textButtonTapTarget,
+            child: _CommentsPreview(
+              post: post,
+              onPressed:
+                  onComments ??
+                  () => onNotice(
+                    'Comments are part of the next preview step.',
                   ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.small,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'View all ${post.commentCount} comments',
-                    style: AppTypography.bodyMedium(
-                      colors,
-                      color: colors.textTertiary,
-                    ),
-                  ),
-                ),
-              ),
             ),
           ),
         const Divider(height: 1),
       ],
+    );
+  }
+}
+
+final class _LikePreview extends StatelessWidget {
+  const _LikePreview({required this.post});
+
+  final FeedPost post;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final firstLiker = post.likePreview.first;
+    final others = post.likeCount - 1;
+    return ConstrainedBox(
+      key: const ValueKey<String>('post-like-preview'),
+      constraints: const BoxConstraints(minHeight: 24),
+      child: Row(
+        children: [
+          _LikerAvatars(authors: post.likePreview.take(3).toList()),
+          const SizedBox(width: AppSpacing.small),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: AppTypography.body(colors, color: colors.textSecondary),
+                children: [
+                  const TextSpan(text: 'Liked by '),
+                  TextSpan(
+                    text: firstLiker.handle,
+                    style: AppTypography.bodyMedium(
+                      colors,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                  if (others > 0)
+                    TextSpan(
+                      text: ' and $others ${others == 1 ? 'other' : 'others'}',
+                      style: AppTypography.bodyMedium(
+                        colors,
+                        color: colors.textSecondary,
+                      ),
+                    ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+final class _LikerAvatars extends StatelessWidget {
+  const _LikerAvatars({required this.authors});
+
+  final List<FeedAuthor> authors;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    const avatarSize = 24.0;
+    const avatarRing = 2.0;
+    const visibleStep = avatarSize - 6;
+    return ExcludeSemantics(
+      child: SizedBox(
+        key: const ValueKey<String>('post-liker-avatars'),
+        width: avatarSize + visibleStep * (authors.length - 1),
+        height: avatarSize,
+        child: Stack(
+          children: [
+            for (final (index, author) in authors.indexed)
+              Positioned(
+                left: visibleStep * index,
+                child: SizedBox.square(
+                  key: ValueKey<String>('post-liker-avatar-$index'),
+                  dimension: avatarSize,
+                  child: DecoratedBox(
+                    key: ValueKey<String>('post-liker-avatar-ring-$index'),
+                    decoration: BoxDecoration(
+                      color: colors.canvas,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(avatarRing),
+                      child: AppAvatar(
+                        imageUrl: author.avatarUrl,
+                        displayName: author.displayName,
+                        size: avatarSize - avatarRing * 2,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+final class _CommentsPreview extends StatelessWidget {
+  const _CommentsPreview({required this.post, required this.onPressed});
+
+  final FeedPost post;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    final latest = post.latestComment;
+    final semanticsLabel = latest == null
+        ? 'View all ${post.commentCount} comments'
+        : '${latest.author.handle} commented: ${latest.body}. '
+              'View all ${post.commentCount} comments';
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Semantics(
+        button: true,
+        label: semanticsLabel,
+        excludeSemantics: true,
+        child: AppButton(
+          key: ValueKey<String>('post-comments-${post.id}'),
+          onPressed: onPressed,
+          minimumSize: const Size(0, AppIconSize.tapTarget),
+          padding: EdgeInsets.zero,
+          alignment: Alignment.centerLeft,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (latest != null) ...[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      latest.author.handle,
+                      style: AppTypography.bodyMedium(colors),
+                    ),
+                    const SizedBox(width: AppSpacing.small),
+                    Expanded(
+                      child: Text(
+                        latest.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.bodyMedium(colors),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppSpacing.xsmall),
+              ],
+              Text(
+                'View all ${post.commentCount} comments',
+                style: AppTypography.bodyMedium(
+                  colors,
+                  color: colors.textTertiary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

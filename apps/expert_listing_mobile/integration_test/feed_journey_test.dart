@@ -25,6 +25,12 @@ void main() {
       // Launch: the seeded feed renders its first page.
       await _pumpUntilFound(tester, find.byType(PostCard));
       expect(find.text('Ayo Balogun'), findsWidgets);
+      expect(find.text('Liked by ifeoma and 1 other'), findsOneWidget);
+      expect(
+        find.text('The study could work well as a nursery too.'),
+        findsOneWidget,
+      );
+      expect(find.text('View all 2 comments'), findsOneWidget);
       final identity = _firstVisiblePostId(tester);
       expect(_scrollOffset(tester), 0);
       final container = ProviderScope.containerOf(
