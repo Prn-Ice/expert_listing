@@ -92,6 +92,25 @@ void main() {
     },
   );
 
+  test('created post inserts immediately and retires an older load', () async {
+    final firstPage = Completer<FeedLoadResult>();
+    final repository = _TestFeedRepository((_, _) => firstPage.future);
+    final bloc = FeedBloc(repository: repository);
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await Future<void>.delayed(Duration.zero);
+    bloc.add(FeedPostCreated(_page(2).posts.single));
+    await Future<void>.delayed(Duration.zero);
+
+    expect(bloc.state.posts.map((post) => post.id), [2]);
+    expect(bloc.state.isInitialLoading, isFalse);
+
+    firstPage.complete(_page(1));
+    await Future<void>.delayed(Duration.zero);
+    expect(bloc.state.posts.map((post) => post.id), [2]);
+  });
+
   test('next-page retry preserves the already loaded posts', () async {
     var nextPageAttempts = 0;
     final repository = _TestFeedRepository((_, cursor) {

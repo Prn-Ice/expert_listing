@@ -1,6 +1,6 @@
 begin;
 
-select plan(67);
+select plan(73);
 
 select ok(to_regclass('public.users') is not null, 'users table exists');
 select ok(to_regclass('public.property_requests') is not null, 'property_requests table exists');
@@ -312,6 +312,53 @@ select is(
   (select count(*) from public.posts where post_type = 'property'),
   8::bigint,
   'deterministic fixtures include property posts'
+);
+
+select ok(
+  to_regprocedure('public.create_hydrated_post(uuid,text,public.post_type,text,public.request_type,public.property_status,text[])') is not null,
+  'the hydrated post creation RPC exists'
+);
+select ok(
+  (select prosecdef from pg_proc where oid = 'public.create_hydrated_post(uuid,text,public.post_type,text,public.request_type,public.property_status,text[])'::regprocedure),
+  'the hydrated post creation RPC is security definer'
+);
+select ok(
+  has_function_privilege('service_role', 'public.create_hydrated_post(uuid,text,public.post_type,text,public.request_type,public.property_status,text[])', 'execute'),
+  'service_role can execute hydrated post creation'
+);
+select ok(
+  not has_function_privilege('anon', 'public.create_hydrated_post(uuid,text,public.post_type,text,public.request_type,public.property_status,text[])', 'execute'),
+  'anon cannot execute hydrated post creation'
+);
+select is(
+  (
+    select created.body || '|' || created.general_location || '|' || created.author_handle
+    from public.create_hydrated_post(
+      '00000000-0000-0000-0000-000000000001',
+      'Hydrated general post',
+      'general',
+      'Surulere, Lagos'
+    ) created
+  ),
+  'Hydrated general post|Surulere, Lagos|prince',
+  'hydrated creation returns post and author fields'
+);
+select is(
+  (
+    select string_agg(image->>'storagePath', ',' order by (image->>'position')::integer)
+    from public.create_hydrated_post(
+      '00000000-0000-0000-0000-000000000001',
+      'Hydrated property post',
+      'property',
+      'Ikoyi, Lagos',
+      null,
+      'for_rent',
+      array['properties/hydrated-0.png', 'properties/hydrated-1.webp']
+    ) created,
+    jsonb_array_elements(created.property_images) image
+  ),
+  'properties/hydrated-0.png,properties/hydrated-1.webp',
+  'hydrated creation returns property images in display order'
 );
 
 -- The feed location filter must keep a predicate form PostgreSQL can connect

@@ -18,7 +18,7 @@ void main() {
             builder: (context, setState) {
               setHostState = setState;
               return CreatePostPrompt(
-                onNotice: (_) {},
+                onPressed: () {},
                 showInvitation: showInvitation,
               );
             },
@@ -74,7 +74,7 @@ void main() {
               builder: (context, setState) {
                 setHostState = setState;
                 return CreatePostPrompt(
-                  onNotice: (_) {},
+                  onPressed: () {},
                   showInvitation: showInvitation,
                 );
               },

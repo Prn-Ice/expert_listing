@@ -4,6 +4,7 @@
 import 'package:equatable/equatable.dart';
 
 import 'package:expert_listing/feed/models/feed_filter.dart';
+import 'package:expert_listing/feed/models/feed_post.dart';
 
 /// User and lifecycle events that can overlap in the feed.
 sealed class FeedEvent extends Equatable {
@@ -96,4 +97,14 @@ final class FeedCommentAdded extends FeedEvent {
 
   @override
   List<Object?> get props => [postId];
+}
+
+/// Inserts a successfully-created hydrated post without reloading the feed.
+final class FeedPostCreated extends FeedEvent {
+  const FeedPostCreated(this.post);
+
+  final FeedPost post;
+
+  @override
+  List<Object?> get props => [post];
 }

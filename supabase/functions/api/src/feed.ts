@@ -42,7 +42,7 @@ type CommentPreviewRow = {
   author: PreviewAuthorRow;
 };
 
-type FeedRow = {
+export type FeedRow = {
   id: number | string;
   body: string;
   post_type: "general" | "request" | "property";
@@ -146,7 +146,7 @@ function previewAuthorDto(row: PreviewAuthorRow, origin: string) {
 // The externally reachable origin for DTO media URLs. Behind the Supabase
 // gateway the forwarded headers carry the public origin; direct request-level
 // use (tests) falls back to the request URL itself.
-function publicOrigin(context: Context, env: AppEnv): string {
+export function publicOrigin(context: Context, env: AppEnv): string {
   if (env.publicUrlOverride) {
     return env.publicUrlOverride;
   }
@@ -164,7 +164,7 @@ function publicOrigin(context: Context, env: AppEnv): string {
   return new URL(context.req.url).origin;
 }
 
-function toPostDto(row: FeedRow, origin: string) {
+export function toPostDto(row: FeedRow, origin: string) {
   const post = {
     id: Number(row.id),
     body: row.body,

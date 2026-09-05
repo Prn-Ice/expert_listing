@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/create_post/create_post_sheet.dart';
 import 'package:expert_listing/feed/bloc/feed_bloc.dart';
 import 'package:expert_listing/feed/bloc/feed_event.dart';
 import 'package:expert_listing/feed/bloc/feed_state.dart';
@@ -97,7 +98,7 @@ class FeedViewState extends ConsumerState<FeedView> {
         ),
         SliverToBoxAdapter(
           child: CreatePostPrompt(
-            onNotice: _showNotice,
+            onPressed: _openCreatePost,
             showInvitation: state.posts.isNotEmpty,
           ),
         ),
@@ -124,6 +125,7 @@ class FeedViewState extends ConsumerState<FeedView> {
           onRetryFirstPage: _retryFirstPage,
           onRetryNextPage: _retryNextPage,
           onClearFilters: _clearFilters,
+          onCreatePost: _openCreatePost,
           onLike: (postId) => bloc.add(FeedLikeToggled(postId)),
           onComments: _openComments,
           onShare: _sharePost,
@@ -198,6 +200,17 @@ class FeedViewState extends ConsumerState<FeedView> {
 
   void _clearFilters() =>
       ref.read(feedBlocProvider.bloc).add(const FeedFiltersCleared());
+
+  Future<void> _openCreatePost() async {
+    final post = await showCreatePostSheet(context);
+    if (!mounted || post == null) return;
+    ref.read(feedBlocProvider.bloc).add(FeedPostCreated(post));
+    AppNotice.show(context, 'Post published.');
+    if (ref.read(feedBlocProvider).filter.isEmpty &&
+        widget.scrollController.hasClients) {
+      scrollToTop();
+    }
+  }
 
   void _showSavedFeedTransition(FeedState? previous, FeedState next) {
     if (previous == null) return;
@@ -467,6 +480,7 @@ final class _FeedContent extends StatelessWidget {
     required this.onRetryFirstPage,
     required this.onRetryNextPage,
     required this.onClearFilters,
+    required this.onCreatePost,
     required this.onLike,
     required this.onComments,
     required this.onShare,
@@ -479,6 +493,7 @@ final class _FeedContent extends StatelessWidget {
   final VoidCallback onRetryFirstPage;
   final VoidCallback onRetryNextPage;
   final VoidCallback onClearFilters;
+  final VoidCallback onCreatePost;
   final ValueChanged<int> onLike;
   final ValueChanged<FeedPost> onComments;
   final void Function(FeedPost post, BuildContext context) onShare;
@@ -535,7 +550,7 @@ final class _FeedContent extends StatelessWidget {
         child: _FeedEmpty(
           isFiltered: !state.filter.isEmpty,
           onClear: onClearFilters,
-          onNotice: onNotice,
+          onCreatePost: onCreatePost,
         ),
       );
     }
@@ -619,12 +634,12 @@ final class _FeedEmpty extends StatelessWidget {
   const _FeedEmpty({
     required this.isFiltered,
     required this.onClear,
-    required this.onNotice,
+    required this.onCreatePost,
   });
 
   final bool isFiltered;
   final VoidCallback onClear;
-  final ValueChanged<String> onNotice;
+  final VoidCallback onCreatePost;
 
   @override
   Widget build(BuildContext context) {
@@ -635,11 +650,7 @@ final class _FeedEmpty extends StatelessWidget {
           Text(isFiltered ? 'No posts match these filters.' : 'No posts yet.'),
           const SizedBox(height: AppSpacing.medium),
           FilledButton(
-            onPressed: isFiltered
-                ? onClear
-                : () => onNotice(
-                    'Post creation is part of the next preview step.',
-                  ),
+            onPressed: isFiltered ? onClear : onCreatePost,
             child: Text(isFiltered ? 'Clear filters' : 'Create a post'),
           ),
         ],

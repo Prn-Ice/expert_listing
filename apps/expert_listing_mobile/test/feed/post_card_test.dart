@@ -664,8 +664,19 @@ void main() {
       ),
     );
 
+    expect(
+      tester.widget<AppNetworkImage>(find.byType(AppNetworkImage)).fit,
+      BoxFit.cover,
+    );
+
     await tester.tap(find.byType(AppPressable));
     await tester.pumpAndSettle();
+
+    final fullScreenImage = find.descendant(
+      of: find.byKey(const ValueKey<String>('full-screen-property-images')),
+      matching: find.byType(AppNetworkImage),
+    );
+    expect(tester.widget<AppNetworkImage>(fullScreenImage).fit, BoxFit.contain);
 
     final overlays = tester
         .widgetList<AnnotatedRegion<SystemUiOverlayStyle>>(
@@ -830,7 +841,7 @@ void main() {
                   children: [
                     StoryStrip(onNotice: (_) {}),
                     CreatePostPrompt(
-                      onNotice: (_) {},
+                      onPressed: () {},
                       showInvitation: false,
                     ),
                     PostCard(post: post, onNotice: (_) {}),

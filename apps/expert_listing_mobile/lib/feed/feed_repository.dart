@@ -3,10 +3,22 @@
 
 import 'package:dio/dio.dart';
 
+import 'package:expert_listing/create_post/create_post_image.dart';
 import 'package:expert_listing/feed/data/feed_cache.dart';
 import 'package:expert_listing/feed/models/feed_comment.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
+import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:expert_listing/feed/models/post_types.dart';
+
+/// A safe recoverable post-creation failure.
+final class CreatePostFailure implements Exception {
+  /// Creates a failure with short approved user-facing copy.
+  const CreatePostFailure(this.message);
+
+  /// The message shown while retaining the draft.
+  final String message;
+}
 
 /// Reconciles Hono's paginated feed with the explicit saved-read boundary.
 class FeedRepository {
@@ -99,6 +111,65 @@ class FeedRepository {
     // responses cannot write pre-mutation data into the cleared cache.
     _activeRequests.clear();
     await _feedCache?.clear();
+  }
+
+  /// Creates one discriminated post and returns its complete hydrated DTO.
+  Future<FeedPost> createPost({
+    required String body,
+    required String location,
+    required PostType postType,
+    required List<CreatePostImage> images,
+    required void Function(double) onProgress,
+    RequestType? requestType,
+    PropertyStatus? propertyStatus,
+  }) async {
+    final form = FormData();
+    form.fields
+      ..add(MapEntry('body', body))
+      ..add(MapEntry('postType', postType.wireValue))
+      ..add(MapEntry('location', location));
+    if (requestType != null) {
+      form.fields.add(MapEntry('requestType', requestType.wireValue));
+    }
+    if (propertyStatus != null) {
+      form.fields.add(MapEntry('propertyStatus', propertyStatus.wireValue));
+    }
+    for (final image in images) {
+      form.files.add(
+        MapEntry(
+          'images',
+          MultipartFile.fromBytes(image.bytes, filename: image.name),
+        ),
+      );
+    }
+
+    try {
+      final response = await _client.post<Map<String, dynamic>>(
+        '/posts',
+        data: form,
+        onSendProgress: (sent, total) {
+          if (total > 0) onProgress((sent / total).clamp(0, 1));
+        },
+      );
+      final data = response.data;
+      if (data == null) throw const FormatException();
+      return FeedPost.fromJson(data);
+    } on DioException catch (error) {
+      if (_fallbackReasonFor(error) == FeedFallbackReason.connection) {
+        throw const CreatePostFailure('You’re offline. Reconnect to publish.');
+      }
+      final data = error.response?.data;
+      final envelope = data is Map ? data['error'] : null;
+      final message = envelope is Map ? envelope['message'] : null;
+      if (message is String && message.isNotEmpty) {
+        throw CreatePostFailure(message);
+      }
+      throw const CreatePostFailure("Couldn't publish this post. Try again.");
+    } on CreatePostFailure {
+      rethrow;
+    } on Object {
+      throw const CreatePostFailure("Couldn't publish this post. Try again.");
+    }
   }
 
   /// Sets, rather than toggles, the current user's desired like state.

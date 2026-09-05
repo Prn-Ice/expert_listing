@@ -50,6 +50,7 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
       );
     });
     on<FeedCommentAdded>(_commentAdded);
+    on<FeedPostCreated>(_postCreated);
   }
 
   final FeedRepository _repository;
@@ -342,6 +343,47 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
     );
     await _retireFeedLoadsAndInvalidate(emit);
     if (!isClosed) add(const FeedRefreshed());
+  }
+
+  Future<void> _postCreated(
+    FeedPostCreated event,
+    Emitter<FeedState> emit,
+  ) async {
+    _requestGeneration++;
+    final posts = _matchesFilter(event.post, state.filter)
+        ? [event.post, ...state.posts.where((post) => post.id != event.post.id)]
+        : state.posts;
+    emit(
+      state.copyWith(
+        posts: posts,
+        isInitialLoading: false,
+        isRefreshing: false,
+        isLoadingMore: false,
+        nextPageFailed: false,
+        hiddenPostIds: {...state.hiddenPostIds}..remove(event.post.id),
+      ),
+    );
+    try {
+      await _repository.invalidateFeed();
+    } on Object {
+      // Cache infrastructure cannot turn a successful creation into failure.
+    }
+  }
+
+  bool _matchesFilter(FeedPost post, FeedFilter filter) {
+    if (filter.postType != null && filter.postType != post.postType) {
+      return false;
+    }
+    if (filter.requestType != null &&
+        (post is! RequestFeedPost || post.requestType != filter.requestType)) {
+      return false;
+    }
+    if (filter.propertyStatus != null &&
+        (post is! PropertyFeedPost || post.status != filter.propertyStatus)) {
+      return false;
+    }
+    final location = filter.location?.trim().toLowerCase() ?? '';
+    return location.isEmpty || post.location.toLowerCase().contains(location);
   }
 
   Future<void> _retireFeedLoadsAndInvalidate(Emitter<FeedState> emit) async {

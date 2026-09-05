@@ -29,6 +29,22 @@ export function internalError(): ApiError {
   );
 }
 
+export function payloadTooLargeError(message: string): ApiError {
+  return new ApiError(413, "PAYLOAD_TOO_LARGE", message);
+}
+
+export function unsupportedMediaError(message: string): ApiError {
+  return new ApiError(415, "UNSUPPORTED_MEDIA_TYPE", message);
+}
+
+export function storageError(): ApiError {
+  return new ApiError(
+    500,
+    "STORAGE_ERROR",
+    "The images could not be uploaded. Try again.",
+  );
+}
+
 // One stable envelope. Errors never carry stack traces, SQL, or credentials,
 // and are never cacheable.
 export function errorResponse(error: ApiError): Response {

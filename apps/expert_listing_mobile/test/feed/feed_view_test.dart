@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/app/providers.dart';
+import 'package:expert_listing/create_post/create_post_image.dart';
+import 'package:expert_listing/create_post/create_post_sheet.dart';
 import 'package:expert_listing/feed/comments/comments_sheet.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
@@ -12,6 +14,7 @@ import 'package:expert_listing/feed/models/feed_comment.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
+import 'package:expert_listing/feed/models/post_types.dart';
 import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/feed/view/post_actions.dart';
@@ -83,6 +86,92 @@ void main() {
       tester.getTopLeft(postAvatar).dx,
     );
     expect(tester.getTopLeft(promptText).dx, tester.getTopLeft(postTitle).dx);
+  });
+
+  testWidgets('creates a post through the real sheet and feed wiring', (
+    tester,
+  ) async {
+    final repository = _PageRepository(_page());
+    await tester.pumpWidget(_harnessWith(repository));
+    await tester.pump();
+
+    await tester.tap(
+      find.text('Share a property, Make a request or say something...'),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CreatePostSheet), findsOneWidget);
+    final bodyField = find.descendant(
+      of: find.byKey(const ValueKey<String>('create-post-body')),
+      matching: find.byType(TextField),
+    );
+    final locationField = find.descendant(
+      of: find.byKey(const ValueKey<String>('create-post-location')),
+      matching: find.byType(TextField),
+    );
+    expect(tester.widget<TextField>(bodyField).focusNode?.hasFocus, isTrue);
+
+    await tester.tap(find.text('Property'));
+    await tester.pump();
+    expect(find.text('Property status'), findsOneWidget);
+    expect(find.text('Add images'), findsOneWidget);
+
+    await tester.tap(find.text('Request'));
+    await tester.pump();
+    expect(find.text('Request type'), findsOneWidget);
+    expect(find.text('Add images'), findsNothing);
+
+    await tester.tap(find.text('General'));
+    await tester.enterText(bodyField, 'Created from the sheet');
+    await tester.enterText(locationField, 'Yaba, Lagos');
+    await tester.pump();
+    await tester.tap(find.text('Publish'));
+    await tester.pumpAndSettle();
+
+    expect(repository.createCalls, 1);
+    expect(find.byType(CreatePostSheet), findsNothing);
+    expect(find.text('Created from the sheet'), findsOneWidget);
+    expect(find.text('Post published.'), findsOneWidget);
+  });
+
+  testWidgets('a populated create sheet confirms discard on iOS', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _harness(_page(), platform: TargetPlatform.iOS),
+    );
+    await tester.pump();
+    await tester.tap(
+      find.text('Share a property, Make a request or say something...'),
+    );
+    await tester.pumpAndSettle();
+
+    final bodyField = find.descendant(
+      of: find.byKey(const ValueKey<String>('create-post-body')),
+      matching: find.byType(EditableText),
+    );
+    await tester.enterText(bodyField, 'Keep this draft');
+    await tester.pump();
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard this post?'), findsOneWidget);
+    expect(find.text('Keep editing'), findsOneWidget);
+    expect(find.text('Discard'), findsOneWidget);
+
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CreatePostSheet), findsOneWidget);
+    expect(
+      tester.widget<EditableText>(bodyField).controller.text,
+      'Keep this draft',
+    );
+
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CreatePostSheet), findsNothing);
   });
 
   testWidgets('comment action opens the shared persistent comments sheet', (
@@ -751,6 +840,7 @@ final class _PageRepository extends FeedRepository {
 
   final FeedLoadResult page;
   int loadCalls = 0;
+  int createCalls = 0;
 
   @override
   Future<FeedLoadResult> loadPage({
@@ -764,6 +854,24 @@ final class _PageRepository extends FeedRepository {
 
   @override
   Future<List<FeedComment>> loadComments(int postId) async => const [];
+
+  @override
+  Future<FeedPost> createPost({
+    required String body,
+    required String location,
+    required PostType postType,
+    required List<CreatePostImage> images,
+    required void Function(double) onProgress,
+    RequestType? requestType,
+    PropertyStatus? propertyStatus,
+  }) async {
+    createCalls++;
+    onProgress(1);
+    return FeedPost.fromJson({
+      ..._feedPostJson(99, body: body),
+      'location': location,
+    });
+  }
 }
 
 final class _ActorPageRepository extends FeedRepository {

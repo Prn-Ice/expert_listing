@@ -16,6 +16,7 @@ Implemented now:
 | --- | --- |
 | `GET /api/health` | `200 {"status":"ok"}` |
 | `GET /api/posts` | Cursor-paginated, server-side filtered feed of hydrated, variant-discriminated post DTOs |
+| `POST /api/posts` | Validated multipart creation for general, request, and property posts; properties accept up to four ordered images |
 | `GET /api/search/suggestions` | Bounded property and location autocomplete |
 | `GET /api/profile` | Server-resolved current user's display name, handle, role, and public avatar URL |
 
@@ -27,7 +28,15 @@ variant's owned location — or all three location owners without a post type.
 Successful responses carry `Cache-Control: private, max-age=0`; errors use the
 stable `{ "error": { "code", "message" } }` envelope with `Cache-Control:
 no-store`. Invalid cursors and out-of-range parameters are `VALIDATION_ERROR`,
-never a silent page one. Mutation routes arrive with their own beads.
+never a silent page one.
+
+`POST /api/posts` accepts trimmed `body`, `postType`, and `location` fields,
+plus the matching `requestType` or `propertyStatus`. Repeated `images` parts are
+property-only and retain their request order. Hono rejects unknown and mixed
+variant fields, more than four files, files over 2 MiB, totals over 8 MiB, and
+bytes that are not JPEG, PNG, or WebP regardless of their supplied filename or
+MIME header. Successful responses are complete post DTOs with `201` and
+`Cache-Control: no-store`.
 
 Configuration is environment-based:
 
@@ -81,6 +90,8 @@ reachable by `service_role`:
 
 - `create_post` creates the matching post variant and, for properties, ordered
   image metadata in one database transaction;
+- `create_hydrated_post` wraps creation and returns the complete new feed row in
+  that same transaction;
 - `feed_page` returns one hydrated feed page — author, variant payload,
   engagement counts, and the viewer's like state — in a single round trip, with
   cursor keyset filtering and literal, escaped location matching;
@@ -95,10 +106,17 @@ only JPEG, PNG, and WebP objects up to 2 MiB, and sources deterministic fixture
 objects from `supabase/seed_media/`. Property fixture objects use the
 `properties/` path. Server-side code, not Flutter, owns writes and turns stored
 paths into public URLs inside DTOs.
+Property uploads use server-generated `properties/<upload-id>/<position>`
+paths with detected extensions and no overwrite. If an upload or database step
+fails, Hono removes only the exact objects confirmed for that request.
+The picker bounds the longest edge to 2048 pixels while preserving aspect
+ratio, and Hono stores the resulting bytes unchanged. Feed media uses an
+aspect-preserving cover crop; full-screen media uses contain, adding empty space
+when needed rather than stretching the image.
 
 ## Local reconstruction
 
-These commands were verified on the local unlinked stack on 2026-09-03 after
+These commands were verified on the local unlinked stack on 2026-09-05 after
 confirming that `supabase/config.toml` has `project_id = "expert_listing"` and
 that `supabase/.temp/project-ref` is absent:
 
@@ -111,8 +129,8 @@ direnv exec . scripts/run-api-tests
 
 The reset applies all committed migrations, loads fixed Lagos fixtures from
 `supabase/seed.sql`, and uploads nine media fixtures. A direct second SQL seed
-application succeeded, `supabase test db --local` passed 67 pgTAP assertions,
-and the API suite passed 17 checks: 16 direct Hono request tests against the
-real local database and one request through the served local Edge Function. The
+application succeeded, and the pgTAP and API suites passed against real local
+Postgres and Storage, including one request through the served local Edge
+Function. The
 seed is repeat-safe for its known fixture IDs, advances
 identity sequences, and does not delete unrelated rows.

@@ -70,7 +70,7 @@ jobs:
       - name: Lint
         run: deno lint supabase/functions
       - name: Type-check
-        run: deno check --frozen index.ts tests/health_test.ts tests/feed_test.ts
+        run: deno check --frozen index.ts tests/*.ts
         working-directory: supabase/functions/api
       - name: Apply migrations, deterministic seed and bucket fixtures
         run: |

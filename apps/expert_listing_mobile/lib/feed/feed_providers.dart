@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/app/providers.dart';
+import 'package:expert_listing/create_post/create_post_cubit.dart';
+import 'package:expert_listing/create_post/create_post_state.dart';
+import 'package:expert_listing/create_post/post_image_picker.dart';
 import 'package:expert_listing/feed/bloc/feed_bloc.dart';
 import 'package:expert_listing/feed/bloc/feed_event.dart';
 import 'package:expert_listing/feed/bloc/feed_state.dart';
@@ -35,6 +38,20 @@ final feedRepositoryProvider = Provider<FeedRepository>((ref) {
     cacheNamespace: ref.watch(previewActorProvider),
   );
 });
+
+/// The native picker boundary used only by an open create-post flow.
+final postImagePickerProvider = Provider<PostImagePicker>((ref) {
+  return SystemPostImagePicker();
+});
+
+/// One auto-disposed retained draft per open create-post sheet.
+final BlocProvider<CreatePostCubit, CreatePostState> createPostCubitProvider =
+    BlocProvider.autoDispose<CreatePostCubit, CreatePostState>((ref) {
+      return CreatePostCubit(
+        repository: ref.watch(feedRepositoryProvider),
+        imagePicker: ref.watch(postImagePickerProvider),
+      );
+    });
 
 /// Device-only persistence for bookmarks and their first-use disclosure.
 final bookmarkStoreProvider = Provider<BookmarkStore>((ref) {

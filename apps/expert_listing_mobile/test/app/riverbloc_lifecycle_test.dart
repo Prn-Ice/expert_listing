@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:expert_listing/create_post/create_post_image.dart';
+import 'package:expert_listing/create_post/post_image_picker.dart';
 import 'package:expert_listing/feed/bloc/feed_event.dart';
 import 'package:expert_listing/feed/bloc/feed_state.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
@@ -77,6 +79,39 @@ void main() {
       expect(bloc.isClosed, isTrue);
     },
   );
+
+  test(
+    'CreatePostCubit emits state and closes with its provider scope',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          feedRepositoryProvider.overrideWithValue(_LifecycleFeedRepository()),
+          postImagePickerProvider.overrideWithValue(_LifecycleImagePicker()),
+        ],
+      );
+      final subscription = container.listen(
+        createPostCubitProvider,
+        (_, _) {},
+        fireImmediately: true,
+      );
+      final cubit = container.read(createPostCubitProvider.bloc)
+        ..bodyChanged('Retained draft');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(container.read(createPostCubitProvider).body, 'Retained draft');
+      subscription.close();
+      await Future<void>.delayed(Duration.zero);
+      container.dispose();
+
+      expect(cubit.isClosed, isTrue);
+    },
+  );
+}
+
+final class _LifecycleImagePicker implements PostImagePicker {
+  @override
+  Future<List<CreatePostImage>> pickImages({required int limit}) async =>
+      const [];
 }
 
 final class _LifecycleFeedRepository extends FeedRepository {

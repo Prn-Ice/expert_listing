@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 class CreatePostPrompt extends StatefulWidget {
   /// Creates the prompt.
   const CreatePostPrompt({
-    required this.onNotice,
+    required this.onPressed,
     required this.showInvitation,
     super.key,
   });
 
-  /// Shows a non-stacking boundary notice.
-  final ValueChanged<String> onNotice;
+  /// Opens the create-post sheet.
+  final VoidCallback onPressed;
 
   /// Whether initial feed data is ready for the one-shot invitation cue.
   final bool showInvitation;
@@ -113,9 +113,7 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
           child: AppPressable(
             color: colors.subtleSurface,
             borderRadius: AppRadii.pill,
-            onPressed: () => widget.onNotice(
-              'Post creation is part of the next preview step.',
-            ),
+            onPressed: widget.onPressed,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.xsmall,
