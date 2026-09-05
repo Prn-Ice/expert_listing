@@ -168,10 +168,8 @@ jobs:
             exit 1
           fi
           export FLUTTER_XCODE_DEVELOPMENT_TEAM="$APPLE_TEAM_ID"
-          export FLUTTER_XCODE_CODE_SIGN_STYLE=Manual
-          export FLUTTER_XCODE_CODE_SIGN_IDENTITY='Apple Distribution'
-          export FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER="$profile_name"
-          flutter build ipa --release --no-pub \
+          export RUNNER_PROVISIONING_PROFILE_SPECIFIER="$profile_name"
+          flutter build ipa --release \
             --build-number "$GITHUB_RUN_NUMBER" \
             --export-options-plist "$RUNNER_TEMP/ExportOptions.plist" \
             --dart-define=API_BASE_URL="$PUBLIC_API_BASE_URL"
