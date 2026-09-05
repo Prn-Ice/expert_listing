@@ -1,5 +1,8 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/dashboard/destination_switcher.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
+import 'package:expert_listing/listings/view/listings_view.dart';
+import 'package:expert_listing/search/view/search_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -15,6 +18,7 @@ class DashboardPage extends StatefulWidget {
 final class _DashboardPageState extends State<DashboardPage> {
   final _feedKey = GlobalKey<FeedViewState>();
   final _feedScrollController = ScrollController();
+  _DashboardDestination _selectedDestination = _DashboardDestination.feed;
 
   @override
   void dispose() {
@@ -29,27 +33,70 @@ final class _DashboardPageState extends State<DashboardPage> {
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: Theme.of(context).appBarTheme.systemOverlayStyle!,
         child: AppScaffold(
-          body: FeedView(
-            key: _feedKey,
-            scrollController: _feedScrollController,
+          body: DestinationSwitcher(
+            selectedIndex: _selectedDestination.index,
+            children: [
+              FeedView(
+                key: _feedKey,
+                scrollController: _feedScrollController,
+              ),
+              SearchView(
+                isActive: _selectedDestination == _DashboardDestination.search,
+                onPropertySelected: (_) => AppNotice.show(
+                  context,
+                  "Property details aren't part of this preview.",
+                ),
+              ),
+              ListingsView(
+                isActive:
+                    _selectedDestination == _DashboardDestination.listings,
+                onListingPressed: () => AppNotice.show(
+                  context,
+                  "Property details aren't part of this preview.",
+                ),
+              ),
+            ],
           ),
           bottomNavigationBar: _DashboardNavigation(
-            onFeedPressed: () => _feedKey.currentState?.returnToTopOrRefresh(),
+            selectedDestination: _selectedDestination,
+            onFeedPressed: _selectFeed,
+            onSearchPressed: () => setState(
+              () => _selectedDestination = _DashboardDestination.search,
+            ),
+            onListingsPressed: () => setState(
+              () => _selectedDestination = _DashboardDestination.listings,
+            ),
             onNotice: (message) => AppNotice.show(context, message),
           ),
         ),
       ),
     );
   }
+
+  void _selectFeed() {
+    if (_selectedDestination == _DashboardDestination.feed) {
+      _feedKey.currentState?.returnToTopOrRefresh();
+      return;
+    }
+    setState(() => _selectedDestination = _DashboardDestination.feed);
+  }
 }
+
+enum _DashboardDestination { feed, search, listings }
 
 final class _DashboardNavigation extends StatelessWidget {
   const _DashboardNavigation({
+    required this.selectedDestination,
     required this.onFeedPressed,
+    required this.onSearchPressed,
+    required this.onListingsPressed,
     required this.onNotice,
   });
 
+  final _DashboardDestination selectedDestination;
   final VoidCallback onFeedPressed;
+  final VoidCallback onSearchPressed;
+  final VoidCallback onListingsPressed;
   final ValueChanged<String> onNotice;
 
   @override
@@ -76,7 +123,7 @@ final class _DashboardNavigation extends StatelessWidget {
                 child: _NavigationItem(
                   icon: AppIcons.navFeedActive,
                   label: 'Feed',
-                  selected: true,
+                  selected: selectedDestination == _DashboardDestination.feed,
                   onPressed: onFeedPressed,
                 ),
               ),
@@ -84,18 +131,17 @@ final class _DashboardNavigation extends StatelessWidget {
                 child: _NavigationItem(
                   icon: AppIcons.search,
                   label: 'Search',
-                  onPressed: () => onNotice(
-                    'Search is not part of this preview. Try Filters.',
-                  ),
+                  selected: selectedDestination == _DashboardDestination.search,
+                  onPressed: onSearchPressed,
                 ),
               ),
               Expanded(
                 child: _NavigationItem(
                   icon: AppIcons.navList,
                   label: 'List',
-                  onPressed: () => onNotice(
-                    'Post creation is part of the next preview step.',
-                  ),
+                  selected:
+                      selectedDestination == _DashboardDestination.listings,
+                  onPressed: onListingsPressed,
                 ),
               ),
               Expanded(

@@ -162,7 +162,7 @@ Do not implement:
 - threaded comments;
 - server-synchronized bookmarks;
 - full story viewing or creation;
-- real search;
+- unbounded or map-backed search beyond the approved property autocomplete;
 - messages;
 - notifications;
 - profiles;
@@ -642,6 +642,28 @@ type it searches general post, request, and property locations. It:
 
 Applying or clearing filters resets pagination and replaces the existing result. A response for an older filter cannot replace the current filter’s result.
 
+### Property discovery
+
+Search is a bounded property autocomplete surface. After three trimmed
+characters and a short debounce, Hono returns at most ten deterministic
+suggestions from owned property locations and summaries. Results may contain a
+location with its property count and individual property rows; a location match
+must not consume every default result when matching properties exist. Literal
+substring matching escapes wildcard characters and uses the existing trigram
+indexes. Stale responses cannot replace the current query.
+
+Selecting a location continues the search with that exact location. Selecting
+a property records the query in up to five device-local, newest-first unique
+recent searches and shows the truthful property-details boundary notice.
+Recent searches can be selected, removed individually, or cleared. Search
+history is never synchronized or silently queued.
+
+List opens a network-first property catalog built from the feed read boundary.
+It shows only hydrated property posts, omits social-feed chrome, preserves
+pagination and retry behavior, and provides visible 48 logical-pixel Previous
+and Next controls as an alternative to swiping multi-image cards. Selecting a
+card shows the same property-details boundary notice.
+
 ## 15. HTTP contract
 
 Successful JSON uses camelCase. Dates use UTC ISO-8601 strings. User IDs are
@@ -1069,8 +1091,11 @@ Every visually interactive element must respond. Static labels such as location,
 | Pull to refresh | Real network refresh with platform-adaptive feedback |
 | Pagination | Quiet stable footer; inline `Try again` after failure |
 | Active Feed destination | Scroll to top; refresh when already at top |
-| Search | `Search isn’t part of this preview. Try Filters.` without selecting Search |
-| List | Open the create-post flow |
+| Search | Select Search and open bounded property autocomplete with device-local recent searches |
+| Search location | Replace the query with the exact location and request matching suggestions |
+| Search property | Save the query locally; `Property details aren’t part of this preview.` |
+| List | Select List and open the network-first property catalog |
+| Property catalog card | `Property details aren’t part of this preview.` |
 | Notifications | `Notifications aren’t part of this preview.` without selecting it |
 | Profile | `Profiles aren’t part of this preview.` without selecting it |
 
@@ -1255,6 +1280,11 @@ boundary evidence where mocks could drift from the implementation.
 | Browse, filter, paginate, refresh | Flutter `integration_test` through real Hono/Postgres |
 | Create and reopen ordered images | Flutter `integration_test` through real Hono/Storage/Postgres |
 | Like, comment, refresh, and persistence | Flutter `integration_test` through real Hono/Postgres |
+| Property/location autocomplete and stale response suppression | Real Hono/Postgres tests plus Search Bloc tests |
+| Bounded recent searches survive reconstruction | Real preference-store integration test |
+| Independent property catalog pagination | Listings Bloc and widget tests through the real feed repository contract |
+| Durable like activity, read state, and recipient isolation | Real pgTAP and Hono/Postgres tests |
+| Local debug actor gating and state reset | Hono boundary, provider lifecycle, and dashboard widget tests |
 | Native picker, share, back, splash, icon, keyboard | Named-device manual checks |
 | Light-mode Figma fidelity | 428-pixel screenshot overlay |
 | Dark-mode coherence | Named-width screenshots and system-theme transition check |
@@ -1291,6 +1321,14 @@ Create a property post with multiple ordered images, property location, and stat
 #### Engagement journey
 
 Like a post and add a comment; refresh or relaunch; prove both persist.
+
+#### Discovery and identity journey
+
+Autocomplete a seeded property location, revisit it from recent searches,
+browse the separately paginated property catalog, switch to another approved
+user against an explicitly enabled local debug backend, like the first user's
+post, switch back, observe the durable notification, mark it read, and prove an
+unlike does not remove the activity history.
 
 ### Additional required proofs
 
