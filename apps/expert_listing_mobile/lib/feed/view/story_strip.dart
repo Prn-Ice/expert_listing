@@ -91,86 +91,88 @@ final class _Story extends StatelessWidget {
     final cacheDimension = (60 * devicePixelRatio).round();
     return SizedBox(
       width: 66,
-      child: TextButton(
+      child: AppPressable(
         onPressed: onPressed,
-        style: TextButton.styleFrom(padding: EdgeInsets.zero),
-        child: Column(
-          children: [
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                if (isCurrentUser)
-                  // Your Story has no brand ring; its add badge marks it.
-                  Padding(
-                    padding: const EdgeInsets.all(1),
-                    child: ClipOval(
-                      child: Image.asset(
-                        asset,
-                        key: ValueKey<String>('story-image-$label'),
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        cacheWidth: cacheDimension,
-                        cacheHeight: cacheDimension,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (isCurrentUser)
+                    // Your Story has no brand ring; its add badge marks it.
+                    Padding(
+                      padding: const EdgeInsets.all(1),
+                      child: ClipOval(
+                        child: Image.asset(
+                          asset,
+                          key: ValueKey<String>('story-image-$label'),
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          cacheWidth: cacheDimension,
+                          cacheHeight: cacheDimension,
+                        ),
                       ),
-                    ),
-                  )
-                else
-                  Container(
-                    key: ValueKey<String>('story-ring-$label'),
-                    padding: const EdgeInsets.all(1),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: colors.brand, width: 2),
-                      shape: BoxShape.circle,
-                    ),
-                    child: ClipOval(
-                      child: Image.asset(
-                        asset,
-                        key: ValueKey<String>('story-image-$label'),
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        cacheWidth: cacheDimension,
-                        cacheHeight: cacheDimension,
-                      ),
-                    ),
-                  ),
-                if (isCurrentUser)
-                  Positioned(
-                    right: 0,
-                    bottom: 3,
-                    child: DecoratedBox(
+                    )
+                  else
+                    Container(
+                      key: ValueKey<String>('story-ring-$label'),
+                      padding: const EdgeInsets.all(1),
                       decoration: BoxDecoration(
-                        color: colors.brand,
+                        border: Border.all(color: colors.brand, width: 2),
                         shape: BoxShape.circle,
-                        border: Border.all(color: colors.canvas, width: 2),
                       ),
-                      child: SizedBox.square(
-                        dimension: AppIconSize.large,
-                        child: Center(
-                          child: AppIcon(
-                            AppIcons.storyAdd,
-                            size: AppIconSize.small,
-                            color: colors.onBrand,
+                      child: ClipOval(
+                        child: Image.asset(
+                          asset,
+                          key: ValueKey<String>('story-image-$label'),
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          cacheWidth: cacheDimension,
+                          cacheHeight: cacheDimension,
+                        ),
+                      ),
+                    ),
+                  if (isCurrentUser)
+                    Positioned(
+                      right: 0,
+                      bottom: 3,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: colors.brand,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: colors.canvas, width: 2),
+                        ),
+                        child: SizedBox.square(
+                          dimension: AppIconSize.large,
+                          child: Center(
+                            child: AppIcon(
+                              AppIcons.storyAdd,
+                              size: AppIconSize.small,
+                              color: colors.onBrand,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xsmall),
+              SizedBox(
+                width: double.infinity,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    label,
+                    style: AppTypography.storyLabel(colors),
                   ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.xsmall),
-            SizedBox(
-              width: double.infinity,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  label,
-                  style: AppTypography.storyLabel(colors),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

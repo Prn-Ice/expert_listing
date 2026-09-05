@@ -2,6 +2,7 @@ import 'package:app_ui/src/tokens/colors.dart';
 import 'package:app_ui/src/tokens/icons.dart';
 import 'package:app_ui/src/tokens/spacing.dart';
 import 'package:app_ui/src/tokens/typography.dart';
+import 'package:app_ui/src/widgets/app_button.dart';
 import 'package:flutter/material.dart';
 
 /// A persistent strip describing saved or stale feed provenance.
@@ -53,16 +54,13 @@ class OfflineStatusBar extends StatelessWidget {
                 SizedBox(
                   height: AppIconSize.textButtonTapTarget,
                   child: Center(
-                    child: TextButton(
+                    child: AppButton(
                       onPressed: onRetry,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size.square(
-                          AppIconSize.textButtonTapTarget,
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.small,
-                        ),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      minimumSize: const Size.square(
+                        AppIconSize.textButtonTapTarget,
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.small,
                       ),
                       child: const Text('Retry'),
                     ),

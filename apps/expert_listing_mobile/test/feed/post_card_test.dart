@@ -2,11 +2,36 @@ import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/feed/view/property_media.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('feed controls render the Cupertino family under iOS', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light(),
+          home: Scaffold(
+            body: PostCard(post: _generalPost(), onNotice: (_) {}),
+          ),
+        ),
+      );
+
+      expect(find.byType(CupertinoButton), findsWidgets);
+      expect(find.byType(IconButton), findsNothing);
+      expect(find.byType(TextButton), findsNothing);
+      expect(find.byType(InkResponse), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
   testWidgets(
     'general, request, and property cards keep their metadata rules',
     (
@@ -151,7 +176,7 @@ void main() {
 
         Finder actionButton(String label) => find.ancestor(
           of: find.bySemanticsLabel(label),
-          matching: find.byType(TextButton),
+          matching: find.byType(AppIconButton),
         );
 
         for (final label in ['Like', 'Comments', 'Share']) {
@@ -328,13 +353,13 @@ void main() {
 
     final shareButton = find.ancestor(
       of: find.bySemanticsLabel('Share'),
-      matching: find.byType(TextButton),
+      matching: find.byType(AppIconButton),
     );
     final views = find.byKey(const ValueKey<String>('post-views-6'));
     final bookmark = find.descendant(
       of: find.ancestor(
         of: find.bySemanticsLabel('Bookmark'),
-        matching: find.byType(TextButton),
+        matching: find.byType(AppIconButton),
       ),
       matching: find.byType(AppIcon),
     );
@@ -412,7 +437,7 @@ void main() {
     Finder actionContent(String label) {
       final button = find.ancestor(
         of: find.bySemanticsLabel(label),
-        matching: find.byType(TextButton),
+        matching: find.byType(AppIconButton),
       );
       return find.descendant(of: button, matching: find.byType(Row));
     }
@@ -450,7 +475,7 @@ void main() {
       Finder actionIcon(String label) {
         final button = find.ancestor(
           of: find.bySemanticsLabel(label),
-          matching: find.byType(TextButton),
+          matching: find.byType(AppIconButton),
         );
         return find.descendant(of: button, matching: find.byType(AppIcon));
       }
@@ -488,7 +513,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byType(InkWell));
+    await tester.tap(find.byType(AppPressable));
     await tester.pumpAndSettle();
 
     final overlays = tester

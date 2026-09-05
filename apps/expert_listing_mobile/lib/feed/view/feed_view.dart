@@ -317,8 +317,9 @@ final class _FeedContent extends StatelessWidget {
         if (state.nextPageFailed)
           SliverToBoxAdapter(
             child: Center(
-              child: TextButton(
+              child: AppButton(
                 onPressed: onRetryNextPage,
+                minimumSize: const Size(64, 48),
                 child: const Text('Try again'),
               ),
             ),

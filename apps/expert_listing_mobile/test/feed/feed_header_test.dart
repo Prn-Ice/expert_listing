@@ -45,7 +45,7 @@ void main() {
       );
       final messagesButton = find.ancestor(
         of: messages,
-        matching: find.byType(TextButton),
+        matching: find.byType(AppPressable),
       );
       final messagesRect = tester.getRect(messagesButton);
       expect(messagesRect.size, const Size.square(AppIconSize.tapTarget));

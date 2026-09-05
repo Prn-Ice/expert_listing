@@ -209,7 +209,15 @@ Implement these only where the repeated contract is used:
 - AppIcon renders committed vector and raster icons with correct semantics.
 - AppIconButton preserves the Figma glyph size inside at least a 48 by 48
   logical-pixel hit region, including focus, tooltip, semantics, platform press
-  feedback, and optional restrained haptic feedback.
+  feedback, and an optional count beside the glyph.
+- AppButton renders a labelled action with the active platform's text button:
+  restrained iOS press opacity, contained Android ink, focus, and the
+  TextButton disabled state. Call sites own their text styles and resolved
+  geometry through the measured minimum size, padding, and tap-target rule.
+- AppPressable adds platform press behaviour to composed branded surfaces
+  (rows, tiles, imagery) without owning their layout: contained Android ink on
+  the supplied radius and restrained iOS press opacity, with one button
+  semantic node per control.
 - AppBrandWordmark owns the exact 169 by 22 Expert Listing wordmark asset;
   feature widgets own its surrounding hit target and action.
 - AppSheet applies the shared design identity with current platform mechanics.

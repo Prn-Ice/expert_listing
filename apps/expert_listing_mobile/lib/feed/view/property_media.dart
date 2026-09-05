@@ -59,8 +59,8 @@ final class _PropertyMediaState extends State<PropertyMedia> {
                   onPageChanged: (page) => setState(() => _page = page),
                   itemBuilder: (context, index) {
                     final image = images[index];
-                    return InkWell(
-                      onTap: () => _showImage(
+                    return AppPressable(
+                      onPressed: () => _showImage(
                         context,
                         image.url!,
                         index: index,

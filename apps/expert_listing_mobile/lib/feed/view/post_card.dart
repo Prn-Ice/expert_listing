@@ -92,21 +92,18 @@ class PostCard extends StatelessWidget {
               height: AppIconSize.textButtonTapTarget,
               child: Align(
                 alignment: Alignment.centerLeft,
-                child: TextButton(
+                child: AppButton(
                   key: ValueKey<String>('post-comments-${post.id}'),
                   onPressed: () => onNotice(
                     'Comments are part of the next preview step.',
                   ),
-                  style: TextButton.styleFrom(
-                    alignment: Alignment.center,
-                    minimumSize: const Size.square(
-                      AppIconSize.textButtonTapTarget,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.small,
-                    ),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  minimumSize: const Size.square(
+                    AppIconSize.textButtonTapTarget,
                   ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.small,
+                  ),
+                  alignment: Alignment.center,
                   child: Text(
                     'View all ${post.commentCount} comments',
                     style: AppTypography.bodyMedium(
@@ -141,76 +138,65 @@ final class _PostHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: TextButton(
+            child: AppPressable(
               key: ValueKey<String>('post-profile-${post.id}'),
               onPressed: _showProfileNotice,
-              style: TextButton.styleFrom(
-                alignment: Alignment.centerLeft,
-                minimumSize: const Size.fromHeight(AppIconSize.tapTarget),
-                padding: EdgeInsets.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppRadii.pill,
-                ),
-                overlayColor: colors.subtleSurface,
-              ),
-              child: Semantics(
-                label: '${post.author.displayName}, view profile',
-                excludeSemantics: true,
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: _postAvatarSize,
-                      height: AppIconSize.tapTarget,
-                      child: Center(
-                        child: AppAvatar(
-                          imageUrl: post.author.avatarUrl,
-                          displayName: post.author.displayName,
+              borderRadius: AppRadii.pill,
+              overlayColor: colors.subtleSurface,
+              semanticLabel: '${post.author.displayName}, view profile',
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: _postAvatarSize,
+                    height: AppIconSize.tapTarget,
+                    child: Center(
+                      child: AppAvatar(
+                        imageUrl: post.author.avatarUrl,
+                        displayName: post.author.displayName,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.small),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Flexible(
+                              child: Text(
+                                post.author.displayName,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.title(colors),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.xsmall),
+                            Text('·', style: AppTypography.meta(colors)),
+                            const SizedBox(width: AppSpacing.xsmall),
+                            Flexible(
+                              child: Text(
+                                post.author.role,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.body(
+                                  colors,
+                                  color: colors.textTertiary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${_postTypeLabel(post.postType)}  ·  '
+                          '${_timeAgo(post.createdAt)}',
+                          style: AppTypography.meta(colors),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: AppSpacing.small),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  post.author.displayName,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.title(colors),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.xsmall),
-                              Text('·', style: AppTypography.meta(colors)),
-                              const SizedBox(width: AppSpacing.xsmall),
-                              Flexible(
-                                child: Text(
-                                  post.author.role,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.body(
-                                    colors,
-                                    color: colors.textTertiary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${_postTypeLabel(post.postType)}  ·  '
-                            '${_timeAgo(post.createdAt)}',
-                            style: AppTypography.meta(colors),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),

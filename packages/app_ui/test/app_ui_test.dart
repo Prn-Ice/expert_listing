@@ -3,6 +3,7 @@ import 'dart:ui' show Tristate, instantiateImageCodec;
 
 import 'package:app_ui/app_ui.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -116,7 +117,7 @@ void main() {
         ),
       );
 
-      final region = tester.getSize(find.byType(SizedBox).first);
+      final region = tester.getSize(find.byType(AppIconButton));
       expect(region.width, AppIconSize.tapTarget);
       expect(region.height, AppIconSize.tapTarget);
 
@@ -125,7 +126,7 @@ void main() {
       expect(icon.size, AppIconSize.small);
 
       // Tapping the edge of the region still activates the control.
-      await tester.tapAt(tester.getTopLeft(find.byType(SizedBox).first));
+      await tester.tapAt(tester.getTopLeft(find.byType(AppIconButton)));
       expect(taps, 1);
     });
 
@@ -186,6 +187,112 @@ void main() {
       } finally {
         debugDefaultTargetPlatformOverride = null;
       }
+    });
+  });
+
+  group('native interaction boundaries', () {
+    // Only these focused boundary tests assert concrete native control
+    // types; behaviour tests stay on semantics and user actions.
+    Future<void> pumpPlatform(WidgetTester tester, Widget child) async {
+      await tester.pumpWidget(harness(child));
+      await tester.pump();
+    }
+
+    testWidgets('AppIconButton picks the real control family', (tester) async {
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await pumpPlatform(
+          tester,
+          AppIconButton(
+            icon: AppIcons.heart,
+            tooltip: 'Like',
+            onPressed: () {},
+          ),
+        );
+        expect(find.byType(CupertinoButton), findsOneWidget);
+        expect(find.byType(IconButton), findsNothing);
+
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await pumpPlatform(
+          tester,
+          AppIconButton(
+            icon: AppIcons.heart,
+            tooltip: 'Like',
+            onPressed: () {},
+          ),
+        );
+        expect(find.byType(IconButton), findsOneWidget);
+        expect(find.byType(CupertinoButton), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('AppButton picks the real control family', (tester) async {
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await pumpPlatform(
+          tester,
+          AppButton(onPressed: () {}, child: const Text('Retry')),
+        );
+        expect(find.byType(CupertinoButton), findsOneWidget);
+        expect(find.byType(TextButton), findsNothing);
+
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await pumpPlatform(
+          tester,
+          AppButton(onPressed: () {}, child: const Text('Retry')),
+        );
+        expect(find.byType(TextButton), findsOneWidget);
+        expect(find.byType(CupertinoButton), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('AppPressable picks the real control family', (tester) async {
+      try {
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+        await pumpPlatform(
+          tester,
+          AppPressable(onPressed: () {}, child: const Text('surface')),
+        );
+        expect(find.byType(CupertinoButton), findsOneWidget);
+        expect(find.byType(InkResponse), findsNothing);
+
+        debugDefaultTargetPlatformOverride = TargetPlatform.android;
+        await pumpPlatform(
+          tester,
+          AppPressable(onPressed: () {}, child: const Text('surface')),
+        );
+        expect(find.byType(InkResponse), findsOneWidget);
+        expect(find.byType(CupertinoButton), findsNothing);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
+    testWidgets('AppPressable keeps corner taps on rounded surfaces', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        harness(
+          SizedBox(
+            height: 56,
+            child: AppPressable(
+              color: AppColors.light.subtleSurface,
+              borderRadius: AppRadii.pill,
+              onPressed: () => taps++,
+              child: const Text('Prompt'),
+            ),
+          ),
+        ),
+      );
+
+      final rect = tester.getRect(find.byType(AppPressable));
+      await tester.tapAt(rect.topLeft + const Offset(1, 1));
+      expect(taps, 1, reason: 'a shaped surface never rejects corner taps');
     });
   });
 

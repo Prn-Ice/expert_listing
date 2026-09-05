@@ -18,21 +18,27 @@ class PostActions extends StatelessWidget {
     final colors = AppColors.of(context);
     return Row(
       children: [
-        _PostActionButton(
+        AppIconButton(
           icon: AppIcons.heart,
+          iconSize: AppIconSize.small,
+          color: colors.textSecondary,
           label: post.likeCount == 0 ? null : '${post.likeCount}',
           tooltip: 'Like',
           onPressed: () => onNotice('Likes are part of the next preview step.'),
         ),
-        _PostActionButton(
+        AppIconButton(
           icon: AppIcons.comment,
+          iconSize: AppIconSize.small,
+          color: colors.textSecondary,
           label: post.commentCount == 0 ? null : '${post.commentCount}',
           tooltip: 'Comments',
           onPressed: () =>
               onNotice('Comments are part of the next preview step.'),
         ),
-        _PostActionButton(
+        AppIconButton(
           icon: AppIcons.share,
+          iconSize: AppIconSize.small,
+          color: colors.textSecondary,
           tooltip: 'Share',
           onPressed: () => onNotice('Sharing is not available right now.'),
         ),
@@ -52,68 +58,16 @@ class PostActions extends StatelessWidget {
           )
         else
           const Spacer(),
-        _PostActionButton(
+        AppIconButton(
           icon: AppIcons.bookmark,
+          iconSize: AppIconSize.small,
+          color: colors.textSecondary,
           label: post.bookmarkCount == 0 ? null : '${post.bookmarkCount}',
           tooltip: 'Bookmark',
           onPressed: () =>
               onNotice('Bookmarks are part of the next preview step.'),
         ),
       ],
-    );
-  }
-}
-
-final class _PostActionButton extends StatelessWidget {
-  const _PostActionButton({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-    this.label,
-  });
-
-  final String icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  final String? label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final semanticLabel = label == null ? tooltip : '$tooltip, $label';
-    return Tooltip(
-      message: tooltip,
-      excludeFromSemantics: true,
-      child: SizedBox(
-        height: AppIconSize.tapTarget,
-        child: TextButton(
-          onPressed: onPressed,
-          style: TextButton.styleFrom(
-            alignment: Alignment.center,
-            minimumSize: const Size.square(AppIconSize.tapTarget),
-            padding: EdgeInsets.zero,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: Semantics(
-            label: semanticLabel,
-            excludeSemantics: true,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                AppIcon(
-                  icon,
-                  size: AppIconSize.small,
-                  color: colors.textSecondary,
-                ),
-                if (label != null) ...[
-                  const SizedBox(width: AppSpacing.xsmall),
-                  Text(label!, style: AppTypography.caption(colors)),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

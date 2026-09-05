@@ -22,36 +22,33 @@ class CreatePostPrompt extends StatelessWidget {
       ),
       child: SizedBox(
         height: 56,
-        child: Material(
+        child: AppPressable(
           color: colors.subtleSurface,
           borderRadius: AppRadii.pill,
-          child: InkWell(
-            onTap: () => onNotice(
-              'Post creation is part of the next preview step.',
+          onPressed: () => onNotice(
+            'Post creation is part of the next preview step.',
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.small,
+              AppSpacing.small,
+              12,
+              AppSpacing.small,
             ),
-            borderRadius: AppRadii.pill,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.small,
-                AppSpacing.small,
-                12,
-                AppSpacing.small,
-              ),
-              child: Row(
-                children: [
-                  const AppAvatar.asset(
-                    assetName: 'assets/images/current-user.jpg',
-                    displayName: 'Prince Adeyemi',
+            child: Row(
+              children: [
+                const AppAvatar.asset(
+                  assetName: 'assets/images/current-user.jpg',
+                  displayName: 'Prince Adeyemi',
+                ),
+                const SizedBox(width: AppSpacing.xsmall),
+                Expanded(
+                  child: Text(
+                    'Share a property, Make a request or say something...',
+                    style: AppTypography.hint(colors),
                   ),
-                  const SizedBox(width: AppSpacing.xsmall),
-                  Expanded(
-                    child: Text(
-                      'Share a property, Make a request or say something...',
-                      style: AppTypography.hint(colors),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

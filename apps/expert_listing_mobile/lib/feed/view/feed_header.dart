@@ -33,25 +33,14 @@ class FeedHeader extends StatelessWidget {
             SizedBox(
               width: 169,
               height: AppIconSize.tapTarget,
-              child: TextButton(
+              child: AppPressable(
                 key: const ValueKey<String>('feed-wordmark'),
                 onPressed: onLogoPressed,
-                style: TextButton.styleFrom(
+                borderRadius: AppRadii.image,
+                semanticLabel: 'Expert Listing feed',
+                child: Align(
                   alignment: Alignment.centerLeft,
-                  minimumSize: const Size(169, AppIconSize.tapTarget),
-                  padding: EdgeInsets.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius: AppRadii.image,
-                  ),
-                ),
-                child: Semantics(
-                  label: 'Expert Listing feed',
-                  excludeSemantics: true,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AppBrandWordmark(color: colors.brandDeep),
-                  ),
+                  child: AppBrandWordmark(color: colors.brandDeep),
                 ),
               ),
             ),
@@ -60,30 +49,24 @@ class FeedHeader extends StatelessWidget {
               excludeFromSemantics: true,
               child: SizedBox.square(
                 dimension: AppIconSize.tapTarget,
-                child: TextButton(
+                child: AppPressable(
                   onPressed: () =>
                       onNotice('Messages are not part of this preview.'),
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size.square(AppIconSize.tapTarget),
-                    padding: EdgeInsets.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: const CircleBorder(),
+                  borderRadius: BorderRadius.circular(
+                    AppIconSize.tapTarget / 2,
                   ),
-                  child: Semantics(
-                    label: 'Messages',
-                    excludeSemantics: true,
-                    child: SizedBox.square(
-                      dimension: 46,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
-                          color: colors.subtleSurface,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Center(
-                          child: AppIcon(
-                            AppIcons.messages,
-                            color: colors.textSecondary,
-                          ),
+                  semanticLabel: 'Messages',
+                  child: SizedBox.square(
+                    dimension: 46,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: colors.subtleSurface,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: AppIcon(
+                          AppIcons.messages,
+                          color: colors.textSecondary,
                         ),
                       ),
                     ),
