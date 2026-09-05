@@ -528,6 +528,40 @@ void main() {
       expect(safeArea.top, isFalse);
       expect(safeArea.minimum.bottom, 300);
     });
+
+    testWidgets('uses the requested compact iOS presentation', (tester) async {
+      final observer = _PushedRouteObserver();
+      debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+      try {
+        await tester.pumpWidget(
+          MaterialApp(
+            navigatorObservers: [observer],
+            theme: AppTheme.light(),
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => TextButton(
+                  onPressed: () => AppSheet.show<void>(
+                    context,
+                    cupertinoTopGap: 0.5,
+                    child: const SizedBox(height: 48),
+                  ),
+                  child: const Text('Show compact sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show compact sheet'));
+        await tester.pumpAndSettle();
+
+        final route = observer.lastPushed;
+        expect(route, isA<CupertinoSheetRoute<void>>());
+        expect((route! as CupertinoSheetRoute<void>).topGap, 0.5);
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
   });
 
   group('AppNotice', () {
@@ -789,4 +823,14 @@ void main() {
       },
     );
   });
+}
+
+final class _PushedRouteObserver extends NavigatorObserver {
+  Route<dynamic>? lastPushed;
+
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    lastPushed = route;
+    super.didPush(route, previousRoute);
+  }
 }

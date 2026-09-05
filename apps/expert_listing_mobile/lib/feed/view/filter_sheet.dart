@@ -1,6 +1,7 @@
 import 'package:app_ui/app_ui.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/post_types.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// Opens the approved server-side feed filter controls.
@@ -8,8 +9,13 @@ Future<FeedFilter?> showFeedFilterSheet(
   BuildContext context, {
   required FeedFilter filter,
 }) {
+  // The native default covers 92% of the screen. The bottom 40% keeps this
+  // small form restrained; longer states and keyboard use remain scrollable.
+  const cupertinoTopGap = 0.6;
+
   return AppSheet.show<FeedFilter>(
     context,
+    cupertinoTopGap: cupertinoTopGap,
     child: _FeedFilterSheet(filter: filter),
   );
 }
@@ -171,29 +177,15 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
           const SizedBox(height: AppSpacing.large),
           Text('Location', style: AppTypography.bodyStrong(colors)),
           const SizedBox(height: AppSpacing.small),
-          TextField(
-            controller: _locationController,
-            // The API accepts a trimmed location of 1 through 120 characters.
-            maxLength: 120,
-            textInputAction: TextInputAction.done,
-            decoration: const InputDecoration(
-              hintText: 'Search locations',
-              counterText: '',
-              border: OutlineInputBorder(),
-            ),
-          ),
+          _FilterField(controller: _locationController),
           const SizedBox(height: AppSpacing.large),
           Row(
             children: [
-              TextButton(
+              _ClearAction(
                 onPressed: () => Navigator.pop(context, const FeedFilter()),
-                child: const Text('Clear'),
               ),
               const Spacer(),
-              FilledButton(
-                onPressed: _apply,
-                child: const Text('Apply'),
-              ),
+              _ApplyAction(onPressed: _apply),
             ],
           ),
         ],
@@ -214,6 +206,11 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
   }
 }
 
+/// One selectable filter value in the active platform's control family.
+///
+/// The approved chip-group structure is kept on both platforms; only the
+/// control family changes. Four long labels never become a cramped segmented
+/// control.
 final class _FilterChoice extends StatelessWidget {
   const _FilterChoice({
     required this.label,
@@ -227,10 +224,127 @@ final class _FilterChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size.square(AppIconSize.textButtonTapTarget),
+        pressedOpacity: 0.6,
+        onPressed: onSelected,
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.small,
+            vertical: 6,
+          ),
+          decoration: BoxDecoration(
+            color: selected ? colors.brandTint : null,
+            border: selected
+                ? null
+                : Border.all(color: colors.textPrimary.withValues(alpha: 0.1)),
+            borderRadius: AppRadii.pill,
+          ),
+          child: Text(
+            label,
+            style: AppTypography.caption(
+              colors,
+              color: selected ? colors.brandText : colors.textPrimary,
+            ),
+          ),
+        ),
+      );
+    }
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onSelected(),
     );
+  }
+}
+
+/// The location input in the active platform's control family.
+final class _FilterField extends StatelessWidget {
+  const _FilterField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
+    // The API accepts a trimmed location of 1 through 120 characters.
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      return CupertinoTextField(
+        controller: controller,
+        maxLength: 120,
+        textInputAction: TextInputAction.done,
+        placeholder: 'Search locations',
+        style: AppTypography.body(colors),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.small,
+          vertical: AppSpacing.small,
+        ),
+      );
+    }
+    return TextField(
+      controller: controller,
+      maxLength: 120,
+      textInputAction: TextInputAction.done,
+      decoration: const InputDecoration(
+        hintText: 'Search locations',
+        counterText: '',
+        border: OutlineInputBorder(),
+      ),
+    );
+  }
+}
+
+/// The cancel action in the active platform's control family.
+final class _ClearAction extends StatelessWidget {
+  const _ClearAction({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      return CupertinoButton(
+        padding: EdgeInsets.zero,
+        minimumSize: const Size.square(AppIconSize.textButtonTapTarget),
+        onPressed: onPressed,
+        child: Text(
+          'Clear',
+          style: AppTypography.bodyMedium(
+            AppColors.of(context),
+            color: AppColors.of(context).textTertiary,
+          ),
+        ),
+      );
+    }
+    return TextButton(onPressed: onPressed, child: const Text('Clear'));
+  }
+}
+
+/// The apply action in the active platform's control family.
+final class _ApplyAction extends StatelessWidget {
+  const _ApplyAction({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    if (Theme.of(context).platform == TargetPlatform.iOS) {
+      return CupertinoButton(
+        color: AppColors.of(context).brand,
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.large,
+          vertical: AppSpacing.small,
+        ),
+        onPressed: onPressed,
+        child: Text(
+          'Apply',
+          style: AppTypography.bodyMedium(AppColors.of(context)),
+        ),
+      );
+    }
+    return FilledButton(onPressed: onPressed, child: const Text('Apply'));
   }
 }

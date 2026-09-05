@@ -12,6 +12,8 @@ import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/post_actions.dart';
 import 'package:expert_listing/feed/view/property_media.dart';
 import 'package:expert_listing/main.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,6 +42,26 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Post type'), findsOneWidget);
     expect(find.text('Apply'), findsOneWidget);
+  });
+
+  testWidgets('iOS pins the filter pill leading and uses native controls', (
+    tester,
+  ) async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      await tester.pumpWidget(_harness(_page()));
+      await tester.pump();
+
+      final pill = find.byKey(const ValueKey<String>('feed-filters-pill'));
+      expect(tester.getTopLeft(pill).dx, AppSpacing.xxlarge);
+
+      await tester.tap(find.byKey(const ValueKey<String>('feed-filters')));
+      await tester.pumpAndSettle();
+      expect(find.byType(CupertinoTextField), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
   });
 
   testWidgets('labels a saved connection fallback and exposes Retry', (

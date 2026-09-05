@@ -223,7 +223,11 @@ Implement these only where the repeated contract is used:
   Android and composes beneath the body on iOS.
 - AppBrandWordmark owns the exact 169 by 22 Expert Listing wordmark asset;
   feature widgets own its surrounding hit target and action.
-- AppSheet applies the shared design identity with current platform mechanics.
+- AppSheet uses `showCupertinoSheet` on iOS and `showModalBottomSheet` elsewhere,
+  preserving the supplied native scroll controller, keyboard insets, safe areas,
+  and drag dismissal. The filter sheet occupies the bottom 40% on iOS because
+  the native 92% default leaves excessive empty space; longer and
+  keyboard-compressed states scroll.
 - AppNotice provides one safe-area-aware transient message and prevents
   queues: the themed Android SnackBar and a restrained dismissible iOS dialog.
 - OfflineStatusBar persistently describes saved-feed provenance.

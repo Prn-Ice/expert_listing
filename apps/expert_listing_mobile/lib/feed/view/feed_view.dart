@@ -213,6 +213,7 @@ final class _FilterControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = AppColors.of(context);
     return Padding(
       // Measured filter row: 24px side insets, 16px above the pill, and no
       // bottom padding because the create-post prompt supplies the gap.
@@ -224,29 +225,50 @@ final class _FilterControl extends StatelessWidget {
       ),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: OutlinedButton.icon(
+        child: AppPressable(
           key: const ValueKey<String>('feed-filters'),
           onPressed: onPressed,
-          style: OutlinedButton.styleFrom(
-            tapTargetSize: MaterialTapTargetSize.padded,
-            minimumSize: Size.zero,
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.medium,
-              vertical: AppSpacing.small,
+          semanticLabel: 'Filters',
+          borderRadius: BorderRadius.circular(AppIconSize.tapTarget / 2),
+          child: Container(
+            // The genuine 48px activation region surrounds the measured
+            // 36px pill without moving visible content.
+            constraints: const BoxConstraints(
+              minHeight: AppIconSize.tapTarget,
             ),
-            side: BorderSide(
-              color: AppColors.of(context).textPrimary.withValues(alpha: 0.1),
+            alignment: Alignment.centerLeft,
+            child: Container(
+              key: const ValueKey<String>('feed-filters-pill'),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.medium,
+                vertical: AppSpacing.small,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppIconSize.tapTarget / 2),
+                border: Border.all(
+                  color: colors.textPrimary.withValues(alpha: 0.1),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppIcon(
+                    AppIcons.filter,
+                    size: AppIconSize.small,
+                    color: colors.textSecondary,
+                  ),
+                  const SizedBox(width: AppSpacing.small),
+                  Text(
+                    activeCount == 0 ? 'Filters' : 'Filters ($activeCount)',
+                    style: AppTypography.postBody(
+                      colors,
+                      color: colors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            shape: const StadiumBorder(),
-            foregroundColor: AppColors.of(context).textSecondary,
-            textStyle: AppTypography.postBody(AppColors.of(context)),
           ),
-          icon: AppIcon(
-            AppIcons.filter,
-            size: AppIconSize.small,
-            color: AppColors.of(context).textSecondary,
-          ),
-          label: Text(activeCount == 0 ? 'Filters' : 'Filters ($activeCount)'),
         ),
       ),
     );
