@@ -85,11 +85,17 @@ final class _DestinationSwitcherState extends State<DestinationSwitcher> {
   }
 
   void _finishTransition(int index) {
-    if (index != widget.selectedIndex || _onstageIndices.length == 1) return;
-    setState(() {
-      _onstageIndices
-        ..clear()
-        ..add(widget.selectedIndex);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted ||
+          index != widget.selectedIndex ||
+          _onstageIndices.length == 1) {
+        return;
+      }
+      setState(() {
+        _onstageIndices
+          ..clear()
+          ..add(widget.selectedIndex);
+      });
     });
   }
 }

@@ -4,6 +4,7 @@ import 'package:app_ui/app_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/providers.dart';
+import 'package:expert_listing/dashboard/destination_switcher.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
@@ -19,11 +20,30 @@ import 'package:expert_listing/search/models/search_suggestion.dart';
 import 'package:expert_listing/search/recent_search_store.dart';
 import 'package:expert_listing/search/search_providers.dart';
 import 'package:expert_listing/search/search_repository.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('an immediate destination transition can be disposed safely', (
+    tester,
+  ) async {
+    Widget harness(int selectedIndex) => MaterialApp(
+      theme: AppTheme.light(platform: TargetPlatform.iOS),
+      home: DestinationSwitcher(
+        selectedIndex: selectedIndex,
+        children: const [Text('Feed'), Text('Search')],
+      ),
+    );
+
+    await tester.pumpWidget(harness(0));
+    await tester.pumpWidget(harness(1));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('destination motion follows the active platform', (tester) async {
     for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
       await tester.pumpWidget(_platformHarness(platform));
