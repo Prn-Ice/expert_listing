@@ -12,9 +12,11 @@ import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/post_details.dart';
 import 'package:expert_listing/feed/view/create_post_prompt.dart';
+import 'package:expert_listing/feed/view/feed_content.dart';
+import 'package:expert_listing/feed/view/feed_controls.dart';
 import 'package:expert_listing/feed/view/feed_header.dart';
 import 'package:expert_listing/feed/view/filter_sheet.dart';
-import 'package:expert_listing/feed/view/post_card.dart';
+import 'package:expert_listing/feed/view/post_options_menu.dart';
 import 'package:expert_listing/feed/view/story_strip.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +94,7 @@ class FeedViewState extends ConsumerState<FeedView> {
         ),
         SliverToBoxAdapter(child: StoryStrip(onNotice: _showNotice)),
         SliverToBoxAdapter(
-          child: _FilterControl(
+          child: FeedFilterControl(
             activeCount: state.filter.activeCount,
             onPressed: _openFilters,
           ),
@@ -109,7 +111,7 @@ class FeedViewState extends ConsumerState<FeedView> {
         if (state.isShowingSavedPosts)
           SliverPersistentHeader(
             pinned: true,
-            delegate: _OfflineBarDelegate(
+            delegate: FeedOfflineBarDelegate(
               height: OfflineStatusBar.heightFor(context),
               message: state.fallbackReason == FeedFallbackReason.connection
                   ? 'Offline · Showing saved posts'
@@ -119,11 +121,11 @@ class FeedViewState extends ConsumerState<FeedView> {
           ),
         if (state.refreshFailed)
           const SliverToBoxAdapter(
-            child: _InlineStatus(
+            child: FeedInlineStatus(
               message: "Couldn't refresh. Showing the posts already loaded.",
             ),
           ),
-        _FeedContent(
+        FeedContent(
           state: state,
           onNotice: _showNotice,
           onRetryFirstPage: _retryFirstPage,
@@ -274,45 +276,35 @@ class FeedViewState extends ConsumerState<FeedView> {
     }
   }
 
-  Future<void> _openPostOptions(FeedPost post) async {
-    final action = await AppSheet.show<_PostOption>(
-      context,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xlarge),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Post options',
-              style: AppTypography.title(AppColors.of(context)),
-            ),
-            const SizedBox(height: AppSpacing.medium),
-            AppButton(
-              minimumSize: const Size.fromHeight(AppIconSize.tapTarget),
-              alignment: Alignment.centerLeft,
-              onPressed: () => Navigator.pop(
-                context,
-                _PostOption.copyDetails,
-              ),
-              child: const Text('Copy post details'),
-            ),
-            AppButton(
-              minimumSize: const Size.fromHeight(AppIconSize.tapTarget),
-              alignment: Alignment.centerLeft,
-              onPressed: () => Navigator.pop(context, _PostOption.hide),
-              child: const Text('Hide this post'),
-            ),
-          ],
-        ),
-      ),
+  Future<void> _openPostOptions(
+    FeedPost post,
+    BuildContext sourceContext,
+  ) async {
+    final source = sourceContext.findRenderObject();
+    final overlay = Navigator.of(
+      sourceContext,
+      rootNavigator: true,
+    ).overlay?.context.findRenderObject();
+    if (source is! RenderBox || !source.hasSize || overlay is! RenderBox) {
+      return;
+    }
+    final sourceRect =
+        source.localToGlobal(
+          Offset.zero,
+          ancestor: overlay,
+        ) &
+        source.size;
+    final action = await showPostOptionsMenu(
+      sourceContext,
+      sourceRect: sourceRect,
+      overlaySize: overlay.size,
     );
     if (!mounted || action == null) return;
     switch (action) {
-      case _PostOption.copyDetails:
+      case PostOption.copyDetails:
         await Clipboard.setData(ClipboardData(text: postDetailsText(post)));
         if (mounted) AppNotice.show(context, 'Post details copied.');
-      case _PostOption.hide:
+      case PostOption.hide:
         ref.read(feedBlocProvider.bloc).add(FeedPostHidden(post.id));
         AppNotice.show(
           context,
@@ -335,348 +327,6 @@ class FeedViewState extends ConsumerState<FeedView> {
       0,
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOut,
-    );
-  }
-}
-
-final class _OfflineBarDelegate extends SliverPersistentHeaderDelegate {
-  const _OfflineBarDelegate({
-    required this.height,
-    required this.message,
-    required this.onRetry,
-  });
-
-  final double height;
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  double get maxExtent => height;
-
-  @override
-  double get minExtent => height;
-
-  @override
-  Widget build(
-    BuildContext context,
-    double shrinkOffset,
-    bool overlapsContent,
-  ) => OfflineStatusBar(message: message, onRetry: onRetry);
-
-  @override
-  bool shouldRebuild(_OfflineBarDelegate oldDelegate) =>
-      oldDelegate.height != height ||
-      oldDelegate.message != message ||
-      oldDelegate.onRetry != onRetry;
-}
-
-final class _FilterControl extends StatelessWidget {
-  const _FilterControl({required this.activeCount, required this.onPressed});
-
-  final int activeCount;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AppColors.of(context);
-    final label = activeCount == 0 ? 'Filters' : 'Filters ($activeCount)';
-    final semanticsLabel = activeCount == 0
-        ? 'Filters'
-        : 'Filters, $activeCount active';
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        AppIcon(
-          AppIcons.filter,
-          size: AppIconSize.small,
-          color: colors.textSecondary,
-        ),
-        const SizedBox(width: AppSpacing.small),
-        Text(
-          label,
-          style: AppTypography.postBody(
-            colors,
-            color: colors.textSecondary,
-          ),
-        ),
-      ],
-    );
-    final borderRadius = BorderRadius.circular(AppIconSize.tapTarget / 2);
-    final borderSide = BorderSide(
-      color: colors.textPrimary.withValues(alpha: 0.1),
-    );
-
-    return Padding(
-      // Measured filter row: 24px side insets, 16px above the pill, and no
-      // bottom padding because the create-post prompt supplies the gap.
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xxlarge,
-        AppSpacing.large,
-        AppSpacing.xxlarge,
-        0,
-      ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: context.isIos
-            ? AppPressable(
-                key: const ValueKey<String>('feed-filters'),
-                onPressed: onPressed,
-                semanticLabel: semanticsLabel,
-                borderRadius: borderRadius,
-                child: Container(
-                  constraints: const BoxConstraints(
-                    minHeight: AppIconSize.tapTarget,
-                  ),
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    key: const ValueKey<String>('feed-filters-pill'),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.medium,
-                      vertical: AppSpacing.small,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: borderRadius,
-                      border: Border.fromBorderSide(borderSide),
-                    ),
-                    child: content,
-                  ),
-                ),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Semantics(
-                    label: semanticsLabel,
-                    button: true,
-                    enabled: true,
-                    excludeSemantics: true,
-                    child: OutlinedButton(
-                      key: const ValueKey<String>('feed-filters'),
-                      onPressed: onPressed,
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: Size.zero,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.medium,
-                          vertical: AppSpacing.small,
-                        ),
-                        tapTargetSize: MaterialTapTargetSize.padded,
-                        foregroundColor: colors.textSecondary,
-                        side: borderSide,
-                        shape: const StadiumBorder(),
-                      ),
-                      child: KeyedSubtree(
-                        key: const ValueKey<String>('feed-filters-pill'),
-                        child: content,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-final class _FeedContent extends StatelessWidget {
-  const _FeedContent({
-    required this.state,
-    required this.onNotice,
-    required this.onRetryFirstPage,
-    required this.onRetryNextPage,
-    required this.onClearFilters,
-    required this.onCreatePost,
-    required this.onLike,
-    required this.onComments,
-    required this.onShare,
-    required this.onBookmark,
-    required this.onOptions,
-  });
-
-  final FeedState state;
-  final ValueChanged<String> onNotice;
-  final VoidCallback onRetryFirstPage;
-  final VoidCallback onRetryNextPage;
-  final VoidCallback onClearFilters;
-  final VoidCallback onCreatePost;
-  final ValueChanged<int> onLike;
-  final ValueChanged<FeedPost> onComments;
-  final void Function(FeedPost post, BuildContext context) onShare;
-  final ValueChanged<int> onBookmark;
-  final ValueChanged<FeedPost> onOptions;
-
-  @override
-  Widget build(BuildContext context) {
-    if (state.isInitialLoading) {
-      return const SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(child: CircularProgressIndicator.adaptive()),
-      );
-    }
-
-    if (state.failure != null && state.posts.isEmpty) {
-      return SliverFillRemaining(
-        hasScrollBody: false,
-        child: _FeedFailure(
-          failure: state.failure!,
-          onRetry: onRetryFirstPage,
-        ),
-      );
-    }
-
-    if (state.visiblePosts.isEmpty && state.posts.isNotEmpty) {
-      return SliverFillRemaining(
-        hasScrollBody: false,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('No posts left in this session.'),
-              if (state.isLoadingMore)
-                const Padding(
-                  padding: EdgeInsets.all(AppSpacing.large),
-                  child: CircularProgressIndicator.adaptive(),
-                )
-              else if (state.canLoadMore)
-                AppButton(
-                  minimumSize: const Size(64, 48),
-                  onPressed: onRetryNextPage,
-                  child: Text(state.nextPageFailed ? 'Try again' : 'Load more'),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (state.posts.isEmpty) {
-      return SliverFillRemaining(
-        hasScrollBody: false,
-        child: _FeedEmpty(
-          isFiltered: !state.filter.isEmpty,
-          onClear: onClearFilters,
-          onCreatePost: onCreatePost,
-        ),
-      );
-    }
-
-    return SliverMainAxisGroup(
-      slivers: [
-        SliverList.builder(
-          itemCount: state.visiblePosts.length,
-          itemBuilder: (context, index) => KeyedSubtree(
-            key: ValueKey(state.visiblePosts[index].id),
-            child: PostCard(
-              post: state.visiblePosts[index],
-              onNotice: onNotice,
-              bookmarked: state.bookmarkedPostIds.contains(
-                state.visiblePosts[index].id,
-              ),
-              onLike: () => onLike(state.visiblePosts[index].id),
-              onComments: () => onComments(state.visiblePosts[index]),
-              onShare: (sourceContext) =>
-                  onShare(state.visiblePosts[index], sourceContext),
-              onBookmark: () => onBookmark(state.visiblePosts[index].id),
-              onOptions: () => onOptions(state.visiblePosts[index]),
-            ),
-          ),
-        ),
-        if (state.canLoadMore || state.isLoadingMore || state.nextPageFailed)
-          SliverToBoxAdapter(
-            child: SizedBox(
-              key: const ValueKey<String>('feed-pagination-footer'),
-              height: AppIconSize.tapTarget + (AppSpacing.large * 2),
-              child: Center(
-                child: state.isLoadingMore
-                    ? const CircularProgressIndicator.adaptive()
-                    : state.nextPageFailed
-                    ? AppButton(
-                        onPressed: onRetryNextPage,
-                        minimumSize: const Size(64, 48),
-                        child: const Text('Try again'),
-                      )
-                    : null,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-enum _PostOption { copyDetails, hide }
-
-final class _FeedFailure extends StatelessWidget {
-  const _FeedFailure({required this.failure, required this.onRetry});
-
-  final FeedLoadFailure failure;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) {
-    final message = switch (failure.kind) {
-      FeedFailureKind.connection =>
-        "You're offline. Reconnect to load the feed.",
-      FeedFailureKind.service => 'Feed unavailable. Try again.',
-      FeedFailureKind.unavailable => "Couldn't load the feed.",
-    };
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxlarge),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: AppSpacing.medium),
-            FilledButton(onPressed: onRetry, child: const Text('Try again')),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-final class _FeedEmpty extends StatelessWidget {
-  const _FeedEmpty({
-    required this.isFiltered,
-    required this.onClear,
-    required this.onCreatePost,
-  });
-
-  final bool isFiltered;
-  final VoidCallback onClear;
-  final VoidCallback onCreatePost;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(isFiltered ? 'No posts match these filters.' : 'No posts yet.'),
-          const SizedBox(height: AppSpacing.medium),
-          FilledButton(
-            onPressed: isFiltered ? onClear : onCreatePost,
-            child: Text(isFiltered ? 'Clear filters' : 'Create a post'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-final class _InlineStatus extends StatelessWidget {
-  const _InlineStatus({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      liveRegion: true,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.medium),
-        child: Text(message, textAlign: TextAlign.center),
-      ),
     );
   }
 }

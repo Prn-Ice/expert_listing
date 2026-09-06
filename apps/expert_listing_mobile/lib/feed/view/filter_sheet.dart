@@ -9,13 +9,12 @@ Future<FeedFilter?> showFeedFilterSheet(
   BuildContext context, {
   required FeedFilter filter,
 }) {
-  // The native default covers 92% of the screen. The bottom 40% keeps this
-  // small form restrained; longer states and keyboard use remain scrollable.
-  const cupertinoTopGap = 0.6;
+  // One stable frame prevents post-type changes from moving the sheet edge.
+  const heightFactor = 0.6;
 
   return AppSheet.show<FeedFilter>(
     context,
-    cupertinoTopGap: cupertinoTopGap,
+    heightFactor: heightFactor,
     child: _FeedFilterSheet(
       key: const ValueKey<String>('feed-filter-sheet'),
       filter: filter,
@@ -50,140 +49,166 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
 
-    // The single-child scroll view keeps every control reachable when the
-    // keyboard compresses the sheet on small screens.
-    return SingleChildScrollView(
-      key: const ValueKey<String>('feed-filter-sheet'),
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.xlarge,
-        AppSpacing.large,
-        AppSpacing.xlarge,
-        AppSpacing.xlarge,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Filters', style: AppTypography.brand(colors)),
-          const SizedBox(height: AppSpacing.large),
-          Text('Post type', style: AppTypography.bodyStrong(colors)),
-          const SizedBox(height: AppSpacing.small),
-          Wrap(
-            spacing: AppSpacing.small,
-            runSpacing: AppSpacing.small,
-            children: [
-              _FilterChoice(
-                label: 'All',
-                selected: _postType == null,
-                onSelected: () {
-                  setState(() {
-                    _postType = null;
-                    _requestType = null;
-                    _propertyStatus = null;
-                  });
-                },
-              ),
-              _FilterChoice(
-                label: 'General',
-                selected: _postType == PostType.general,
-                onSelected: () {
-                  setState(() {
-                    _postType = PostType.general;
-                    _requestType = null;
-                    _propertyStatus = null;
-                  });
-                },
-              ),
-              _FilterChoice(
-                label: 'Request',
-                selected: _postType == PostType.request,
-                onSelected: () {
-                  setState(() {
-                    _postType = PostType.request;
-                    _propertyStatus = null;
-                  });
-                },
-              ),
-              _FilterChoice(
-                label: 'Property',
-                selected: _postType == PostType.property,
-                onSelected: () {
-                  setState(() {
-                    _postType = PostType.property;
-                    _requestType = null;
-                  });
-                },
-              ),
-            ],
+    return Column(
+      children: [
+        Expanded(
+          // Conditional fields grow inside this region without moving the
+          // sheet or its actions.
+          child: SingleChildScrollView(
+            primary: true,
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xlarge,
+              AppSpacing.large,
+              AppSpacing.xlarge,
+              AppSpacing.medium,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Filters', style: AppTypography.brand(colors)),
+                const SizedBox(height: AppSpacing.large),
+                Text('Post type', style: AppTypography.bodyStrong(colors)),
+                const SizedBox(height: AppSpacing.small),
+                Wrap(
+                  spacing: AppSpacing.small,
+                  runSpacing: AppSpacing.small,
+                  children: [
+                    _FilterChoice(
+                      label: 'All',
+                      selected: _postType == null,
+                      onSelected: () {
+                        setState(() {
+                          _postType = null;
+                          _requestType = null;
+                          _propertyStatus = null;
+                        });
+                      },
+                    ),
+                    _FilterChoice(
+                      label: 'General',
+                      selected: _postType == PostType.general,
+                      onSelected: () {
+                        setState(() {
+                          _postType = PostType.general;
+                          _requestType = null;
+                          _propertyStatus = null;
+                        });
+                      },
+                    ),
+                    _FilterChoice(
+                      label: 'Request',
+                      selected: _postType == PostType.request,
+                      onSelected: () {
+                        setState(() {
+                          _postType = PostType.request;
+                          _propertyStatus = null;
+                        });
+                      },
+                    ),
+                    _FilterChoice(
+                      label: 'Property',
+                      selected: _postType == PostType.property,
+                      onSelected: () {
+                        setState(() {
+                          _postType = PostType.property;
+                          _requestType = null;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+                if (_postType == PostType.request) ...[
+                  const SizedBox(height: AppSpacing.large),
+                  Text(
+                    'Request type',
+                    style: AppTypography.bodyStrong(colors),
+                  ),
+                  const SizedBox(height: AppSpacing.small),
+                  Wrap(
+                    spacing: AppSpacing.small,
+                    children: [
+                      _FilterChoice(
+                        label: 'Any',
+                        selected: _requestType == null,
+                        onSelected: () {
+                          setState(() => _requestType = null);
+                        },
+                      ),
+                      _FilterChoice(
+                        label: 'Looking to buy',
+                        selected: _requestType == RequestType.lookingToBuy,
+                        onSelected: () {
+                          setState(
+                            () => _requestType = RequestType.lookingToBuy,
+                          );
+                        },
+                      ),
+                      _FilterChoice(
+                        label: 'Looking to rent',
+                        selected: _requestType == RequestType.lookingToRent,
+                        onSelected: () {
+                          setState(
+                            () => _requestType = RequestType.lookingToRent,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+                if (_postType == PostType.property) ...[
+                  const SizedBox(height: AppSpacing.large),
+                  Text(
+                    'Property status',
+                    style: AppTypography.bodyStrong(colors),
+                  ),
+                  const SizedBox(height: AppSpacing.small),
+                  Wrap(
+                    spacing: AppSpacing.small,
+                    children: [
+                      _FilterChoice(
+                        label: 'Any',
+                        selected: _propertyStatus == null,
+                        onSelected: () {
+                          setState(() => _propertyStatus = null);
+                        },
+                      ),
+                      _FilterChoice(
+                        label: 'For sale',
+                        selected: _propertyStatus == PropertyStatus.forSale,
+                        onSelected: () {
+                          setState(
+                            () => _propertyStatus = PropertyStatus.forSale,
+                          );
+                        },
+                      ),
+                      _FilterChoice(
+                        label: 'For rent',
+                        selected: _propertyStatus == PropertyStatus.forRent,
+                        onSelected: () {
+                          setState(
+                            () => _propertyStatus = PropertyStatus.forRent,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.large),
+                Text('Location', style: AppTypography.bodyStrong(colors)),
+                const SizedBox(height: AppSpacing.small),
+                _FilterField(controller: _locationController),
+              ],
+            ),
           ),
-          if (_postType == PostType.request) ...[
-            const SizedBox(height: AppSpacing.large),
-            Text('Request type', style: AppTypography.bodyStrong(colors)),
-            const SizedBox(height: AppSpacing.small),
-            Wrap(
-              spacing: AppSpacing.small,
-              children: [
-                _FilterChoice(
-                  label: 'Any',
-                  selected: _requestType == null,
-                  onSelected: () {
-                    setState(() => _requestType = null);
-                  },
-                ),
-                _FilterChoice(
-                  label: 'Looking to buy',
-                  selected: _requestType == RequestType.lookingToBuy,
-                  onSelected: () {
-                    setState(() => _requestType = RequestType.lookingToBuy);
-                  },
-                ),
-                _FilterChoice(
-                  label: 'Looking to rent',
-                  selected: _requestType == RequestType.lookingToRent,
-                  onSelected: () {
-                    setState(() => _requestType = RequestType.lookingToRent);
-                  },
-                ),
-              ],
-            ),
-          ],
-          if (_postType == PostType.property) ...[
-            const SizedBox(height: AppSpacing.large),
-            Text('Property status', style: AppTypography.bodyStrong(colors)),
-            const SizedBox(height: AppSpacing.small),
-            Wrap(
-              spacing: AppSpacing.small,
-              children: [
-                _FilterChoice(
-                  label: 'Any',
-                  selected: _propertyStatus == null,
-                  onSelected: () {
-                    setState(() => _propertyStatus = null);
-                  },
-                ),
-                _FilterChoice(
-                  label: 'For sale',
-                  selected: _propertyStatus == PropertyStatus.forSale,
-                  onSelected: () {
-                    setState(() => _propertyStatus = PropertyStatus.forSale);
-                  },
-                ),
-                _FilterChoice(
-                  label: 'For rent',
-                  selected: _propertyStatus == PropertyStatus.forRent,
-                  onSelected: () {
-                    setState(() => _propertyStatus = PropertyStatus.forRent);
-                  },
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: AppSpacing.large),
-          Text('Location', style: AppTypography.bodyStrong(colors)),
-          const SizedBox(height: AppSpacing.small),
-          _FilterField(controller: _locationController),
-          const SizedBox(height: AppSpacing.large),
-          Row(
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.xlarge,
+            AppSpacing.small,
+            AppSpacing.xlarge,
+            AppSpacing.xlarge,
+          ),
+          child: Row(
             children: [
               _ClearAction(
                 onPressed: () => Navigator.pop(context, const FeedFilter()),
@@ -192,8 +217,8 @@ final class _FeedFilterSheetState extends State<_FeedFilterSheet> {
               _ApplyAction(onPressed: _apply),
             ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -305,7 +330,7 @@ final class _FilterField extends StatelessWidget {
               controller: controller,
               maxLength: 120,
               textInputAction: TextInputAction.done,
-              placeholder: 'Search locations',
+              placeholder: 'Location',
               style: AppTypography.body(colors),
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.small,
@@ -316,10 +341,10 @@ final class _FilterField extends StatelessWidget {
               controller: controller,
               maxLength: 120,
               textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                hintText: 'Search locations',
-                counterText: '',
-                border: OutlineInputBorder(),
+              style: AppTypography.body(colors),
+              decoration: appSheetInputDecoration(
+                context,
+                hintText: 'Location',
               ),
             ),
     );

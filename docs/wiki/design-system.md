@@ -55,7 +55,7 @@ in `app_ui`.
 | `AppButton` | A compact labelled action using native iOS or Android press behaviour |
 | `AppPressable` | A composed branded row, tile, or image that needs native press behaviour without owned layout |
 | `AppScaffold` | An adaptive page surface with optional bottom navigation |
-| `AppSheet` | A Cupertino or Material route with safe-area, keyboard, and dismissal handling; callers own Android scrollable content |
+| `AppSheet` | A Cupertino or Material route with safe-area, keyboard, dismissal, stable optional height, and the shared Material sheet-field treatment |
 | `AppNotice` | One replacing, safe-area-aware transient notice |
 | `OfflineStatusBar` | Persistent saved-feed provenance with an optional Retry action; the feature owns its state |
 | `AppNetworkImage` | Bounded network imagery with stable loading, error, decode, and semantic behaviour |
@@ -200,7 +200,8 @@ surfaces:
 | --- | --- | --- |
 | Pull to refresh | `CupertinoSliverRefreshControl` | `RefreshIndicator` |
 | Filter surface | Dismissible `CupertinoSheetRoute` | Modal Material bottom sheet |
-| Filters and location | Cupertino choices and field | Material choices and field |
+| Filters and location | Cupertino choices and field | Material choices and the shared comments-style sheet field |
+| Create-post actions | Close and Publish in the top sheet bar | Close in the header and Publish in a separated bottom bar |
 | Boundary notice | Replacing dismissible Cupertino alert | Replacing SnackBar |
 | Full-screen media route | `CupertinoPageRoute` with edge swipe-back | `MaterialPageRoute` with system back |
 | Feed return to top | Primary scroll view supports the iOS status-bar gesture | Selecting the active Feed destination returns to top |
@@ -210,14 +211,13 @@ screen-reader semantics, and reduced-motion preferences remain native. Media
 carousels support swiping; full-screen property media also exposes visible
 Previous and Next actions so paging never requires a drag gesture.
 
-Two deliberate exceptions preserve the product reference. The iOS filter sheet
-occupies the bottom 40% rather than Cupertino's taller default because the fixed
-filter set otherwise leaves excessive empty space; compressed keyboard states
-scroll. Compact labelled controls retain their measured 32px minimum where the
-WCAG 2.2 AA 24px target requirement is met; icon-only controls retain at least a
-48 by 48 logical-pixel target. Revisit either exception if content grows, device
-testing finds clipping, or a platform review requires its larger recommended
-target.
+Two deliberate exceptions preserve the product reference. The filter sheet uses
+one stable 60% height on both platforms; conditional fields scroll inside it and
+Clear and Apply remain fixed. Compact labelled controls retain their measured
+32px minimum where the WCAG 2.2 AA 24px target requirement is met;
+icon-only controls retain at least a 48 by 48 logical-pixel target. Revisit either
+exception if content grows, device testing finds clipping, or a platform review
+requires its larger recommended target.
 
 The bottom navigation retains its custom measured arrangement because neither
 native bar reproduces the reference's icon, label, spacing, and safe-area

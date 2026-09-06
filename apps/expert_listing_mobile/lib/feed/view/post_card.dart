@@ -36,7 +36,7 @@ class PostCard extends StatelessWidget {
   final VoidCallback? onComments;
   final ValueChanged<BuildContext>? onShare;
   final VoidCallback? onBookmark;
-  final VoidCallback? onOptions;
+  final ValueChanged<BuildContext>? onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -326,7 +326,7 @@ final class _PostHeader extends StatelessWidget {
 
   final FeedPost post;
   final ValueChanged<String> onNotice;
-  final VoidCallback? onOptions;
+  final ValueChanged<BuildContext>? onOptions;
 
   void _showProfileNotice() =>
       onNotice('Profiles aren’t part of this preview.');
@@ -401,16 +401,18 @@ final class _PostHeader extends StatelessWidget {
               ),
             ),
           ),
-          AppIconButton(
-            key: ValueKey<String>('post-overflow-${post.id}'),
-            icon: AppIcons.postOverflow,
-            iconSize: AppIconSize.small,
-            tooltip: 'Post options',
-            onPressed:
-                onOptions ??
-                () => onNotice(
-                  'Post options are part of the next preview step.',
-                ),
+          Builder(
+            builder: (buttonContext) => AppIconButton(
+              key: ValueKey<String>('post-overflow-${post.id}'),
+              icon: AppIcons.postOverflow,
+              iconSize: AppIconSize.small,
+              tooltip: 'Post options',
+              onPressed: onOptions == null
+                  ? () => onNotice(
+                      'Post options are part of the next preview step.',
+                    )
+                  : () => onOptions!(buttonContext),
+            ),
           ),
         ],
       ),

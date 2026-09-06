@@ -57,6 +57,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Post type'), findsOneWidget);
     expect(find.text('Apply'), findsOneWidget);
+    final location = tester.widget<TextField>(find.byType(TextField));
+    expect(location.decoration?.hintText, 'Location');
+    expect(location.decoration?.filled, isTrue);
+    expect(location.decoration?.fillColor, AppColors.light.surface);
   });
 
   testWidgets('aligns prompt and post avatar and text columns', (tester) async {
@@ -114,6 +118,21 @@ void main() {
       matching: find.byType(TextField),
     );
     expect(tester.widget<TextField>(bodyField).focusNode?.hasFocus, isTrue);
+    for (final field in [bodyField, locationField]) {
+      final decoration = tester.widget<TextField>(field).decoration!;
+      expect(decoration.filled, isTrue);
+      expect(decoration.fillColor, AppColors.light.surface);
+      expect(decoration.enabledBorder, isA<OutlineInputBorder>());
+      expect(decoration.focusedBorder, isA<OutlineInputBorder>());
+    }
+    expect(
+      tester.widget<TextField>(locationField).decoration?.hintText,
+      'Location',
+    );
+    expect(
+      tester.getTopLeft(find.text('Publish')).dy,
+      greaterThan(tester.getBottomLeft(locationField).dy),
+    );
 
     await tester.tap(find.text('Property'));
     await tester.pump();
@@ -136,6 +155,64 @@ void main() {
     expect(find.byType(CreatePostSheet), findsNothing);
     expect(find.text('Created from the sheet'), findsOneWidget);
     expect(find.text('Post published.'), findsOneWidget);
+  });
+
+  testWidgets('filter frame and actions stay fixed across post types', (
+    tester,
+  ) async {
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      await tester.pumpWidget(_harness(_page(), platform: platform));
+      await tester.pump();
+      await tester.tap(find.text('Filters'));
+      await tester.pumpAndSettle();
+
+      final sheet = find.byKey(const ValueKey<String>('feed-filter-sheet'));
+      final initialSheetRect = tester.getRect(sheet);
+      final initialApplyRect = tester.getRect(find.text('Apply'));
+
+      await tester.tap(find.text('Request'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(sheet), initialSheetRect);
+      expect(tester.getRect(find.text('Apply')), initialApplyRect);
+
+      await tester.tap(find.text('Property'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(sheet), initialSheetRect);
+      expect(tester.getRect(find.text('Apply')), initialApplyRect);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
+  });
+
+  testWidgets('create frame and actions stay fixed across post types', (
+    tester,
+  ) async {
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      await tester.pumpWidget(_harness(_page(), platform: platform));
+      await tester.pump();
+      await tester.tap(
+        find.text('Share a property, Make a request or say something...'),
+      );
+      await tester.pumpAndSettle();
+
+      final sheet = find.byKey(const ValueKey<String>('create-post-sheet'));
+      final initialSheetRect = tester.getRect(sheet);
+      final initialPublishRect = tester.getRect(find.text('Publish'));
+
+      await tester.tap(find.text('Property'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(sheet), initialSheetRect);
+      expect(tester.getRect(find.text('Publish')), initialPublishRect);
+
+      await tester.tap(find.text('Request'));
+      await tester.pumpAndSettle();
+      expect(tester.getRect(sheet), initialSheetRect);
+      expect(tester.getRect(find.text('Publish')), initialPublishRect);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
   });
 
   testWidgets('Add images invokes the native picker boundary', (tester) async {
@@ -292,18 +369,6 @@ void main() {
       );
       tester.view.viewInsets = const FakeViewPadding(bottom: 280);
       await tester.pumpAndSettle();
-      await tester.scrollUntilVisible(
-        find.text('Publish'),
-        -160,
-        scrollable: find
-            .descendant(
-              of: find.byType(CreatePostSheet),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.pumpAndSettle();
-
       expect(find.text('Publish').hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
 
@@ -398,13 +463,16 @@ void main() {
   testWidgets('session hide removes a post and Undo restores it', (
     tester,
   ) async {
-    await tester.pumpWidget(_harness(_page()));
+    await tester.pumpWidget(
+      _harness(_page(), platform: TargetPlatform.android),
+    );
     await tester.pump();
 
     await tester.tap(
       find.byKey(const ValueKey<String>('post-overflow-42')),
     );
     await tester.pumpAndSettle();
+    expect(find.byType(BottomSheet), findsNothing);
     await tester.tap(find.text('Hide this post'));
     await tester.pumpAndSettle();
 
@@ -415,6 +483,56 @@ void main() {
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(find.text('Saved post'), findsOneWidget);
+  });
+
+  testWidgets('post options open an anchored menu on both platforms', (
+    tester,
+  ) async {
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      await tester.pumpWidget(_harness(_page(), platform: platform));
+      await tester.pump();
+
+      final overflow = find.byKey(
+        const ValueKey<String>('post-overflow-42'),
+      );
+      final overflowRect = tester.getRect(overflow);
+      await tester.tap(overflow);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(find.text('Copy post details'), findsOneWidget);
+      expect(find.text('Hide this post'), findsOneWidget);
+      if (platform == TargetPlatform.iOS) {
+        expect(
+          find.byKey(
+            const ValueKey<String>('cupertino-post-options-menu'),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.byWidgetPredicate((widget) => widget is PopupMenuItem),
+          findsNothing,
+        );
+      } else {
+        expect(
+          find.byKey(
+            const ValueKey<String>('cupertino-post-options-menu'),
+          ),
+          findsNothing,
+        );
+        expect(
+          find.byWidgetPredicate((widget) => widget is PopupMenuItem),
+          findsNWidgets(2),
+        );
+      }
+      expect(
+        tester.getRect(find.text('Copy post details')).top,
+        lessThan(overflowRect.bottom + AppIconSize.tapTarget),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
   });
 
   testWidgets('post options copy truthful details to the clipboard', (
@@ -438,7 +556,7 @@ void main() {
         null,
       ),
     );
-    await tester.pumpWidget(_harness(page));
+    await tester.pumpWidget(_harness(page, platform: TargetPlatform.iOS));
     await tester.pump();
 
     await tester.tap(
@@ -554,6 +672,12 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CupertinoTextField), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
+      expect(
+        tester
+            .widget<CupertinoTextField>(find.byType(CupertinoTextField))
+            .placeholder,
+        'Location',
+      );
 
       await tester.tap(find.text('General'));
       await tester.pump();
@@ -982,23 +1106,12 @@ void main() {
       await tester.enterText(find.byType(TextField), 'Lekki Phase 1');
       await tester.pump();
 
-      // A compressed keyboard leaves less vertical space than the sheet needs;
-      // the sheet content must scroll to keep Apply reachable.
+      // A compressed keyboard may scroll the fields, but the footer remains
+      // fixed above it.
       tester.view.viewInsets = const FakeViewPadding(bottom: 280);
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-
-      await tester.scrollUntilVisible(
-        find.text('Apply'),
-        160,
-        scrollable: find
-            .descendant(
-              of: find.byType(BottomSheet),
-              matching: find.byType(Scrollable),
-            )
-            .first,
-      );
-      await tester.pumpAndSettle();
+      expect(find.text('Apply').hitTestable(), findsOneWidget);
 
       await tester.tap(find.text('Apply'));
       await tester.pumpAndSettle();

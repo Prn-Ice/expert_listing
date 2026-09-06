@@ -620,6 +620,30 @@ void main() {
   });
 
   group('AppSheet', () {
+    testWidgets('shares one Material field treatment', (tester) async {
+      await tester.pumpWidget(
+        harness(
+          Builder(
+            builder: (context) => TextField(
+              decoration: appSheetInputDecoration(
+                context,
+                hintText: 'Location',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final decoration = tester
+          .widget<TextField>(find.byType(TextField))
+          .decoration!;
+      expect(decoration.hintText, 'Location');
+      expect(decoration.filled, isTrue);
+      expect(decoration.fillColor, AppColors.light.surface);
+      expect(decoration.enabledBorder, isA<OutlineInputBorder>());
+      expect(decoration.focusedBorder, isA<OutlineInputBorder>());
+    });
+
     testWidgets('protects bottom actions from keyboard and device insets', (
       tester,
     ) async {
@@ -664,7 +688,7 @@ void main() {
                 builder: (context) => TextButton(
                   onPressed: () => AppSheet.show<void>(
                     context,
-                    cupertinoTopGap: 0.5,
+                    heightFactor: 0.5,
                     child: const SizedBox(height: 48),
                   ),
                   child: const Text('Show compact sheet'),

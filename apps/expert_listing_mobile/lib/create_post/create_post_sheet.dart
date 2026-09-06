@@ -14,6 +14,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 Future<FeedPost?> showCreatePostSheet(BuildContext context) {
   return AppSheet.show<FeedPost>(
     context,
+    heightFactor: context.isIos ? null : 0.92,
     child: const CreatePostSheet(),
   );
 }
@@ -54,241 +55,305 @@ final class _CreatePostSheetState extends ConsumerState<CreatePostSheet> {
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) unawaited(_close(state));
       },
-      child: ListView(
+      child: Column(
         key: const ValueKey<String>('create-post-sheet'),
-        primary: true,
-        shrinkWrap: true,
-        padding: const EdgeInsets.fromLTRB(
-          AppSpacing.large,
-          AppSpacing.small,
-          AppSpacing.large,
-          AppSpacing.xlarge,
-        ),
         children: [
-          Row(
-            children: [
-              AppButton(
-                minimumSize: const Size.square(AppIconSize.tapTarget),
-                onPressed: state.isSubmitting ? null : () => _close(state),
-                child: Text(
-                  'Close',
-                  style: AppTypography.bodyMedium(
-                    colors,
-                    color: colors.textSecondary,
+          if (context.isIos)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.large,
+                AppSpacing.small,
+                AppSpacing.large,
+                0,
+              ),
+              child: Row(
+                children: [
+                  AppButton(
+                    minimumSize: const Size.square(AppIconSize.tapTarget),
+                    onPressed: state.isSubmitting ? null : () => _close(state),
+                    child: Text(
+                      'Close',
+                      style: AppTypography.bodyMedium(
+                        colors,
+                        color: colors.textSecondary,
+                      ),
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: Text(
+                      'Create post',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.title(colors),
+                    ),
+                  ),
+                  _PublishButton(
+                    enabled: state.canSubmit,
+                    submitting: state.isSubmitting,
+                    progress: state.uploadProgress,
+                    onPressed: _publish,
+                  ),
+                ],
               ),
-              Expanded(
-                child: Text(
-                  'Create post',
-                  textAlign: TextAlign.center,
-                  style: AppTypography.title(colors),
-                ),
+            )
+          else ...[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.xlarge,
+                AppSpacing.small,
+                AppSpacing.small,
+                AppSpacing.xsmall,
               ),
-              _PublishButton(
-                enabled: state.canSubmit,
-                submitting: state.isSubmitting,
-                progress: state.uploadProgress,
-                onPressed: _publish,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Create post',
+                      style: AppTypography.title(colors),
+                    ),
+                  ),
+                  CloseButton(
+                    onPressed: state.isSubmitting ? null : () => _close(state),
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.medium),
-          _CreateTextField(
-            key: const ValueKey<String>('create-post-body'),
-            controller: _bodyController,
-            focusNode: _bodyFocus,
-            autofocus: true,
-            label: 'Post text',
-            placeholder: 'What would you like to share?',
-            maxLength: 2000,
-            maxLines: 6,
-            minLines: 4,
-            onChanged: cubit.bodyChanged,
-          ),
-          const SizedBox(height: AppSpacing.large),
-          Text('Post type', style: AppTypography.bodyStrong(colors)),
-          const SizedBox(height: AppSpacing.small),
-          Wrap(
-            spacing: AppSpacing.small,
-            runSpacing: AppSpacing.small,
-            children: [
-              for (final type in PostType.values)
-                _CreateChoice(
-                  label: switch (type) {
-                    PostType.general => 'General',
-                    PostType.request => 'Request',
-                    PostType.property => 'Property',
-                  },
-                  selected: state.postType == type,
-                  onSelected: state.isSubmitting
-                      ? null
-                      : () => cubit.postTypeChanged(type),
-                ),
-            ],
-          ),
-          if (state.postType == PostType.request) ...[
-            const SizedBox(height: AppSpacing.large),
-            Text('Request type', style: AppTypography.bodyStrong(colors)),
-            const SizedBox(height: AppSpacing.small),
-            Wrap(
-              spacing: AppSpacing.small,
-              runSpacing: AppSpacing.small,
-              children: [
-                _CreateChoice(
-                  label: 'Looking to buy',
-                  selected: state.requestType == RequestType.lookingToBuy,
-                  onSelected: state.isSubmitting
-                      ? null
-                      : () =>
-                            cubit.requestTypeChanged(RequestType.lookingToBuy),
-                ),
-                _CreateChoice(
-                  label: 'Looking to rent',
-                  selected: state.requestType == RequestType.lookingToRent,
-                  onSelected: state.isSubmitting
-                      ? null
-                      : () => cubit.requestTypeChanged(
-                          RequestType.lookingToRent,
-                        ),
-                ),
-              ],
             ),
+            const Divider(height: 1),
           ],
-          if (state.postType == PostType.property) ...[
-            const SizedBox(height: AppSpacing.large),
-            Text('Property status', style: AppTypography.bodyStrong(colors)),
-            const SizedBox(height: AppSpacing.small),
-            Wrap(
-              spacing: AppSpacing.small,
-              runSpacing: AppSpacing.small,
+          Expanded(
+            child: ListView(
+              primary: true,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.large,
+                AppSpacing.medium,
+                AppSpacing.large,
+                AppSpacing.xlarge,
+              ),
               children: [
-                _CreateChoice(
-                  label: 'For sale',
-                  selected: state.propertyStatus == PropertyStatus.forSale,
-                  onSelected: state.isSubmitting
-                      ? null
-                      : () => cubit.propertyStatusChanged(
-                          PropertyStatus.forSale,
-                        ),
+                _CreateTextField(
+                  key: const ValueKey<String>('create-post-body'),
+                  controller: _bodyController,
+                  focusNode: _bodyFocus,
+                  autofocus: true,
+                  label: 'Post text',
+                  placeholder: 'What would you like to share?',
+                  maxLength: 2000,
+                  maxLines: 6,
+                  minLines: 4,
+                  onChanged: cubit.bodyChanged,
                 ),
-                _CreateChoice(
-                  label: 'For rent',
-                  selected: state.propertyStatus == PropertyStatus.forRent,
-                  onSelected: state.isSubmitting
-                      ? null
-                      : () => cubit.propertyStatusChanged(
-                          PropertyStatus.forRent,
-                        ),
+                const SizedBox(height: AppSpacing.large),
+                Text('Post type', style: AppTypography.bodyStrong(colors)),
+                const SizedBox(height: AppSpacing.small),
+                Wrap(
+                  spacing: AppSpacing.small,
+                  runSpacing: AppSpacing.small,
+                  children: [
+                    for (final type in PostType.values)
+                      _CreateChoice(
+                        label: switch (type) {
+                          PostType.general => 'General',
+                          PostType.request => 'Request',
+                          PostType.property => 'Property',
+                        },
+                        selected: state.postType == type,
+                        onSelected: state.isSubmitting
+                            ? null
+                            : () => cubit.postTypeChanged(type),
+                      ),
+                  ],
                 ),
-              ],
-            ),
-          ],
-          const SizedBox(height: AppSpacing.large),
-          _CreateTextField(
-            key: const ValueKey<String>('create-post-location'),
-            controller: _locationController,
-            label: 'Location',
-            placeholder: switch (state.postType) {
-              PostType.general => 'Where is this relevant?',
-              PostType.request => 'Where are you looking?',
-              PostType.property => 'Where is the property?',
-            },
-            maxLength: 120,
-            maxLines: 1,
-            minLines: 1,
-            onChanged: cubit.locationChanged,
-          ),
-          if (state.postType == PostType.property) ...[
-            const SizedBox(height: AppSpacing.large),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Property images (${state.images.length}/4)',
+                if (state.postType == PostType.request) ...[
+                  const SizedBox(height: AppSpacing.large),
+                  Text('Request type', style: AppTypography.bodyStrong(colors)),
+                  const SizedBox(height: AppSpacing.small),
+                  Wrap(
+                    spacing: AppSpacing.small,
+                    runSpacing: AppSpacing.small,
+                    children: [
+                      _CreateChoice(
+                        label: 'Looking to buy',
+                        selected: state.requestType == RequestType.lookingToBuy,
+                        onSelected: state.isSubmitting
+                            ? null
+                            : () => cubit.requestTypeChanged(
+                                RequestType.lookingToBuy,
+                              ),
+                      ),
+                      _CreateChoice(
+                        label: 'Looking to rent',
+                        selected:
+                            state.requestType == RequestType.lookingToRent,
+                        onSelected: state.isSubmitting
+                            ? null
+                            : () => cubit.requestTypeChanged(
+                                RequestType.lookingToRent,
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+                if (state.postType == PostType.property) ...[
+                  const SizedBox(height: AppSpacing.large),
+                  Text(
+                    'Property status',
                     style: AppTypography.bodyStrong(colors),
                   ),
+                  const SizedBox(height: AppSpacing.small),
+                  Wrap(
+                    spacing: AppSpacing.small,
+                    runSpacing: AppSpacing.small,
+                    children: [
+                      _CreateChoice(
+                        label: 'For sale',
+                        selected:
+                            state.propertyStatus == PropertyStatus.forSale,
+                        onSelected: state.isSubmitting
+                            ? null
+                            : () => cubit.propertyStatusChanged(
+                                PropertyStatus.forSale,
+                              ),
+                      ),
+                      _CreateChoice(
+                        label: 'For rent',
+                        selected:
+                            state.propertyStatus == PropertyStatus.forRent,
+                        onSelected: state.isSubmitting
+                            ? null
+                            : () => cubit.propertyStatusChanged(
+                                PropertyStatus.forRent,
+                              ),
+                      ),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: AppSpacing.large),
+                _CreateTextField(
+                  key: const ValueKey<String>('create-post-location'),
+                  controller: _locationController,
+                  label: 'Location',
+                  placeholder: 'Location',
+                  maxLength: 120,
+                  maxLines: 1,
+                  minLines: 1,
+                  onChanged: cubit.locationChanged,
                 ),
-                AppButton(
-                  minimumSize: const Size(96, AppIconSize.tapTarget),
-                  onPressed: state.isSubmitting || state.isPickingImages
-                      ? null
-                      : cubit.pickImages,
-                  child: Text(
-                    state.isPickingImages ? 'Opening…' : 'Add images',
-                    style: AppTypography.bodyMedium(
-                      colors,
-                      color: colors.brandText,
+                if (state.postType == PostType.property) ...[
+                  const SizedBox(height: AppSpacing.large),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Property images (${state.images.length}/4)',
+                          style: AppTypography.bodyStrong(colors),
+                        ),
+                      ),
+                      AppButton(
+                        minimumSize: const Size(96, AppIconSize.tapTarget),
+                        onPressed: state.isSubmitting || state.isPickingImages
+                            ? null
+                            : cubit.pickImages,
+                        child: Text(
+                          state.isPickingImages ? 'Opening…' : 'Add images',
+                          style: AppTypography.bodyMedium(
+                            colors,
+                            color: colors.brandText,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (state.images.isNotEmpty) ...[
+                    const SizedBox(height: AppSpacing.small),
+                    SizedBox(
+                      height: 136,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: state.images.length,
+                        separatorBuilder: (_, _) =>
+                            const SizedBox(width: AppSpacing.small),
+                        itemBuilder: (context, index) => SizedBox(
+                          width: 96,
+                          child: Column(
+                            children: [
+                              ClipRRect(
+                                borderRadius: AppRadii.image,
+                                child: Image.memory(
+                                  state.images[index].bytes,
+                                  key: ValueKey<String>(
+                                    'create-post-image-$index',
+                                  ),
+                                  width: 96,
+                                  height: 88,
+                                  cacheWidth:
+                                      (96 *
+                                              MediaQuery.devicePixelRatioOf(
+                                                context,
+                                              ))
+                                          .ceil(),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) => ColoredBox(
+                                    color: colors.subtleSurface,
+                                    child: const SizedBox(
+                                      width: 96,
+                                      height: 88,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              AppButton(
+                                minimumSize: const Size(96, 48),
+                                onPressed: state.isSubmitting
+                                    ? null
+                                    : () => cubit.removeImage(index),
+                                child: Text(
+                                  'Remove',
+                                  style: AppTypography.caption(
+                                    colors,
+                                    color: colors.textSecondary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+                if (state.failureMessage != null) ...[
+                  const SizedBox(height: AppSpacing.medium),
+                  Semantics(
+                    liveRegion: true,
+                    child: Text(
+                      state.failureMessage!,
+                      style: AppTypography.bodyMedium(
+                        colors,
+                        color: colors.textSecondary,
+                      ),
                     ),
                   ),
-                ),
+                ],
               ],
             ),
-            if (state.images.isNotEmpty) ...[
-              const SizedBox(height: AppSpacing.small),
-              SizedBox(
-                height: 136,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: state.images.length,
-                  separatorBuilder: (_, _) =>
-                      const SizedBox(width: AppSpacing.small),
-                  itemBuilder: (context, index) => SizedBox(
-                    width: 96,
-                    child: Column(
-                      children: [
-                        ClipRRect(
-                          borderRadius: AppRadii.image,
-                          child: Image.memory(
-                            state.images[index].bytes,
-                            key: ValueKey<String>(
-                              'create-post-image-$index',
-                            ),
-                            width: 96,
-                            height: 88,
-                            cacheWidth:
-                                (96 * MediaQuery.devicePixelRatioOf(context))
-                                    .ceil(),
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => ColoredBox(
-                              color: colors.subtleSurface,
-                              child: const SizedBox(width: 96, height: 88),
-                            ),
-                          ),
-                        ),
-                        AppButton(
-                          minimumSize: const Size(96, 48),
-                          onPressed: state.isSubmitting
-                              ? null
-                              : () => cubit.removeImage(index),
-                          child: Text(
-                            'Remove',
-                            style: AppTypography.caption(
-                              colors,
-                              color: colors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+          ),
+          if (!context.isIos)
+            DecoratedBox(
+              decoration: BoxDecoration(
+                border: Border(top: BorderSide(color: colors.border)),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xlarge),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: _PublishButton(
+                    enabled: state.canSubmit,
+                    submitting: state.isSubmitting,
+                    progress: state.uploadProgress,
+                    onPressed: _publish,
                   ),
                 ),
               ),
-            ],
-          ],
-          if (state.failureMessage != null) ...[
-            const SizedBox(height: AppSpacing.medium),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                state.failureMessage!,
-                style: AppTypography.bodyMedium(
-                  colors,
-                  color: colors.textSecondary,
-                ),
-              ),
             ),
-          ],
         ],
       ),
     );
@@ -408,14 +473,10 @@ final class _CreateTextField extends StatelessWidget {
             maxLines: maxLines,
             minLines: minLines,
             onChanged: onChanged,
-            decoration: InputDecoration(
+            style: AppTypography.body(colors),
+            decoration: appSheetInputDecoration(
+              context,
               hintText: placeholder,
-              counterText: '',
-              filled: true,
-              fillColor: colors.subtleSurface,
-              border: const OutlineInputBorder(
-                borderRadius: AppRadii.image,
-              ),
             ),
           );
     return Semantics(label: label, child: field);
@@ -508,7 +569,7 @@ final class _PublishButton extends StatelessWidget {
           )
         : const Text('Publish');
     return SizedBox(
-      width: 88,
+      width: context.isIos ? 88 : 112,
       height: AppIconSize.tapTarget,
       child: context.isIos
           ? CupertinoButton.filled(
@@ -524,6 +585,11 @@ final class _PublishButton extends StatelessWidget {
               ),
             )
           : FilledButton(
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.medium,
+                ),
+              ),
               onPressed: enabled ? onPressed : null,
               child: child,
             ),
