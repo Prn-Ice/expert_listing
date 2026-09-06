@@ -176,11 +176,26 @@ final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   late final PageController _controller = PageController(
     initialPage: widget.initialIndex,
   );
+  late final List<TransformationController> _imageControllers;
   late int _page = widget.initialIndex;
+  var _isZoomed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageControllers = List.generate(
+      widget.images.length,
+      (index) =>
+          TransformationController()..addListener(() => _zoomChanged(index)),
+    );
+  }
 
   @override
   void dispose() {
     _controller.dispose();
+    for (final controller in _imageControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -208,19 +223,37 @@ final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
             PageView.builder(
               key: const ValueKey<String>('full-screen-property-images'),
               controller: _controller,
+              physics: _isZoomed ? const NeverScrollableScrollPhysics() : null,
               itemCount: imageCount,
-              onPageChanged: (page) => setState(() => _page = page),
+              onPageChanged: (page) {
+                _resetZoom(_page);
+                setState(() => _page = page);
+              },
               itemBuilder: (context, index) {
                 final image = widget.images[index];
-                return SizedBox.expand(
-                  child: AppNetworkImage(
-                    imageUrl: image.url!,
-                    fit: BoxFit.contain,
-                    semanticLabel: 'Property photo ${index + 1} of $imageCount',
-                    fallback: const Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        color: Colors.white,
+                var doubleTapPosition = Offset.zero;
+                return GestureDetector(
+                  onDoubleTapDown: (details) {
+                    doubleTapPosition = details.localPosition;
+                  },
+                  onDoubleTap: () => _toggleZoom(index, doubleTapPosition),
+                  child: InteractiveViewer(
+                    key: ValueKey<String>('property-image-zoom-${image.id}'),
+                    transformationController: _imageControllers[index],
+                    minScale: 1,
+                    maxScale: 4,
+                    child: SizedBox.expand(
+                      child: AppNetworkImage(
+                        imageUrl: image.url!,
+                        fit: BoxFit.contain,
+                        semanticLabel:
+                            'Property photo ${index + 1} of $imageCount',
+                        fallback: const Center(
+                          child: Icon(
+                            Icons.image_not_supported,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -277,6 +310,7 @@ final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
   }
 
   void _showPage(int page) {
+    _resetZoom(_page);
     if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) {
       _controller.jumpToPage(page);
       return;
@@ -286,5 +320,30 @@ final class _FullScreenImageViewerState extends State<_FullScreenImageViewer> {
       duration: AppMotion.medium,
       curve: AppMotion.curve,
     );
+  }
+
+  void _toggleZoom(int index, Offset focalPoint) {
+    final controller = _imageControllers[index];
+    if (controller.value.getMaxScaleOnAxis() > 1) {
+      controller.value = Matrix4.identity();
+      return;
+    }
+
+    const scale = 2.5;
+    controller.value = Matrix4.identity()
+      ..translateByDouble(focalPoint.dx, focalPoint.dy, 0, 1)
+      ..scaleByDouble(scale, scale, 1, 1)
+      ..translateByDouble(-focalPoint.dx, -focalPoint.dy, 0, 1);
+  }
+
+  void _resetZoom(int index) {
+    _imageControllers[index].value = Matrix4.identity();
+  }
+
+  void _zoomChanged(int index) {
+    if (index != _page) return;
+    final isZoomed = _imageControllers[index].value.getMaxScaleOnAxis() > 1;
+    if (isZoomed == _isZoomed) return;
+    setState(() => _isZoomed = isZoomed);
   }
 }

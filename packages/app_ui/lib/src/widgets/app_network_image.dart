@@ -45,6 +45,7 @@ class AppNetworkImage extends StatelessWidget {
         final reducedMotion =
             MediaQuery.maybeOf(context)?.disableAnimations ?? false;
         final fadeDuration = reducedMotion ? Duration.zero : AppMotion.fast;
+        final preserveSourceAspectRatio = fit == BoxFit.contain;
         final image = CachedNetworkImage(
           imageUrl: imageUrl,
           width: width,
@@ -55,11 +56,15 @@ class AppNetworkImage extends StatelessWidget {
             constraints.maxWidth,
             devicePixelRatio,
           ),
-          memCacheHeight: _decodeDimension(
-            height,
-            constraints.maxHeight,
-            devicePixelRatio,
-          ),
+          // ResizeImage treats two dimensions as an exact decode size. A
+          // contain preview must derive its height from the source image.
+          memCacheHeight: preserveSourceAspectRatio
+              ? null
+              : _decodeDimension(
+                  height,
+                  constraints.maxHeight,
+                  devicePixelRatio,
+                ),
           placeholder: (_, _) => placeholder ?? const SizedBox.expand(),
           errorWidget: (_, _, _) => fallback ?? const SizedBox.expand(),
           placeholderFadeInDuration: fadeDuration,

@@ -406,6 +406,32 @@ void main() {
       expect(image.memCacheHeight, 180);
     });
 
+    testWidgets('preserves source aspect ratio for contained images', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(devicePixelRatio: 2),
+          child: harness(
+            const SizedBox(
+              width: 160,
+              height: 320,
+              child: AppNetworkImage(
+                imageUrl: 'https://images.example/property.jpg',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final image = tester.widget<CachedNetworkImage>(
+        find.byType(CachedNetworkImage),
+      );
+      expect(image.memCacheWidth, 320);
+      expect(image.memCacheHeight, isNull);
+    });
+
     testWidgets('uses a 40px initials fallback when no avatar URL exists', (
       tester,
     ) async {

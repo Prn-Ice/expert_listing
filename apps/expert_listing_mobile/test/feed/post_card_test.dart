@@ -703,6 +703,11 @@ void main() {
       matching: find.byType(AppNetworkImage),
     );
     expect(tester.widget<AppNetworkImage>(fullScreenImage).fit, BoxFit.contain);
+    final zoom = tester.widget<InteractiveViewer>(
+      find.byType(InteractiveViewer),
+    );
+    expect(zoom.minScale, 1);
+    expect(zoom.maxScale, 4);
 
     final overlays = tester
         .widgetList<AnnotatedRegion<SystemUiOverlayStyle>>(
@@ -725,6 +730,67 @@ void main() {
             ),
       ),
     );
+  });
+
+  testWidgets('the full-screen viewer toggles zoom without paging', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: const Scaffold(
+          body: SizedBox(
+            width: 300,
+            child: PropertyMedia(
+              images: [
+                PropertyImage(
+                  id: 1,
+                  url: 'https://example.test/property-1.jpg',
+                  position: 0,
+                ),
+                PropertyImage(
+                  id: 2,
+                  url: 'https://example.test/property-2.jpg',
+                  position: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.bySemanticsLabel('Property photo 1 of 2'));
+    await tester.pumpAndSettle();
+
+    final zoomFinder = find.byKey(
+      const ValueKey<String>('property-image-zoom-1'),
+    );
+    final center = tester.getCenter(zoomFinder);
+    await tester.tapAt(center);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(center);
+    await tester.pump();
+
+    var zoom = tester.widget<InteractiveViewer>(zoomFinder);
+    expect(zoom.transformationController!.value.getMaxScaleOnAxis(), 2.5);
+    expect(
+      tester
+          .widget<PageView>(
+            find.byKey(const ValueKey<String>('full-screen-property-images')),
+          )
+          .physics,
+      isA<NeverScrollableScrollPhysics>(),
+    );
+
+    await tester.tapAt(center);
+    await tester.pump(const Duration(milliseconds: 50));
+    await tester.tapAt(center);
+    await tester.pump();
+
+    zoom = tester.widget<InteractiveViewer>(zoomFinder);
+    expect(zoom.transformationController!.value, Matrix4.identity());
+    await tester.pump(const Duration(seconds: 1));
   });
 
   testWidgets('the full-screen viewer uses the active platform route', (
