@@ -233,7 +233,11 @@ tags, and engagement counts), metadata 13/400 at 1.3, body 14/400 at 1.45, post
 body 16/500 at 1.2, and title 16/500 at 1.2. The 20/600 brand role has a 1.2
 line height. Bottom-navigation labels are 14px at 1.2 (weight 400 unselected
 over `text-secondary`, weight 500 selected over `primary-text`), measured on
-the Figma Nav frame.
+the Figma Nav frame. Observed 12/400, 13/400, 13/500, 14/400, and 16/500 roles
+use -0.6% tracking, converted to logical pixels for Flutter; the observed
+14/500 role uses neutral tracking. App-defined 14/600 and 20/600 roles also use
+neutral tracking. Every role declares the value explicitly so native root
+defaults cannot change branded text spacing.
 
 Measured feed geometry: the story strip uses a 60px avatar inside its ring as a
 64px-wide item with 16px separation and a 4px label gap; the header links row

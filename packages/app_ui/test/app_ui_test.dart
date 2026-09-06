@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -99,6 +100,74 @@ void main() {
       expect(light.extension<AppColors>(), AppColors.light);
       expect(dark.extension<AppColors>(), AppColors.dark);
     });
+
+    testWidgets(
+      'branded roles keep explicit tracking under both native roots',
+      (
+        tester,
+      ) async {
+        final roles = <(String, TextStyle, double)>[
+          ('brand', AppTypography.brand(AppColors.light), 0),
+          ('title', AppTypography.title(AppColors.light), -0.096),
+          ('postBody', AppTypography.postBody(AppColors.light), -0.096),
+          ('body', AppTypography.body(AppColors.light), -0.084),
+          ('bodyMedium', AppTypography.bodyMedium(AppColors.light), 0),
+          ('bodyStrong', AppTypography.bodyStrong(AppColors.light), 0),
+          ('meta', AppTypography.meta(AppColors.light), -0.078),
+          ('caption', AppTypography.caption(AppColors.light), -0.078),
+          ('hint', AppTypography.hint(AppColors.light), -0.078),
+          ('storyLabel', AppTypography.storyLabel(AppColors.light), -0.072),
+          ('navLabel', AppTypography.navLabel(AppColors.light), -0.084),
+          (
+            'navLabelSelected',
+            AppTypography.navLabelSelected(AppColors.light),
+            0,
+          ),
+        ];
+
+        Future<double?> renderedLetterSpacing(
+          TargetPlatform platform,
+          String name,
+          TextStyle style,
+        ) async {
+          final label = Text(
+            name,
+            style: style,
+          );
+          await tester.pumpWidget(
+            platform == TargetPlatform.iOS
+                ? CupertinoApp(
+                    theme: AppTheme.cupertino(Brightness.light),
+                    builder: (context, child) => Theme(
+                      data: AppTheme.light(platform: platform),
+                      child: child!,
+                    ),
+                    home: CupertinoPageScaffold(child: Center(child: label)),
+                  )
+                : MaterialApp(
+                    theme: AppTheme.light(platform: platform),
+                    home: Scaffold(body: Center(child: label)),
+                  ),
+          );
+
+          return tester
+              .renderObject<RenderParagraph>(find.text(name))
+              .text
+              .style
+              ?.letterSpacing;
+        }
+
+        for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+          for (final (name, style, expected) in roles) {
+            expect(
+              await renderedLetterSpacing(platform, name, style),
+              closeTo(expected, 0.000001),
+              reason: '$name must not inherit $platform tracking',
+            );
+          }
+        }
+      },
+    );
   });
 
   group('AppIconButton', () {

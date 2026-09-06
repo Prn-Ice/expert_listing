@@ -19,6 +19,7 @@ abstract final class AppTypography {
     required double size,
     required FontWeight weight,
     required double height,
+    required double letterSpacing,
     Color? color,
   }) {
     return TextStyle(
@@ -26,6 +27,7 @@ abstract final class AppTypography {
       fontSize: size,
       fontWeight: weight,
       height: height,
+      letterSpacing: letterSpacing,
       color: color ?? colors.textPrimary,
       // The design ships no italic or fallback substitutes.
       fontFamilyFallback: const [],
@@ -40,6 +42,7 @@ abstract final class AppTypography {
     size: 20,
     weight: FontWeight.w600,
     height: 1.2,
+    letterSpacing: 0,
     color: color,
   );
 
@@ -52,6 +55,7 @@ abstract final class AppTypography {
     size: 16,
     weight: FontWeight.w500,
     height: 1.2,
+    letterSpacing: -0.096,
     color: color,
   );
 
@@ -63,6 +67,7 @@ abstract final class AppTypography {
     size: 16,
     weight: FontWeight.w500,
     height: 1.2,
+    letterSpacing: -0.096,
     color: color,
   );
 
@@ -74,6 +79,7 @@ abstract final class AppTypography {
     size: 14,
     weight: FontWeight.w400,
     height: 1.45,
+    letterSpacing: -0.084,
     color: color,
   );
 
@@ -85,6 +91,7 @@ abstract final class AppTypography {
     size: 14,
     weight: FontWeight.w500,
     height: 1.2,
+    letterSpacing: 0,
     color: color,
   );
 
@@ -96,6 +103,7 @@ abstract final class AppTypography {
     size: 14,
     weight: FontWeight.w600,
     height: 1.45,
+    letterSpacing: 0,
     color: color,
   );
 
@@ -107,6 +115,7 @@ abstract final class AppTypography {
     size: 13,
     weight: FontWeight.w400,
     height: 1.3,
+    letterSpacing: -0.078,
     color: color ?? colors.textSecondary,
   );
 
@@ -119,6 +128,7 @@ abstract final class AppTypography {
     size: 13,
     weight: FontWeight.w500,
     height: 1.2,
+    letterSpacing: -0.078,
     color: color ?? colors.textSecondary,
   );
 
@@ -132,10 +142,12 @@ abstract final class AppTypography {
     size: 13,
     weight: FontWeight.w500,
     height: 1.3,
+    letterSpacing: -0.078,
     color: color ?? colors.textSecondary,
   );
 
-  /// Open Runde, 12 logical pixels, 15px line height, weight 400.
+  /// Open Runde, 12 logical pixels, 15px line height, weight 400, -0.6%
+  /// tracking.
   ///
   /// Used for the labels below story previews.
   static TextStyle storyLabel(AppColors colors, {Color? color}) => _role(
@@ -143,6 +155,7 @@ abstract final class AppTypography {
     size: 12,
     weight: FontWeight.w400,
     height: 1.25,
+    letterSpacing: -0.072,
     color: color ?? colors.textSecondary,
   );
 
@@ -154,6 +167,7 @@ abstract final class AppTypography {
     size: 14,
     weight: FontWeight.w400,
     height: 1.2,
+    letterSpacing: -0.084,
     color: color ?? colors.textSecondary,
   );
 
@@ -165,6 +179,7 @@ abstract final class AppTypography {
     size: 14,
     weight: FontWeight.w500,
     height: 1.2,
+    letterSpacing: 0,
     color: color ?? colors.textPrimary,
   );
 }
