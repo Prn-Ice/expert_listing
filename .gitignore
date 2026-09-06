@@ -142,6 +142,8 @@ supabase/functions/.env
 2026-09-02-expert-listing-assessment-handoff.md
 2026-09-02-expert-listing-assessment-plan.md
 raw_test_images/
+docs/releases/assets/recording-android.webm
+docs/releases/assets/recording-ios.mov
 
 # Proprietary design-source artifacts.
 apps/expert_listing_mobile/assets/design/
