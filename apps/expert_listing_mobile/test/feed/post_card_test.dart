@@ -242,7 +242,24 @@ void main() {
         );
 
         final cardRect = tester.getRect(find.byType(PostCard));
+        final overflowButtonRect = tester.getRect(
+          find.byKey(const ValueKey<String>('post-overflow-1')),
+        );
         final bookmarkButtonRect = tester.getRect(actionButton('Bookmark'));
+        final overflowIconRect = tester.getRect(
+          find.descendant(
+            of: find.byKey(const ValueKey<String>('post-overflow-1')),
+            matching: find.byType(AppIcon),
+          ),
+        );
+        final bookmarkIconRect = tester.getRect(
+          find.descendant(
+            of: actionButton('Bookmark'),
+            matching: find.byType(AppIcon),
+          ),
+        );
+        expect(overflowButtonRect.right, bookmarkButtonRect.right);
+        expect(overflowIconRect.center.dx, bookmarkIconRect.center.dx);
         expect(
           bookmarkButtonRect.right,
           moreOrLessEquals(
@@ -429,7 +446,10 @@ void main() {
     final commentsLabel = tester.widget<Text>(commentsText);
     expect(tester.getRect(comments).top, tester.getRect(actions).bottom);
     expect(tester.getRect(comments).height, AppIconSize.tapTarget);
-    expect(tester.getRect(divider).top, tester.getRect(comments).bottom);
+    expect(
+      tester.getRect(divider).top - tester.getRect(comments).bottom,
+      AppSpacing.small,
+    );
     expect(tester.getRect(commentsText).left, tester.getRect(body).left);
     expect(tester.getRect(comments).left, tester.getRect(commentsText).left);
     expect(
@@ -631,9 +651,12 @@ void main() {
 
       final cardRect = tester.getRect(find.byType(PostCard));
       final bodyRect = tester.getRect(find.text('Post 1'));
+      final overflowRect = tester.getRect(actionIcon('Post options'));
+      final bookmarkRect = tester.getRect(actionIcon('Bookmark'));
       expect(tester.getRect(actionIcon('Like')).left, bodyRect.left);
+      expect(overflowRect.center.dx, bookmarkRect.center.dx);
       expect(
-        tester.getRect(actionIcon('Bookmark')).right,
+        bookmarkRect.right,
         cardRect.right - AppSpacing.xlarge,
       );
     }

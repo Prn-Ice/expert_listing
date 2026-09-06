@@ -12,6 +12,7 @@ const double _postInset = AppSpacing.xlarge;
 const _postAvatarSize = 40.0;
 const double _postContentInset =
     _postInset + _postAvatarSize + AppSpacing.small;
+const double _postEdgeActionTargetInset = _postInset - AppSpacing.large;
 
 /// A Figma-aligned feed row for every hydrated post variant.
 class PostCard extends StatelessWidget {
@@ -41,12 +42,12 @@ class PostCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     // Let centered edge targets use the adjacent outer space so their visible
-    // content stays on the post edge whether or not a count is present.
+    // content stays on the Figma post edge.
     final actionTargetLeftInset =
         _postContentInset -
         (post.likeCount == 0 ? AppSpacing.large : AppSpacing.small);
     final actionTargetRightInset = post.bookmarkCount == 0
-        ? _postInset - AppSpacing.large
+        ? _postEdgeActionTargetInset
         : _postInset;
 
     return Column(
@@ -56,7 +57,7 @@ class PostCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(
             _postInset,
             AppSpacing.medium,
-            _postInset,
+            _postEdgeActionTargetInset,
             0,
           ),
           child: _PostHeader(
@@ -125,6 +126,7 @@ class PostCard extends StatelessWidget {
                   ),
             ),
           ),
+        const SizedBox(height: AppSpacing.small),
         const Divider(height: 1),
       ],
     );
