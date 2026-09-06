@@ -40,13 +40,12 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    // Let centered icon-only edge targets use adjacent outer space while
-    // counted content aligns within the post edges.
+    // Let centered edge targets use the adjacent outer space so their visible
+    // content stays on the post edge whether or not a count is present.
     final actionTargetLeftInset =
         _postContentInset -
         (post.likeCount == 0 ? AppSpacing.large : AppSpacing.small);
-    final bookmarkCount = post.bookmarkCount + (bookmarked ? 1 : 0);
-    final actionTargetRightInset = bookmarkCount == 0
+    final actionTargetRightInset = post.bookmarkCount == 0
         ? _postInset - AppSpacing.large
         : _postInset;
 

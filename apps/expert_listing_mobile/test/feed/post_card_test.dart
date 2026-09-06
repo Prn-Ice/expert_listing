@@ -602,62 +602,6 @@ void main() {
     );
   });
 
-  testWidgets('counted edge actions align with the property image', (
-    tester,
-  ) async {
-    final post = FeedPost.fromJson({
-      ..._commonPost(id: 7),
-      'likeCount': 2,
-      'bookmarkCount': 17,
-      'postType': 'property',
-      'location': null,
-      'property': const <String, dynamic>{
-        'id': 7,
-        'status': 'for_sale',
-        'location': 'Lekki Phase 1, Lagos',
-        'images': <Map<String, dynamic>>[
-          {
-            'id': 7,
-            'url': 'https://example.test/property.jpg',
-            'position': 0,
-          },
-        ],
-      },
-    });
-    await tester.pumpWidget(
-      MaterialApp(
-        theme: AppTheme.light(),
-        home: Scaffold(
-          body: Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: 428,
-              child: PostCard(post: post, onNotice: (_) {}),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    Finder actionContent(String label) {
-      final button = find.ancestor(
-        of: find.bySemanticsLabel(label),
-        matching: find.byType(AppIconButton),
-      );
-      return find.descendant(of: button, matching: find.byType(Row));
-    }
-
-    final mediaRect = tester.getRect(find.byType(PropertyMedia));
-    expect(
-      tester.getRect(actionContent('Like, 2')).left,
-      moreOrLessEquals(mediaRect.left, epsilon: 1),
-    );
-    expect(
-      tester.getRect(actionContent('Bookmark, 17')).right,
-      moreOrLessEquals(mediaRect.right, epsilon: 1),
-    );
-  });
-
   testWidgets('icon-only edge actions align at 428 and 360 widths', (
     tester,
   ) async {

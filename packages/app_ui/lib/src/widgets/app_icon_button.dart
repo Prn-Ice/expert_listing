@@ -24,7 +24,6 @@ class AppIconButton extends StatelessWidget {
     this.iconSize = AppIconSize.medium,
     this.color,
     this.label,
-    this.alignment = Alignment.center,
   });
 
   /// The committed [AppIcons] asset to render.
@@ -44,9 +43,6 @@ class AppIconButton extends StatelessWidget {
 
   /// Optional count rendered beside the glyph and announced after the label.
   final String? label;
-
-  /// Alignment of the visible content inside the minimum hit region.
-  final AlignmentGeometry alignment;
 
   @override
   Widget build(BuildContext context) {
@@ -81,7 +77,6 @@ class AppIconButton extends StatelessWidget {
             child: CupertinoButton(
               padding: EdgeInsets.zero,
               minimumSize: const Size.square(AppIconSize.tapTarget),
-              alignment: alignment,
               pressedOpacity: 0.6,
               onPressed: onPressed,
               child: child,
@@ -99,7 +94,6 @@ class AppIconButton extends StatelessWidget {
         minHeight: AppIconSize.tapTarget,
       ),
       padding: EdgeInsets.zero,
-      alignment: alignment,
       icon: Semantics(
         label: semanticLabel,
         excludeSemantics: true,
