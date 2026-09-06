@@ -88,11 +88,12 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     return Padding(
-      // Measured prompt geometry: 16px side insets, 8px above, 12px below.
+      // The 12px pill inset and 8px leading pad align its avatar with the
+      // 20px post inset while leaving the pill edge visibly outside it.
       padding: const EdgeInsets.fromLTRB(
-        AppSpacing.large,
+        AppSpacing.medium,
         AppSpacing.small,
-        AppSpacing.large,
+        AppSpacing.medium,
         AppSpacing.medium,
       ),
       child: ConstrainedBox(
@@ -116,22 +117,33 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
             onPressed: widget.onPressed,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xsmall,
                 AppSpacing.small,
-                12,
+                AppSpacing.small,
+                AppSpacing.medium,
                 AppSpacing.small,
               ),
               child: Row(
                 children: [
-                  const AppAvatar.asset(
-                    assetName: 'assets/images/current-user.jpg',
-                    displayName: 'Prince Adeyemi',
+                  DecoratedBox(
+                    key: const ValueKey<String>('create-post-avatar-border'),
+                    position: DecorationPosition.foreground,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: colors.border),
+                    ),
+                    child: const AppAvatar.asset(
+                      assetName: 'assets/images/current-user.jpg',
+                      displayName: 'Prince Adeyemi',
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.small),
                   Expanded(
                     child: Text(
                       'Share a property, Make a request or say something...',
-                      style: AppTypography.hint(colors),
+                      style: AppTypography.hint(
+                        colors,
+                        color: colors.textTertiary,
+                      ),
                     ),
                   ),
                 ],

@@ -241,10 +241,8 @@ defaults cannot change branded text spacing.
 
 Measured feed geometry: the story strip uses a 60px avatar inside its ring as a
 64px-wide item with 16px separation and a 4px label gap; the header links row
-pads 12px vertically around a 48px control row; the create-post prompt
-insets 16px on the sides with 8px above and 12px below, and leaves a 4px gap
-between its 40px avatar and hint text; the filter pill insets 24px; status-tag
-pills pad 8px horizontally and 4px vertically around a 4px glyph gap.
+pads 12px vertically around a 48px control row; the filter pill insets 24px;
+status-tag pills pad 8px horizontally and 4px vertically around a 4px glyph gap.
 
 The dashboard bottom bar uses a 0.5px hairline top border, 16px top padding,
 20px side insets, 24px glyphs, an 11px glyph-to-label gap, and content anchored
