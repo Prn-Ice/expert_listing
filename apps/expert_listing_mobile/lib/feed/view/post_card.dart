@@ -276,6 +276,7 @@ final class _CommentsPreview extends StatelessWidget {
           minimumSize: const Size(0, AppIconSize.tapTarget),
           padding: EdgeInsets.zero,
           alignment: Alignment.centerLeft,
+          borderRadius: AppRadii.image,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.start,

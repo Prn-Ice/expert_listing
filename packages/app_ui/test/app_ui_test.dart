@@ -74,6 +74,22 @@ void main() {
       expect(AppColors.light.subtleSurface, const Color(0x05000000));
     });
 
+    test('Android ink uses one quiet theme response', () {
+      final light = AppTheme.light(platform: TargetPlatform.android);
+      final dark = AppTheme.dark(platform: TargetPlatform.android);
+
+      expect(light.splashColor, AppColors.light.subtleSurface);
+      expect(dark.splashColor, AppColors.dark.subtleSurface);
+      expect(light.highlightColor, Colors.transparent);
+      expect(dark.highlightColor, Colors.transparent);
+      expect(
+        light.textButtonTheme.style!.overlayColor!.resolve({
+          WidgetState.pressed,
+        }),
+        AppColors.light.subtleSurface,
+      );
+    });
+
     test('the Cupertino themes are built from the shared palettes', () {
       final light = AppTheme.cupertino(Brightness.light);
       final dark = AppTheme.cupertino(Brightness.dark);
@@ -344,7 +360,10 @@ void main() {
           tester,
           AppPressable(onPressed: () {}, child: const Text('surface')),
         );
-        expect(find.byType(InkResponse), findsOneWidget);
+        expect(
+          find.byWidgetPredicate((widget) => widget is InkResponse),
+          findsOneWidget,
+        );
         expect(find.byType(CupertinoButton), findsNothing);
       } finally {
         debugDefaultTargetPlatformOverride = null;

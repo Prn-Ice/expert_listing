@@ -65,6 +65,36 @@ void main() {
     }
   });
 
+  testWidgets('Android navigation contains ink to its icon target', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_platformHarness(TargetPlatform.android));
+    await tester.pump();
+
+    final feed = find.bySemanticsLabel('Feed');
+    final inkFinder = find.descendant(
+      of: feed,
+      matching: find.byWidgetPredicate((widget) => widget is InkResponse),
+    );
+    final ink = tester.widget<InkResponse>(inkFinder);
+    final referenceBox = tester.renderObject<RenderBox>(inkFinder);
+    final rect = ink.getRectCallback(referenceBox)!();
+    expect(rect.size, const Size.square(AppIconSize.tapTarget));
+    expect(rect.top, 0);
+    expect(rect.center.dx, referenceBox.size.width / 2);
+    expect(rect.center.dy, AppIconSize.tapTarget / 2);
+    expect(ink.borderRadius, AppRadii.pill);
+    expect(ink.overlayColor, isNull);
+    expect(
+      Theme.of(tester.element(inkFinder)).splashColor,
+      AppColors.light.subtleSurface,
+    );
+
+    final icon = find.descendant(of: feed, matching: find.byType(AppIcon));
+    final label = find.descendant(of: feed, matching: find.text('Feed'));
+    expect(tester.getRect(label).top - tester.getRect(icon).bottom, 11);
+  });
+
   testWidgets(
     'implemented destinations select and preserve their state',
     (

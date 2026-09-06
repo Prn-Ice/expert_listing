@@ -348,6 +348,63 @@ void main() {
     expect(bookmark.color, AppColors.light.brandText);
   });
 
+  testWidgets('Android comments use the restrained theme overlay', (
+    tester,
+  ) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 1),
+      'commentCount': 3,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(platform: TargetPlatform.android),
+        home: Scaffold(
+          body: PostCard(post: post, onNotice: (_) {}),
+        ),
+      ),
+    );
+
+    final commentsFinder = find.descendant(
+      of: find.byKey(const ValueKey<String>('post-comments-1')),
+      matching: find.byType(TextButton),
+    );
+    final comments = tester.widget<TextButton>(commentsFinder);
+    final textButtonTheme = Theme.of(
+      tester.element(commentsFinder),
+    ).textButtonTheme;
+    expect(
+      textButtonTheme.style!.overlayColor!.resolve({WidgetState.pressed}),
+      AppColors.light.subtleSurface,
+    );
+    expect(
+      comments.style!.shape!.resolve({}),
+      const RoundedRectangleBorder(borderRadius: AppRadii.image),
+    );
+  });
+
+  testWidgets('Android story ink stays inside its image', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(platform: TargetPlatform.android),
+        home: Scaffold(body: StoryStrip(onNotice: (_) {})),
+      ),
+    );
+
+    final story = find.bySemanticsLabel('Open Abba’s story');
+    final inkFinder = find.descendant(
+      of: story,
+      matching: find.byWidgetPredicate((widget) => widget is InkResponse),
+    );
+    final ink = tester.widget<InkResponse>(inkFinder);
+    final referenceBox = tester.renderObject<RenderBox>(inkFinder);
+    expect(
+      ink.getRectCallback(referenceBox)!(),
+      const Rect.fromLTWH(0, 0, 66, 66),
+    );
+    expect(ink.borderRadius, AppRadii.pill);
+    expect(ink.overlayColor, isNull);
+  });
+
   testWidgets('the profile pressed overlay moves no visible geometry', (
     tester,
   ) async {

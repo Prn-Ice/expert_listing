@@ -133,7 +133,7 @@ final class _DashboardNavigation extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.xlarge,
-            AppSpacing.large,
+            AppSpacing.xsmall,
             AppSpacing.xlarge,
             0,
           ),
@@ -209,21 +209,25 @@ final class _NavigationItem extends StatelessWidget {
     final colors = AppColors.of(context);
     final color = selected ? colors.brandText : colors.textSecondary;
     return AppPressable(
-      // Green marks selection, never press feedback. iOS answers with the
-      // restrained press opacity; Android with a neutral ink contained to
-      // the destination cell, so it never crosses a divider or neighbour.
+      // Green marks selection, never press feedback. Android keeps the full
+      // destination tappable while containing ink to the icon's 48px target.
       onPressed: onPressed,
       borderRadius: AppRadii.pill,
-      overlayColor: colors.subtleSurface,
+      inkRect: _navigationInkRect,
       semanticLabel: label,
       selected: selected,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          AppIcon(icon, size: AppIconSize.large, color: color),
-          // The Figma Nav containers ([private design node removed]) gap 11px between the
-          // 24px glyph and its 14px label.
-          const SizedBox(height: 11),
+          // The 47px layout box preserves the reference's 24px glyph and 11px
+          // label gap while making room for an unclipped 48px ink target.
+          SizedBox(
+            height: 47,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 11),
+              child: AppIcon(icon, size: AppIconSize.large, color: color),
+            ),
+          ),
           SizedBox(
             width: double.infinity,
             child: FittedBox(
@@ -241,3 +245,9 @@ final class _NavigationItem extends StatelessWidget {
     );
   }
 }
+
+Rect _navigationInkRect(Size size) => Rect.fromCenter(
+  center: Offset(size.width / 2, AppIconSize.tapTarget / 2),
+  width: AppIconSize.tapTarget,
+  height: AppIconSize.tapTarget,
+);

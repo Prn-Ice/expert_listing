@@ -102,6 +102,9 @@ final class _Story extends StatelessWidget {
             ? 'Open Your Story'
             : 'Open $label’s story',
         onPressed: onPressed,
+        borderRadius: AppRadii.pill,
+        inkRect: _storyInkRect,
+        inkOnTop: true,
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -195,3 +198,8 @@ final class _Story extends StatelessWidget {
     );
   }
 }
+
+Rect _storyInkRect(Size size) => Alignment.topCenter.inscribe(
+  const Size.square(66),
+  Offset.zero & size,
+);

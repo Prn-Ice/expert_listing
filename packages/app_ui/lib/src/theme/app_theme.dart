@@ -116,6 +116,17 @@ abstract final class AppTheme {
       colorScheme: colorScheme,
       textTheme: textTheme,
       iconTheme: IconThemeData(color: colors.textPrimary),
+      splashColor: colors.subtleSurface,
+      highlightColor: Colors.transparent,
+      textButtonTheme: TextButtonThemeData(
+        style: ButtonStyle(
+          overlayColor: WidgetStateProperty.resolveWith((states) {
+            return states.contains(WidgetState.pressed)
+                ? colors.subtleSurface
+                : null;
+          }),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: colors.canvas,
         foregroundColor: colors.textPrimary,
