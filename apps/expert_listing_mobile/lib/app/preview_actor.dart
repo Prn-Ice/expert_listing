@@ -1,5 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// The local visual identity for one server-advertised preview actor.
+typedef PreviewActorIdentity = ({String assetName, String displayName});
+
+/// Resolves the fixed preview actor used by local, non-server UI.
+PreviewActorIdentity previewActorIdentity(String? alias) => switch (alias) {
+  'ayo' => (
+    assetName: 'assets/images/ayo.jpg',
+    displayName: 'Ayo Balogun',
+  ),
+  'ifeoma' => (
+    assetName: 'assets/images/ifeoma.jpg',
+    displayName: 'Ifeoma Nwosu',
+  ),
+  'bizzaro' => (
+    assetName: 'assets/images/bizzaro.jpg',
+    displayName: 'Bizzaro Cole',
+  ),
+  _ => (
+    assetName: 'assets/images/current-user.jpg',
+    displayName: 'Prince Adeyemi',
+  ),
+};
+
 /// The public demo alias selected for request-scoped server resolution.
 final previewActorProvider = NotifierProvider<PreviewActor, String?>(
   PreviewActor.new,

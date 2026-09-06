@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/feed/data/bookmark_store.dart';
+import 'package:expert_listing/feed/feed_providers.dart';
+import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/main.dart';
 import 'package:expert_listing/notifications/notifications_providers.dart';
@@ -163,6 +165,9 @@ Future<void> _pumpApp(WidgetTester tester, AppConfig config) async {
     ProviderScope(
       overrides: [
         appConfigProvider.overrideWithValue(config),
+        feedRepositoryProvider.overrideWith(
+          (ref) => FeedRepository(client: ref.watch(httpClientProvider)),
+        ),
         notificationAlertServiceProvider.overrideWithValue(
           DisabledNotificationAlertService(),
         ),

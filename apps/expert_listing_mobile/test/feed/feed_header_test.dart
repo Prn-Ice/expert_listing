@@ -51,7 +51,7 @@ void main() {
       expect(messagesRect.size, const Size.square(AppIconSize.tapTarget));
       await tester.tapAt(messagesRect.bottomRight + const Offset(-1, -1));
       await tester.pump();
-      expect(notices, ['Messages are not part of this preview.']);
+      expect(notices, ['Messages aren’t part of this preview.']);
 
       await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));

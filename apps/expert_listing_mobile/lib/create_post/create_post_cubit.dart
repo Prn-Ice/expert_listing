@@ -46,7 +46,7 @@ final class CreatePostCubit extends Cubit<CreatePostState> {
     if (state.isPickingImages) return;
     final remaining = 4 - state.images.length;
     if (remaining == 0) {
-      emit(state.copyWith(failureMessage: 'You can add up to four images.'));
+      emit(state.copyWith(failureMessage: 'You can add up to 4 images.'));
       return;
     }
     emit(state.copyWith(isPickingImages: true, clearFailure: true));

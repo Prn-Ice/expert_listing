@@ -40,7 +40,12 @@ final class CreatePostState extends Equatable {
 
   /// Whether closing must ask before discarding the draft.
   bool get isPopulated =>
-      body.trim().isNotEmpty || location.trim().isNotEmpty || images.isNotEmpty;
+      body.trim().isNotEmpty ||
+      location.trim().isNotEmpty ||
+      postType != initial.postType ||
+      requestType != initial.requestType ||
+      propertyStatus != initial.propertyStatus ||
+      images.isNotEmpty;
 
   /// Whether the current draft has the required client-side fields.
   bool get canSubmit =>

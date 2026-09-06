@@ -92,6 +92,10 @@ win. Ask before changing an explicit product decision.
   repository. Mocked Bloc streams are only for narrow visual-state tests.
 - Do not replace Hono, Postgres, Storage, durable disk persistence, or the
   required user journeys with mocks and then claim those boundaries work.
+- Before every integration-test command targeting an iOS Simulator, fully
+  restart that simulator with `xcrun simctl shutdown <UDID>`,
+  `xcrun simctl boot <UDID>`, and `xcrun simctl bootstatus <UDID> -b`. Repeat
+  the cycle before each command rather than once for a batch of commands.
 - Golden tests begin only after the current required scope is published and
   independently verified, the required journeys pass, and the manual Figma
   overlay is accepted. Until then, use valuable behaviour, semantics,

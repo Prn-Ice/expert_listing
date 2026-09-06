@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:expert_listing/create_post/create_post_cubit.dart';
 import 'package:expert_listing/create_post/create_post_image.dart';
+import 'package:expert_listing/create_post/create_post_state.dart';
 import 'package:expert_listing/create_post/post_image_picker.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
@@ -31,6 +32,28 @@ void main() {
       expect(cubit.state.location, 'Yaba, Lagos');
       expect(cubit.state.requestType, RequestType.lookingToRent);
       expect(cubit.state.propertyStatus, PropertyStatus.forRent);
+    });
+
+    test('treats type-only changes as a populated draft', () {
+      expect(CreatePostState.initial.isPopulated, isFalse);
+      expect(
+        CreatePostState.initial
+            .copyWith(postType: PostType.request)
+            .isPopulated,
+        isTrue,
+      );
+      expect(
+        CreatePostState.initial
+            .copyWith(requestType: RequestType.lookingToRent)
+            .isPopulated,
+        isTrue,
+      );
+      expect(
+        CreatePostState.initial
+            .copyWith(propertyStatus: PropertyStatus.forRent)
+            .isPopulated,
+        isTrue,
+      );
     });
 
     test('keeps selected images ordered and supports removal', () async {
@@ -73,7 +96,10 @@ void main() {
       expect(cubit.state.location, 'Lekki, Lagos');
       expect(cubit.state.propertyStatus, PropertyStatus.forRent);
       expect(cubit.state.images, [image]);
-      expect(cubit.state.failureMessage, "Couldn't publish. Try again.");
+      expect(
+        cubit.state.failureMessage,
+        'Couldn’t publish. Your post is still here.',
+      );
       expect(cubit.state.isSubmitting, isFalse);
     });
 
@@ -132,7 +158,9 @@ final class _CreateRepository extends FeedRepository {
     onProgress(0.5);
     progressWasReported = true;
     if (fail) {
-      throw const CreatePostFailure("Couldn't publish. Try again.");
+      throw const CreatePostFailure(
+        'Couldn’t publish. Your post is still here.',
+      );
     }
     return FeedPost.fromJson({
       'id': 99,

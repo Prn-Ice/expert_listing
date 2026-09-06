@@ -327,7 +327,7 @@ final class _PostHeader extends StatelessWidget {
   final VoidCallback? onOptions;
 
   void _showProfileNotice() =>
-      onNotice('Profiles are not part of this preview.');
+      onNotice('Profiles aren’t part of this preview.');
 
   @override
   Widget build(BuildContext context) {

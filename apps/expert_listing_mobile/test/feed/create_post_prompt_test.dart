@@ -1,9 +1,45 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('shows the active preview actor', (tester) async {
+    late StateSetter setHostState;
+    var actor = previewActorIdentity(null);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: StatefulBuilder(
+            builder: (context, setState) {
+              setHostState = setState;
+              return CreatePostPrompt(
+                actorIdentity: actor,
+                onPressed: () {},
+                showInvitation: false,
+              );
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      tester.widget<AppAvatar>(find.byType(AppAvatar)).displayName,
+      'Prince Adeyemi',
+    );
+
+    setHostState(() => actor = previewActorIdentity('ayo'));
+    await tester.pump();
+
+    final avatar = tester.widget<AppAvatar>(find.byType(AppAvatar));
+    expect(avatar.displayName, 'Ayo Balogun');
+    expect(avatar.assetName, 'assets/images/ayo.jpg');
+  });
+
   testWidgets('matches the corrected prompt geometry and styling', (
     tester,
   ) async {
@@ -16,6 +52,7 @@ void main() {
             child: SizedBox(
               width: 428,
               child: CreatePostPrompt(
+                actorIdentity: previewActorIdentity(null),
                 onPressed: () {},
                 showInvitation: false,
               ),
@@ -69,6 +106,7 @@ void main() {
             builder: (context, setState) {
               setHostState = setState;
               return CreatePostPrompt(
+                actorIdentity: previewActorIdentity(null),
                 onPressed: () {},
                 showInvitation: showInvitation,
               );
@@ -125,6 +163,7 @@ void main() {
               builder: (context, setState) {
                 setHostState = setState;
                 return CreatePostPrompt(
+                  actorIdentity: previewActorIdentity(null),
                   onPressed: () {},
                   showInvitation: showInvitation,
                 );

@@ -4,6 +4,7 @@ import 'package:expert_listing/create_post/create_post_image.dart';
 import 'package:expert_listing/create_post/create_post_sheet.dart';
 import 'package:expert_listing/create_post/post_image_picker.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
+import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/main.dart';
@@ -101,10 +102,12 @@ Future<int> _createPost(
   );
   await _pumpUntilFound(tester, find.byType(CreatePostSheet));
   final sheet = find.byKey(const ValueKey<String>('create-post-sheet'));
+  await SystemChannels.textInput.invokeMethod<void>('TextInput.hide');
+  await tester.pumpAndSettle();
 
   final typeChoice = find.descendant(of: sheet, matching: find.text(postType));
   await tester.ensureVisible(typeChoice);
-  await tester.tap(typeChoice);
+  await tester.tap(typeChoice.hitTestable());
   await tester.pump();
   if (subtype != null) {
     final subtypeChoice = find.descendant(
@@ -188,6 +191,9 @@ Future<void> _pumpApp(
       key: ValueKey<String>(key),
       overrides: [
         appConfigProvider.overrideWithValue(config),
+        feedRepositoryProvider.overrideWith(
+          (ref) => FeedRepository(client: ref.watch(httpClientProvider)),
+        ),
         notificationAlertServiceProvider.overrideWithValue(
           DisabledNotificationAlertService(),
         ),

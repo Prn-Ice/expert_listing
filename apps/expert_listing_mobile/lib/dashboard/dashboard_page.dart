@@ -50,7 +50,7 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
                 isActive: _selectedDestination == _DashboardDestination.search,
                 onPropertySelected: (_) => AppNotice.show(
                   context,
-                  "Property details aren't part of this preview.",
+                  'Property details aren’t part of this preview.',
                 ),
               ),
               ListingsView(
@@ -58,7 +58,7 @@ final class _DashboardPageState extends ConsumerState<DashboardPage> {
                     _selectedDestination == _DashboardDestination.listings,
                 onListingPressed: () => AppNotice.show(
                   context,
-                  "Property details aren't part of this preview.",
+                  'Property details aren’t part of this preview.',
                 ),
               ),
               NotificationsView(

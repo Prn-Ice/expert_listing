@@ -1,9 +1,11 @@
+import 'package:app_ui/app_ui.dart';
 import 'package:dio/dio.dart';
 import 'package:expert_listing/app/app_config.dart';
 import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
 import 'package:expert_listing/feed/models/feed_filter.dart';
+import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
 import 'package:expert_listing/listings/view/listing_card.dart';
 import 'package:expert_listing/listings/view/listings_view.dart';
@@ -61,7 +63,7 @@ void main() {
       );
       await tester.pump();
       expect(
-        find.text("Property details aren't part of this preview."),
+        find.text('Property details aren’t part of this preview.'),
         findsOneWidget,
       );
       if (find.text('OK').evaluate().isNotEmpty) {
@@ -140,6 +142,17 @@ void main() {
       const postId = 1006;
       await tester.tap(find.bySemanticsLabel('Feed'));
       await tester.pump();
+      expect(
+        tester
+            .widget<AppAvatar>(
+              find.descendant(
+                of: find.byType(CreatePostPrompt),
+                matching: find.byType(AppAvatar),
+              ),
+            )
+            .displayName,
+        'Bizzaro Cole',
+      );
       await _scrollToPost(tester, postId);
       if (tester.widget<PostCard>(_post(postId)).post.likedByCurrentUser) {
         await tester.tap(_postAction(postId, 'Unlike'));

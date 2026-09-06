@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/create_post/create_post_sheet.dart';
 import 'package:expert_listing/feed/bloc/feed_bloc.dart';
 import 'package:expert_listing/feed/bloc/feed_event.dart';
@@ -98,6 +99,9 @@ class FeedViewState extends ConsumerState<FeedView> {
         ),
         SliverToBoxAdapter(
           child: CreatePostPrompt(
+            actorIdentity: previewActorIdentity(
+              ref.watch(previewActorProvider),
+            ),
             onPressed: _openCreatePost,
             showInvitation: state.posts.isNotEmpty,
           ),
@@ -576,20 +580,21 @@ final class _FeedContent extends StatelessWidget {
             ),
           ),
         ),
-        if (state.isLoadingMore)
-          const SliverToBoxAdapter(
-            child: Padding(
-              padding: EdgeInsets.all(AppSpacing.large),
-              child: Center(child: CircularProgressIndicator.adaptive()),
-            ),
-          ),
-        if (state.nextPageFailed)
+        if (state.canLoadMore || state.isLoadingMore || state.nextPageFailed)
           SliverToBoxAdapter(
-            child: Center(
-              child: AppButton(
-                onPressed: onRetryNextPage,
-                minimumSize: const Size(64, 48),
-                child: const Text('Try again'),
+            child: SizedBox(
+              key: const ValueKey<String>('feed-pagination-footer'),
+              height: AppIconSize.tapTarget + (AppSpacing.large * 2),
+              child: Center(
+                child: state.isLoadingMore
+                    ? const CircularProgressIndicator.adaptive()
+                    : state.nextPageFailed
+                    ? AppButton(
+                        onPressed: onRetryNextPage,
+                        minimumSize: const Size(64, 48),
+                        child: const Text('Try again'),
+                      )
+                    : null,
               ),
             ),
           ),

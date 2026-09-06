@@ -60,7 +60,7 @@ final class SystemPostImagePicker implements PostImagePicker {
       rethrow;
     } on Object {
       throw const PostImagePickerFailure(
-        "Couldn't open your photo library. Try again.",
+        'That image couldn’t be added. Choose another.',
       );
     }
   }

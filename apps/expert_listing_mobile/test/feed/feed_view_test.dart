@@ -7,6 +7,7 @@ import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/app/providers.dart';
 import 'package:expert_listing/create_post/create_post_image.dart';
 import 'package:expert_listing/create_post/create_post_sheet.dart';
+import 'package:expert_listing/create_post/post_image_picker.dart';
 import 'package:expert_listing/feed/comments/comments_sheet.dart';
 import 'package:expert_listing/feed/feed_providers.dart';
 import 'package:expert_listing/feed/feed_repository.dart';
@@ -15,6 +16,7 @@ import 'package:expert_listing/feed/models/feed_filter.dart';
 import 'package:expert_listing/feed/models/feed_load_result.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/models/post_types.dart';
+import 'package:expert_listing/feed/post_details.dart';
 import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/feed_view.dart';
 import 'package:expert_listing/feed/view/post_actions.dart';
@@ -26,6 +28,7 @@ import 'package:expert_listing/search/search_providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -134,6 +137,25 @@ void main() {
     expect(find.text('Post published.'), findsOneWidget);
   });
 
+  testWidgets('Add images invokes the native picker boundary', (tester) async {
+    final picker = _RecordingImagePicker();
+    await tester.pumpWidget(
+      _harnessWith(_PageRepository(_page()), imagePicker: picker),
+    );
+    await tester.pump();
+    await tester.tap(
+      find.text('Share a property, Make a request or say something...'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Property'));
+    await tester.pump();
+    await tester.tap(find.text('Add images'));
+    await tester.pump();
+
+    expect(picker.limits, [4]);
+  });
+
   testWidgets('a populated create sheet confirms discard on iOS', (
     tester,
   ) async {
@@ -172,6 +194,96 @@ void main() {
     await tester.tap(find.text('Discard'));
     await tester.pumpAndSettle();
     expect(find.byType(CreatePostSheet), findsNothing);
+  });
+
+  testWidgets('type-only draft intercepts Android system back', (tester) async {
+    await tester.pumpWidget(
+      _harness(_page(), platform: TargetPlatform.android),
+    );
+    await tester.pump();
+    await tester.tap(
+      find.text('Share a property, Make a request or say something...'),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Request'));
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Discard this post?'), findsOneWidget);
+    await tester.tap(find.text('Keep editing'));
+    await tester.pumpAndSettle();
+    expect(find.text('Request type'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Discard'));
+    await tester.pumpAndSettle();
+    expect(find.byType(CreatePostSheet), findsNothing);
+  });
+
+  testWidgets('create sheet keeps publish reachable at 360px in dark mode', (
+    tester,
+  ) async {
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    addTearDown(tester.view.reset);
+    addTearDown(tester.platformDispatcher.clearAllTestValues);
+    tester.platformDispatcher.platformBrightnessTestValue = Brightness.dark;
+    tester.view
+      ..devicePixelRatio = 1
+      ..physicalSize = const Size(360, 640);
+    await tester.binding.setSurfaceSize(const Size(360, 640));
+
+    for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pumpWidget(_harness(_page(), platform: platform));
+      await tester.pump();
+      await tester.tap(
+        find.text('Share a property, Make a request or say something...'),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('create-post-body')),
+          matching: find.byType(EditableText),
+        ),
+        'Dark narrow draft',
+      );
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(const ValueKey<String>('create-post-location')),
+          matching: find.byType(EditableText),
+        ),
+        'Yaba, Lagos',
+      );
+      tester.view.viewInsets = const FakeViewPadding(bottom: 280);
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(
+        find.text('Publish'),
+        -160,
+        scrollable: find
+            .descendant(
+              of: find.byType(CreatePostSheet),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Publish').hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      tester.view.viewInsets = FakeViewPadding.zero;
+      await tester.pump();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Discard'));
+      await tester.pumpAndSettle();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
   });
 
   testWidgets('comment action opens the shared persistent comments sheet', (
@@ -271,6 +383,73 @@ void main() {
     await tester.tap(find.text('Undo'));
     await tester.pumpAndSettle();
     expect(find.text('Saved post'), findsOneWidget);
+  });
+
+  testWidgets('post options copy truthful details to the clipboard', (
+    tester,
+  ) async {
+    final page = _page();
+    final clipboardWrites = <String>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          final arguments = call.arguments! as Map<Object?, Object?>;
+          clipboardWrites.add(arguments['text']! as String);
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+    await tester.pumpWidget(_harness(page));
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey<String>('post-overflow-42')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Copy post details'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Post details copied.'), findsOneWidget);
+    expect(clipboardWrites, [postDetailsText(page.posts.single)]);
+  });
+
+  testWidgets('Share invokes the platform sheet with truthful post text', (
+    tester,
+  ) async {
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    final shareCalls = <Map<Object?, Object?>>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      shareChannel,
+      (call) async {
+        if (call.method == 'share') {
+          shareCalls.add(call.arguments! as Map<Object?, Object?>);
+        }
+        return 'completed';
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        shareChannel,
+        null,
+      ),
+    );
+    final page = _page();
+    await tester.pumpWidget(_harness(page));
+    await tester.pump();
+
+    await tester.tap(find.bySemanticsLabel('Share'));
+    await tester.pump();
+
+    expect(shareCalls, hasLength(1));
+    expect(shareCalls.single['text'], postDetailsText(page.posts.single));
   });
 
   testWidgets('an all-hidden page keeps later pages reachable', (tester) async {
@@ -465,6 +644,24 @@ void main() {
     final barTop = tester.getTopLeft(find.byType(OfflineStatusBar)).dy;
     expect(barTop, moreOrLessEquals(0, epsilon: 1));
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('the feed return-to-top action moves a scrolled feed', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_harness(_responsiveFeedPage()));
+    await tester.pump();
+
+    final scrollable = find.byType(CustomScrollView);
+    await tester.drag(scrollable, const Offset(0, -1200));
+    await tester.pumpAndSettle();
+    final feed = tester.state<FeedViewState>(find.byType(FeedView));
+    expect(feed.widget.scrollController.offset, greaterThan(0));
+
+    feed.scrollToTop();
+    await tester.pumpAndSettle();
+
+    expect(feed.widget.scrollController.offset, 0);
   });
 
   testWidgets(
@@ -686,6 +883,10 @@ void main() {
     await tester.pump();
 
     expect(find.text('Try again'), findsOneWidget);
+    final footer = find.byKey(
+      const ValueKey<String>('feed-pagination-footer'),
+    );
+    expect(tester.getSize(footer).height, 80);
 
     final callsBeforeRetry = repository.nextPageCalls;
     await tester.tap(find.text('Try again'));
@@ -801,7 +1002,11 @@ Widget _harness(FeedLoadResult page, {TargetPlatform? platform}) {
   return _harnessWith(_PageRepository(page), platform: platform);
 }
 
-Widget _harnessWith(FeedRepository repository, {TargetPlatform? platform}) {
+Widget _harnessWith(
+  FeedRepository repository, {
+  TargetPlatform? platform,
+  PostImagePicker? imagePicker,
+}) {
   return ProviderScope(
     key: ValueKey<TargetPlatform?>(platform),
     overrides: [
@@ -812,10 +1017,22 @@ Widget _harnessWith(FeedRepository repository, {TargetPlatform? platform}) {
         ),
       ),
       feedRepositoryProvider.overrideWithValue(repository),
+      if (imagePicker != null)
+        postImagePickerProvider.overrideWithValue(imagePicker),
       recentSearchStoreProvider.overrideWithValue(_RecentSearchStore()),
     ],
     child: ExpertListingApp(platformOverride: platform),
   );
+}
+
+final class _RecordingImagePicker implements PostImagePicker {
+  final limits = <int>[];
+
+  @override
+  Future<List<CreatePostImage>> pickImages({required int limit}) async {
+    limits.add(limit);
+    return const [];
+  }
 }
 
 final class _RecentSearchStore implements RecentSearchStore {

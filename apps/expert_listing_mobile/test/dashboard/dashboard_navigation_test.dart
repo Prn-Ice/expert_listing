@@ -186,7 +186,7 @@ void main() {
       );
       await tester.pump();
       expect(
-        find.text("Property details aren't part of this preview."),
+        find.text('Property details aren’t part of this preview.'),
         findsOneWidget,
       );
       await tester.pump(const Duration(seconds: 5));
@@ -223,7 +223,7 @@ void main() {
       await tester.tapAt(tester.getTopLeft(listing) + const Offset(24, 24));
       await tester.pump();
       expect(
-        find.text("Property details aren't part of this preview."),
+        find.text('Property details aren’t part of this preview.'),
         findsOneWidget,
       );
 

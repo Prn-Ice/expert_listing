@@ -164,11 +164,15 @@ class FeedRepository {
       if (message is String && message.isNotEmpty) {
         throw CreatePostFailure(message);
       }
-      throw const CreatePostFailure("Couldn't publish this post. Try again.");
+      throw const CreatePostFailure(
+        'Couldn’t publish. Your post is still here.',
+      );
     } on CreatePostFailure {
       rethrow;
     } on Object {
-      throw const CreatePostFailure("Couldn't publish this post. Try again.");
+      throw const CreatePostFailure(
+        'Couldn’t publish. Your post is still here.',
+      );
     }
   }
 

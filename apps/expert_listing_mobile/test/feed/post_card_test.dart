@@ -1,4 +1,5 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:expert_listing/feed/models/feed_post.dart';
 import 'package:expert_listing/feed/view/create_post_prompt.dart';
 import 'package:expert_listing/feed/view/post_card.dart';
@@ -172,7 +173,7 @@ void main() {
       expect(profile, findsOneWidget);
       expect(tester.getSemantics(profile).flagsCollection.isButton, isTrue);
       await tester.tap(profile);
-      expect(notices, ['Profiles are not part of this preview.']);
+      expect(notices, ['Profiles aren’t part of this preview.']);
       semantics.dispose();
     },
   );
@@ -285,7 +286,7 @@ void main() {
         await tester.pump();
         expect(
           notices.last,
-          'Profiles are not part of this preview.',
+          'Profiles aren’t part of this preview.',
         );
 
         await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
@@ -960,6 +961,7 @@ void main() {
                   children: [
                     StoryStrip(onNotice: (_) {}),
                     CreatePostPrompt(
+                      actorIdentity: previewActorIdentity(null),
                       onPressed: () {},
                       showInvitation: false,
                     ),

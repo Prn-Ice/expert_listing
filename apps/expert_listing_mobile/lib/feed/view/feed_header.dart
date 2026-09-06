@@ -51,7 +51,7 @@ class FeedHeader extends StatelessWidget {
                 dimension: AppIconSize.tapTarget,
                 child: AppPressable(
                   onPressed: () =>
-                      onNotice('Messages are not part of this preview.'),
+                      onNotice('Messages aren’t part of this preview.'),
                   borderRadius: BorderRadius.circular(
                     AppIconSize.tapTarget / 2,
                   ),

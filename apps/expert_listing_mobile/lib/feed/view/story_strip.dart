@@ -65,8 +65,8 @@ class StoryStrip extends StatelessWidget {
             width: 66 + (32 * scaleDelta),
             onPressed: () => onNotice(
               story.isCurrentUser
-                  ? 'Story posting is not part of this preview.'
-                  : 'Story viewing is not part of this preview.',
+                  ? 'Story posting isn’t part of this preview.'
+                  : 'Story viewing isn’t part of this preview.',
             ),
           );
         },
@@ -98,6 +98,9 @@ final class _Story extends StatelessWidget {
     return SizedBox(
       width: width,
       child: AppPressable(
+        semanticLabel: isCurrentUser
+            ? 'Open Your Story'
+            : 'Open $label’s story',
         onPressed: onPressed,
         child: Center(
           child: Column(

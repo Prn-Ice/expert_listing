@@ -1,10 +1,12 @@
 import 'package:app_ui/app_ui.dart';
+import 'package:expert_listing/app/preview_actor.dart';
 import 'package:flutter/material.dart';
 
 /// The feed entry point for the later create-post flow.
 class CreatePostPrompt extends StatefulWidget {
   /// Creates the prompt.
   const CreatePostPrompt({
+    required this.actorIdentity,
     required this.onPressed,
     required this.showInvitation,
     super.key,
@@ -12,6 +14,9 @@ class CreatePostPrompt extends StatefulWidget {
 
   /// Opens the create-post sheet.
   final VoidCallback onPressed;
+
+  /// The active preview actor represented by the prompt avatar.
+  final PreviewActorIdentity actorIdentity;
 
   /// Whether initial feed data is ready for the one-shot invitation cue.
   final bool showInvitation;
@@ -131,9 +136,9 @@ final class _CreatePostPromptState extends State<CreatePostPrompt>
                       shape: BoxShape.circle,
                       border: Border.all(color: colors.border),
                     ),
-                    child: const AppAvatar.asset(
-                      assetName: 'assets/images/current-user.jpg',
-                      displayName: 'Prince Adeyemi',
+                    child: AppAvatar.asset(
+                      assetName: widget.actorIdentity.assetName,
+                      displayName: widget.actorIdentity.displayName,
                     ),
                   ),
                   const SizedBox(width: AppSpacing.small),
