@@ -121,6 +121,7 @@ sealed class FeedPost extends Equatable {
     int? likeCount,
     int? commentCount,
     bool? likedByCurrentUser,
+    List<FeedAuthor>? likePreview,
     bool clearLikePreview = false,
     bool clearLatestComment = false,
   }) {
@@ -133,7 +134,8 @@ sealed class FeedPost extends Equatable {
       likeCount: likeCount ?? this.likeCount,
       commentCount: commentCount ?? this.commentCount,
       likedByCurrentUser: likedByCurrentUser ?? this.likedByCurrentUser,
-      likePreview: clearLikePreview ? const [] : likePreview,
+      likePreview:
+          likePreview ?? (clearLikePreview ? const [] : this.likePreview),
       latestComment: clearLatestComment ? null : latestComment,
       author: author,
     );

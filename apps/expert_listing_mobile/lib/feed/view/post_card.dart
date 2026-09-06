@@ -40,12 +40,13 @@ class PostCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    // Let centered edge targets use the adjacent outer space so their visible
-    // content stays on the post edge whether or not a count is present.
+    // Let centered icon-only edge targets use adjacent outer space while
+    // counted content aligns within the post edges.
     final actionTargetLeftInset =
         _postContentInset -
         (post.likeCount == 0 ? AppSpacing.large : AppSpacing.small);
-    final actionTargetRightInset = post.bookmarkCount == 0
+    final bookmarkCount = post.bookmarkCount + (bookmarked ? 1 : 0);
+    final actionTargetRightInset = bookmarkCount == 0
         ? _postInset - AppSpacing.large
         : _postInset;
 
@@ -103,7 +104,7 @@ class PostCard extends StatelessWidget {
             onBookmark: onBookmark,
           ),
         ),
-        if (post.likeCount > 0 && post.likePreview.isNotEmpty)
+        if (post.likeCount > 0)
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: _postContentInset,
@@ -139,36 +140,52 @@ final class _LikePreview extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
-    final firstLiker = post.likePreview.first;
+    final firstLiker = post.likePreview.isEmpty ? null : post.likePreview.first;
     final others = post.likeCount - 1;
     return ConstrainedBox(
       key: const ValueKey<String>('post-like-preview'),
       constraints: const BoxConstraints(minHeight: 24),
       child: Row(
         children: [
-          _LikerAvatars(authors: post.likePreview.take(3).toList()),
-          const SizedBox(width: AppSpacing.small),
+          if (post.likePreview.isNotEmpty) ...[
+            _LikerAvatars(authors: post.likePreview.take(3).toList()),
+            const SizedBox(width: AppSpacing.small),
+          ],
           Expanded(
             child: Text.rich(
               TextSpan(
                 style: AppTypography.body(colors, color: colors.textSecondary),
                 children: [
                   const TextSpan(text: 'Liked by '),
-                  TextSpan(
-                    text: firstLiker.handle,
-                    style: AppTypography.bodyMedium(
-                      colors,
-                      color: colors.textSecondary,
-                    ),
-                  ),
-                  if (others > 0)
+                  if (firstLiker == null)
                     TextSpan(
-                      text: ' and $others ${others == 1 ? 'other' : 'others'}',
+                      text:
+                          '${post.likeCount} '
+                          '${post.likeCount == 1 ? 'person' : 'people'}',
+                      style: AppTypography.bodyMedium(
+                        colors,
+                        color: colors.textSecondary,
+                      ),
+                    )
+                  else ...[
+                    TextSpan(
+                      text: firstLiker.handle,
                       style: AppTypography.bodyMedium(
                         colors,
                         color: colors.textSecondary,
                       ),
                     ),
+                    if (others > 0)
+                      TextSpan(
+                        text:
+                            ' and $others '
+                            '${others == 1 ? 'other' : 'others'}',
+                        style: AppTypography.bodyMedium(
+                          colors,
+                          color: colors.textSecondary,
+                        ),
+                      ),
+                  ],
                 ],
               ),
               maxLines: 1,

@@ -65,6 +65,7 @@ final feedBlocProvider = BlocProvider<FeedBloc, FeedState>(
     return FeedBloc(
       repository: ref.watch(feedRepositoryProvider),
       bookmarkStore: ref.watch(bookmarkStoreProvider),
+      currentUserHandle: ref.watch(previewActorProvider) ?? 'prince',
     );
   },
 );

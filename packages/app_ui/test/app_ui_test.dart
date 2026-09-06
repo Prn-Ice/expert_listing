@@ -216,6 +216,35 @@ void main() {
       expect(semantics.flagsCollection.isEnabled, Tristate.isTrue);
     });
 
+    testWidgets('aligns visible content within the 48x48 hit region', (
+      tester,
+    ) async {
+      try {
+        for (final platform in [TargetPlatform.iOS, TargetPlatform.android]) {
+          debugDefaultTargetPlatformOverride = platform;
+          await tester.pumpWidget(
+            harness(
+              AppIconButton(
+                icon: AppIcons.bookmark,
+                tooltip: 'Bookmark',
+                iconSize: AppIconSize.small,
+                alignment: Alignment.centerRight,
+                onPressed: () {},
+              ),
+            ),
+          );
+
+          final target = tester.getRect(find.byType(AppIconButton));
+          final glyph = tester.getRect(find.byType(AppIcon));
+          expect(target.size, const Size.square(AppIconSize.tapTarget));
+          expect(glyph.right, target.right);
+          expect(glyph.center.dy, target.center.dy);
+        }
+      } finally {
+        debugDefaultTargetPlatformOverride = null;
+      }
+    });
+
     testWidgets('disabled state announces itself', (tester) async {
       await tester.pumpWidget(
         harness(

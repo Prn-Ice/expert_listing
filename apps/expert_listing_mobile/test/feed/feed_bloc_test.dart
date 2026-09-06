@@ -295,27 +295,85 @@ void main() {
     expect(bloc.state.posts.single.likeCount, 1);
   });
 
-  test('a failed latest like intent rolls back to confirmed state', () async {
-    final repository = _EngagementRepository(withPreviews: true);
-    final bloc = FeedBloc(repository: repository);
+  test(
+    'a failed latest like intent restores confirmed state and preview',
+    () async {
+      final repository = _EngagementRepository(withPreviews: true);
+      final bloc = FeedBloc(repository: repository);
+      addTearDown(bloc.close);
+
+      bloc.add(const FeedStarted());
+      await _flush();
+      final confirmedPreview = bloc.state.posts.single.likePreview;
+      expect(confirmedPreview, isNotEmpty);
+      bloc.add(const FeedLikeToggled(1));
+      await _flush();
+      expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
+      expect(bloc.state.posts.single.likePreview, confirmedPreview);
+
+      repository.likeRequests.single.result.completeError(
+        const EngagementFailure(),
+      );
+      await _flush();
+
+      expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+      expect(bloc.state.posts.single.likeCount, 2);
+      expect(bloc.state.posts.single.likePreview, confirmedPreview);
+      expect(bloc.state.notice, "Couldn't update your like. Try again.");
+    },
+  );
+
+  test('a failed unlike restores the confirmed liker preview', () async {
+    final repository = _EngagementRepository(
+      withPreviews: true,
+      initiallyLiked: true,
+    );
+    final bloc = FeedBloc(repository: repository, currentUserHandle: 'ayo');
     addTearDown(bloc.close);
 
     bloc.add(const FeedStarted());
     await _flush();
-    expect(bloc.state.posts.single.likePreview, isNotEmpty);
+    final confirmedPreview = bloc.state.posts.single.likePreview;
+
     bloc.add(const FeedLikeToggled(1));
     await _flush();
-    expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
-    expect(bloc.state.posts.single.likePreview, isEmpty);
+    expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+    expect(bloc.state.posts.single.likeCount, 1);
+    expect(
+      bloc.state.posts.single.likePreview.map((author) => author.handle),
+      ['ifeoma'],
+    );
 
     repository.likeRequests.single.result.completeError(
       const EngagementFailure(),
     );
     await _flush();
 
-    expect(bloc.state.posts.single.likedByCurrentUser, isFalse);
+    expect(bloc.state.posts.single.likedByCurrentUser, isTrue);
     expect(bloc.state.posts.single.likeCount, 2);
-    expect(bloc.state.notice, "Couldn't update your like. Try again.");
+    expect(bloc.state.posts.single.likePreview, confirmedPreview);
+  });
+
+  test('unlike removes only the current user from the liker preview', () async {
+    final repository = _EngagementRepository(
+      withPreviews: true,
+      initiallyLiked: true,
+    );
+    final bloc = FeedBloc(
+      repository: repository,
+      currentUserHandle: 'ifeoma',
+    );
+    addTearDown(bloc.close);
+
+    bloc.add(const FeedStarted());
+    await _flush();
+    bloc.add(const FeedLikeToggled(1));
+    await _flush();
+
+    expect(
+      bloc.state.posts.single.likePreview.map((author) => author.handle),
+      ['ayo'],
+    );
   });
 
   test(
@@ -457,12 +515,16 @@ final class _TestFeedRepository extends FeedRepository {
 }
 
 final class _EngagementRepository extends FeedRepository {
-  _EngagementRepository({this.invalidateBarrier, this.withPreviews = false})
-    : super(client: Dio());
+  _EngagementRepository({
+    this.invalidateBarrier,
+    this.withPreviews = false,
+    this.initiallyLiked = false,
+  }) : super(client: Dio());
 
   final likeRequests = <({bool liked, Completer<LikeResult> result})>[];
   final Completer<void>? invalidateBarrier;
   final bool withPreviews;
+  final bool initiallyLiked;
   int invalidateCalls = 0;
 
   @override
@@ -470,7 +532,11 @@ final class _EngagementRepository extends FeedRepository {
     required FeedFilter filter,
     String? cursor,
     int limit = 10,
-  }) async => _page(1, withPreviews: withPreviews);
+  }) async => _page(
+    1,
+    withPreviews: withPreviews,
+    likedByCurrentUser: initiallyLiked,
+  );
 
   @override
   Future<LikeResult> setPostLiked({
@@ -579,6 +645,7 @@ FeedLoadResult _page(
   FeedDataSource source = FeedDataSource.network,
   FeedFallbackReason? fallbackReason,
   bool withPreviews = false,
+  bool likedByCurrentUser = false,
 }) => FeedLoadResult(
   posts: [
     FeedPost.fromJson({
@@ -590,7 +657,7 @@ FeedLoadResult _page(
       'bookmarkCount': 0,
       'likeCount': 0,
       'commentCount': 0,
-      'likedByCurrentUser': false,
+      'likedByCurrentUser': likedByCurrentUser,
       'author': const {
         'id': '11111111-1111-4111-8111-111111111111',
         'handle': 'prince',
@@ -607,6 +674,13 @@ FeedLoadResult _page(
             'handle': 'ifeoma',
             'displayName': 'Ifeoma Nwosu',
             'role': 'Architect',
+            'avatarUrl': null,
+          },
+          {
+            'id': '00000000-0000-0000-0000-000000000002',
+            'handle': 'ayo',
+            'displayName': 'Ayo Balogun',
+            'role': 'Property Consultant',
             'avatarUrl': null,
           },
         ],

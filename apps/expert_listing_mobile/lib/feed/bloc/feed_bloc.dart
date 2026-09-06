@@ -17,8 +17,10 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
   FeedBloc({
     required FeedRepository repository,
     BookmarkStore? bookmarkStore,
+    String currentUserHandle = 'prince',
   }) : _repository = repository,
        _bookmarkStore = bookmarkStore ?? _TransientBookmarkStore(),
+       _currentUserHandle = currentUserHandle,
        super(FeedState.initial) {
     on<FeedStarted>((_, emit) => _loadFirstPage(emit));
     on<FeedRefreshed>((_, emit) => _loadFirstPage(emit, keepVisible: true));
@@ -55,8 +57,10 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
 
   final FeedRepository _repository;
   final BookmarkStore _bookmarkStore;
+  final String _currentUserHandle;
   int _requestGeneration = 0;
-  final _confirmedLikes = <int, LikeResult>{};
+  final _confirmedLikes =
+      <int, ({LikeResult result, List<FeedAuthor> preview})>{};
   final _desiredLikes = <int, bool>{};
   final _activeLikeWorkers = <int>{};
   final _commentCountFloor = <int, int>{};
@@ -229,10 +233,13 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
     if (post == null) return;
     _confirmedLikes.putIfAbsent(
       post.id,
-      () => LikeResult(
-        postId: post.id,
-        liked: post.likedByCurrentUser,
-        likeCount: post.likeCount,
+      () => (
+        result: LikeResult(
+          postId: post.id,
+          liked: post.likedByCurrentUser,
+          likeCount: post.likeCount,
+        ),
+        preview: post.likePreview,
       ),
     );
     final desired = !post.likedByCurrentUser;
@@ -242,7 +249,11 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
       post.withEngagement(
         likedByCurrentUser: desired,
         likeCount: (post.likeCount + (desired ? 1 : -1)).clamp(0, 1 << 31),
-        clearLikePreview: true,
+        likePreview: desired
+            ? post.likePreview
+            : post.likePreview
+                  .where((author) => author.handle != _currentUserHandle)
+                  .toList(growable: false),
       ),
     );
 
@@ -256,7 +267,10 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
             postId: post.id,
             liked: requested,
           );
-          _confirmedLikes[post.id] = result;
+          _confirmedLikes[post.id] = (
+            result: result,
+            preview: _post(post.id)?.likePreview ?? const [],
+          );
           mutationSucceeded = true;
           await _retireFeedLoadsAndInvalidate(emit);
           if (_desiredLikes[post.id] == requested) {
@@ -280,8 +294,9 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
             _replacePost(
               emit,
               current.withEngagement(
-                likedByCurrentUser: confirmed.liked,
-                likeCount: confirmed.likeCount,
+                likedByCurrentUser: confirmed.result.liked,
+                likeCount: confirmed.result.likeCount,
+                likePreview: confirmed.preview,
               ),
               notice: "Couldn't update your like. Try again.",
             );
@@ -411,12 +426,16 @@ final class FeedBloc extends Bloc<FeedEvent, FeedState> {
             overlaidPost = overlaidPost.withEngagement(
               likedByCurrentUser: current.likedByCurrentUser,
               likeCount: current.likeCount,
+              likePreview: current.likePreview,
             );
           } else {
-            _confirmedLikes[post.id] = LikeResult(
-              postId: post.id,
-              liked: post.likedByCurrentUser,
-              likeCount: post.likeCount,
+            _confirmedLikes[post.id] = (
+              result: LikeResult(
+                postId: post.id,
+                liked: post.likedByCurrentUser,
+                likeCount: post.likeCount,
+              ),
+              preview: post.likePreview,
             );
           }
           final countFloor = _commentCountFloor[post.id];

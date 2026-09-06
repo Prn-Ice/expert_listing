@@ -548,6 +548,33 @@ void main() {
     expect(commentsOpened, 1);
   });
 
+  testWidgets('keeps a generic liker summary while identities reconcile', (
+    tester,
+  ) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 10),
+      'likeCount': 2,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PostCard(post: post, onNotice: (_) {}),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey<String>('post-like-preview')),
+      findsOneWidget,
+    );
+    expect(find.text('Liked by 2 people'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey<String>('post-liker-avatars')),
+      findsNothing,
+    );
+  });
+
   testWidgets('uses concise copy for one comment', (tester) async {
     final post = FeedPost.fromJson({
       ..._commonPost(id: 9),

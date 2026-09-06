@@ -76,6 +76,7 @@ class PostActions extends StatelessWidget {
       iconSize: AppIconSize.small,
       color: bookmarked ? colors.brandText : colors.textSecondary,
       label: bookmarkCount == 0 ? null : '$bookmarkCount',
+      alignment: bookmarkCount == 0 ? Alignment.center : Alignment.centerRight,
       tooltip: bookmarked ? 'Remove bookmark' : 'Bookmark',
       onPressed:
           onBookmark ??
