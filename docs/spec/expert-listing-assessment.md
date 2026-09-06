@@ -7,10 +7,8 @@
 - **Employer deadline:** Evening of Saturday, 5 September 2026, West Africa Time
 - **Internal release-candidate target:** 12:00 WAT, Saturday, 5 September 2026
 - **Internal submission target:** 17:00 WAT, Saturday, 5 September 2026
-- **Primary Figma frame:** `[private design node removed]`, “iPhone 14 Plus - 1312”, 428 logical
-  pixels wide
-- **Figma source:**
-  <https://www.figma.com/design/[private design file removed]/ExpertListing-Assessment--Copy-?node-id=[private design node removed]>
+- **Primary design reference:** company-provided mobile frame at 428 logical
+  pixels wide; the source file is not committed
 
 This file defines the required product behaviour and engineering scope. Beads
 records live work and evidence; the wiki records durable decisions and
@@ -1131,11 +1129,15 @@ Do not add a connectivity package unless a measured retry problem justifies one.
 
 ## 17. Design system and Figma fidelity
 
-Use Figma MCP design context, measurements, variables, screenshots, and exports. A screenshot is a comparison aid, not structured design data.
+Use approved Figma access for design context, measurements, variables, and exact
+exports. A screenshot is a temporary comparison aid, not structured design data
+or a repository asset.
 
-The reference frame is node `[private design node removed]` at 428 logical pixels. Header node `[private design node removed]` contains the complete logo and distinct brand mark.
+The reference target is 428 logical pixels wide. Its header contains the
+complete logo and distinct brand mark.
 
-Download and commit exact assets immediately because generated asset URLs may expire.
+Commit only approved runtime assets. Never commit source screenshots, private
+design links or identifiers, or generated design code.
 
 ### Required assets
 
@@ -1144,8 +1146,9 @@ Commit:
 - exact brand mark;
 - exact wordmark;
 - every custom SVG used by the selected mobile frame;
-- reference imagery required for deterministic visual states;
-- a semantic asset-name-to-Figma-node provenance map;
+- approved fixture imagery required for deterministic visual states;
+- a semantic asset-name-to-source provenance map without private links or
+  identifiers;
 - Open Runde in weights 400, 500, 600, and 700;
 - Open Runde’s OFL 1.1 licence.
 
@@ -1574,7 +1577,7 @@ code alone.
 | Beads | Live work, dependencies, risks, and detailed evidence |
 | Root README | Assessor entry point and verified delivery links |
 | `docs/wiki/` | Architecture, decisions, design contracts, and workflows |
-| `docs/releases/v0.1.0.md` | Curated release record |
+| `docs/releases/v0.1.0.md` | Curated assessment-review release record |
 
 Create phase-specific pages only with the behaviour they describe:
 
@@ -1640,14 +1643,13 @@ Flutter version: 0.1.0+1
 ```
 
 Its actual shipped scope and remaining verification are recorded in
-`docs/releases/v0.1.0.md`. Because it predates post creation and activity
-notifications, it does not satisfy the expanded current contract. Do not move or
-rewrite that tag. Approve a subsequent version before claiming the current
-assessment complete.
+`docs/releases/v0.1.0.md`. It is the immutable version delivered for assessment
+review. Because it predates post creation and activity notifications, it does
+not satisfy the expanded current contract. Do not move or rewrite that tag;
+later releases are follow-up improvements.
 
-Before a subsequent Android release, update the release workflow's currently
-fixed `v0.1.0` trigger and the application version. The tag-triggered workflow
-must then:
+Before a subsequent Android release, update the application version. The
+workflow accepts `v*` tags and must:
 
 1. check out the existing tag;
 2. install the exact selected Flutter SDK;
@@ -1669,18 +1671,10 @@ Workflow permissions:
 - use the built-in GitHub token;
 - do not use a personal access token.
 
-The release body comes from the matching `docs/releases/<tag>.md` and includes:
-
-- short product description;
-- two screenshots, including appropriate light and dark evidence;
-- Android installation steps;
-- backend and health URL;
-- feature highlights;
-- walkthrough link;
-- tested device;
-- scope notes;
-- source commit;
-- checksum instructions.
+The workflow generates release notes from GitHub history and does not require a
+matching repository Markdown file. `docs/releases/v0.1.0.md` remains the curated
+record for the assessment-review submission rather than a template for later
+improvement releases.
 
 App Store publication remains out of scope. TestFlight CI is an owner-approved
 optional delivery channel and does not replace the required signed Android GitHub

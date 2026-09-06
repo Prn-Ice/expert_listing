@@ -5,6 +5,21 @@ optional TestFlight delivery channel. The assessment specification remains the
 authority: App Store publication is out of scope, and TestFlight never replaces
 or blocks the signed Android release.
 
+## Release lineage
+
+`v0.1.0` is the immutable release delivered for the assessment review. Its
+curated record remains at `docs/releases/v0.1.0.md`; it is historical evidence,
+not a template or gate for later releases. Subsequent versions are follow-up
+improvements.
+
+The Android release workflow listens for `v*` tags, rejects a tag that does not
+match the application version, and generates release notes from GitHub history.
+It does not require a matching file under `docs/releases/`. For a later release:
+
+1. Update and verify the application version.
+2. Tag the intended commit as `v<version>`.
+3. Push the tag and monitor the **Release** workflow.
+
 ## Release gate
 
 `.github/workflows/ci.yml` runs for pushes to `main` and pull requests. It is

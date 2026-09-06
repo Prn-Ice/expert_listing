@@ -124,7 +124,7 @@ final class _DashboardNavigation extends StatelessWidget {
     final colors = AppColors.of(context);
     return DecoratedBox(
       decoration: BoxDecoration(
-        // The Figma Nav frame ([private design node removed]) draws a 0.5px --border2 top hairline.
+        // The reference navigation draws a 0.5px border top hairline.
         border: Border(top: BorderSide(color: colors.border, width: 0.5)),
         color: colors.canvas,
       ),

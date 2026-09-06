@@ -56,9 +56,9 @@ win. Ask before changing an explicit product decision.
   Do not approximate an available SVG or scatter repeated design values.
 - For Figma-to-Flutter implementation or layout correction, load and follow the
   repository `figma-to-flutter-layout` skill before editing UI code.
-- Keep canonical Figma references in the specification and agent guidance;
-  user-facing README and wiki pages use semantic asset names and measurements,
-  never Figma IDs or links.
+- Keep private Figma files, links, node IDs, screenshots, and generated design
+  code out of Git. Tracked guidance uses only approved semantic asset names and
+  measurements.
 - Choose controls in this order: reuse a suitable app_ui component; otherwise
   use the platform's standard or adaptive Flutter control; build a custom
   control only when the branded design or required behaviour cannot be

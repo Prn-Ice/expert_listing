@@ -161,7 +161,7 @@ abstract final class AppTypography {
 
   /// Open Runde, 14 logical pixels, 16.8px line height, weight 400.
   ///
-  /// Used for inactive bottom-navigation labels (Figma Nav, node [private design node removed]).
+  /// Used for inactive bottom-navigation labels.
   static TextStyle navLabel(AppColors colors, {Color? color}) => _role(
     colors,
     size: 14,
@@ -173,7 +173,7 @@ abstract final class AppTypography {
 
   /// Open Runde, 14 logical pixels, 16.8px line height, weight 500.
   ///
-  /// The selected bottom-navigation label role (Figma Nav, node [private design node removed]).
+  /// The selected bottom-navigation label role.
   static TextStyle navLabelSelected(AppColors colors, {Color? color}) => _role(
     colors,
     size: 14,

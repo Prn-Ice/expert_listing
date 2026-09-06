@@ -68,14 +68,10 @@ the feed entry is `CreatePostPrompt` and the opened surface is
 
 ## Design source and provenance
 
-The primary reference is the Figma “iPhone 14 Plus - 1312” mobile frame at 428
+The primary implementation reference was a company-provided mobile frame at 428
 logical pixels wide. Its header contains the full Expert Listing logo and
-distinct mark.
-
-Use that frame for measurements, variables, screenshots, and exact exports. The
-local screenshot at
-`apps/expert_listing_mobile/assets/design/[private reference removed]` is an
-overlay aid, never an app asset.
+distinct mark. Source screenshots and generated design code are intentionally
+not committed.
 
 Captured SVG icons live under `packages/app_ui/assets/icons/`; reference
 imagery remains under `apps/expert_listing_mobile/assets/images/`.

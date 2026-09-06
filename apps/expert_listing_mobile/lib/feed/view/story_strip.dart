@@ -43,7 +43,7 @@ class StoryStrip extends StatelessWidget {
     ];
 
     return SizedBox(
-      // Figma [private design node removed] uses a 60px avatar, 1px inner gap, 2px ring,
+      // The design uses a 60px avatar, 1px inner gap, 2px ring,
       // 4px label gap, and 12px label.
       height: 87 + scaledTextAllowance + (46 * scaleDelta),
       child: ListView.separated(

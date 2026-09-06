@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    tags: ["v0.1.0"]
+    tags: ["v*"]
 
 concurrency:
   group: release-${{ github.ref }}
@@ -27,19 +27,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref }}
-      - name: Verify tag, application version and release notes
+      - name: Verify tag and application version
         run: |
           tag_version="${GITHUB_REF_NAME#v}"
           pubspec_version="$(sed -n 's/^version: \([0-9][^+]*\).*/\1/p' apps/expert_listing_mobile/pubspec.yaml | head -1)"
-          release_notes="docs/releases/${GITHUB_REF_NAME}.md"
           echo "Tag version: $tag_version"
           echo "pubspec version: $pubspec_version"
           if [ -z "$pubspec_version" ] || [ "$tag_version" != "$pubspec_version" ]; then
             echo "::error::Tag $GITHUB_REF_NAME does not match the application version $pubspec_version."
-            exit 1
-          fi
-          if [ ! -f "$release_notes" ]; then
-            echo "::error::$release_notes must be committed before tagging; it is the release body."
             exit 1
           fi
       - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -124,8 +119,9 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             "$RUNNER_TEMP/expert-listing-${GITHUB_REF_NAME}-android.apk" \
             "$RUNNER_TEMP/SHA256SUMS.txt" \
+            --verify-tag \
             --title "Expert Listing $GITHUB_REF_NAME" \
-            --notes-file "docs/releases/${GITHUB_REF_NAME}.md"
+            --generate-notes
       - name: Remove release signing material
         if: ${{ always() }}
         run: rm -f apps/expert_listing_mobile/android/key.properties "$RUNNER_TEMP/expert-listing-release.jks"

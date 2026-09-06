@@ -47,5 +47,6 @@ tracking, backend, test, and device workflows.
   saved-feed provenance.
 - [Decisions](docs/wiki/decisions.md): durable architectural trade-offs.
 - [Release runbook](docs/wiki/release.md): CI, signing, and delivery workflows.
-- [v0.1.0 release record](docs/releases/v0.1.0.md): shipped scope and evidence.
+- [v0.1.0 review release](docs/releases/v0.1.0.md): assessment-submission scope
+  and evidence.
 - [Deferred roadmap](docs/wiki/roadmap.md): explicitly postponed work.
