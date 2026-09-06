@@ -512,6 +512,7 @@ final class _PublishButton extends StatelessWidget {
       height: AppIconSize.tapTarget,
       child: context.isIos
           ? CupertinoButton.filled(
+              color: colors.brand,
               padding: EdgeInsets.zero,
               onPressed: enabled ? onPressed : null,
               child: DefaultTextStyle(

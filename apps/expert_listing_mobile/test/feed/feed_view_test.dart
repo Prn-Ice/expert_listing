@@ -28,6 +28,7 @@ import 'package:expert_listing/search/search_providers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +169,16 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    final publishButton = tester.widget<CupertinoButton>(
+      find
+          .ancestor(
+            of: find.text('Publish'),
+            matching: find.byType(CupertinoButton),
+          )
+          .first,
+    );
+    expect(publishButton.color, AppColors.light.brand);
+
     final bodyField = find.descendant(
       of: find.byKey(const ValueKey<String>('create-post-body')),
       matching: find.byType(EditableText),
@@ -180,6 +191,27 @@ void main() {
     expect(find.text('Discard this post?'), findsOneWidget);
     expect(find.text('Keep editing'), findsOneWidget);
     expect(find.text('Discard'), findsOneWidget);
+    final keepEditingContext = tester.element(find.text('Keep editing'));
+    final discardContext = tester.element(find.text('Discard'));
+    expect(
+      tester
+          .renderObject<RenderParagraph>(find.text('Keep editing'))
+          .text
+          .style
+          ?.color,
+      CupertinoDynamicColor.resolve(
+        CupertinoColors.activeBlue,
+        keepEditingContext,
+      ),
+    );
+    expect(
+      tester
+          .renderObject<RenderParagraph>(find.text('Discard'))
+          .text
+          .style
+          ?.color,
+      CupertinoDynamicColor.resolve(CupertinoColors.systemRed, discardContext),
+    );
 
     await tester.tap(find.text('Keep editing'));
     await tester.pumpAndSettle();

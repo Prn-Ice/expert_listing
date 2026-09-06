@@ -90,14 +90,22 @@ void main() {
       );
     });
 
-    test('the Cupertino themes are built from the shared palettes', () {
+    test('Cupertino themes keep native actions separate from brand colour', () {
       final light = AppTheme.cupertino(Brightness.light);
       final dark = AppTheme.cupertino(Brightness.dark);
 
       expect(light.scaffoldBackgroundColor, AppColors.light.canvas);
       expect(dark.scaffoldBackgroundColor, AppColors.dark.canvas);
-      expect(light.primaryColor, AppColors.light.brand);
-      expect(dark.primaryColor, AppColors.dark.brand);
+      expect(light.primaryColor, CupertinoColors.activeBlue);
+      expect(dark.primaryColor, CupertinoColors.activeBlue);
+      expect(
+        light.textTheme.actionTextStyle.color,
+        CupertinoColors.activeBlue,
+      );
+      expect(
+        dark.textTheme.actionTextStyle.color,
+        CupertinoColors.activeBlue,
+      );
       expect(light.textTheme.textStyle.fontFamily, AppTypography.fontFamily);
     });
 

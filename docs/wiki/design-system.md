@@ -185,6 +185,11 @@ select behaviour with `context.isIos`. That app_ui extension resolves the
 active `ThemeData.platform`, so tests can override the platform without using
 `dart:io`; feature widgets never call `Platform.isIOS`.
 
+Standard Cupertino text and dialog actions use the native dynamic system blue
+rather than the lime brand accent. Branded filled and selected controls apply
+the lime explicitly; revisit this split only if a product design defines a
+different iOS action colour.
+
 ## Platform behavior
 
 The branded feed keeps the same content order and measured geometry on iOS and

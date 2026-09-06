@@ -168,12 +168,11 @@ abstract final class AppTheme {
 
   static CupertinoThemeData _buildCupertino(AppColors colors) {
     return CupertinoThemeData(
-      primaryColor: colors.brand,
-      primaryContrastingColor: colors.onBrand,
+      primaryColor: CupertinoColors.activeBlue,
+      primaryContrastingColor: CupertinoColors.white,
       scaffoldBackgroundColor: colors.canvas,
       barBackgroundColor: colors.canvas,
       textTheme: CupertinoTextThemeData(
-        primaryColor: colors.brand,
         textStyle: AppTypography.body(colors),
       ),
     );
