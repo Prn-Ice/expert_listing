@@ -179,10 +179,11 @@ Do not implement:
 - App Store publication;
 - tablet or desktop layouts.
 
-TestFlight CI is an owner-approved optional delivery channel after Apple Developer
-Program enrollment. It does not replace the required signed Android GitHub
-Release, does not block that assessment delivery, and is not verification until a
-signed build is uploaded, processed, assigned to testers, installed, and launched.
+TestFlight CI is an owner-approved delivery channel after Apple Developer Program
+enrollment. Version tags trigger it alongside the independent Android release.
+It does not replace the required signed Android GitHub Release, does not block
+that assessment delivery, and is not verification until a signed build is
+uploaded, processed, assigned to testers, installed, and launched.
 
 Out-of-scope controls still require a useful response.
 
@@ -1676,10 +1677,11 @@ matching repository Markdown file. `docs/releases/v0.1.0.md` remains the curated
 record for the assessment-review submission rather than a template for later
 improvement releases.
 
-App Store publication remains out of scope. TestFlight CI is an owner-approved
-optional delivery channel and does not replace the required signed Android GitHub
-Release. Do not attach an unsigned IPA or claim TestFlight verification until a
-signed build is uploaded, processed, assigned to testers, installed, and launched.
+App Store publication remains out of scope. Version tags trigger the
+owner-approved TestFlight workflow independently of the required signed Android
+GitHub Release; manual dispatch remains available for explicit retries. Do not
+attach an unsigned IPA or claim TestFlight verification until a signed build is
+uploaded, processed, assigned to testers, installed, and launched.
 
 Before sharing the release:
 

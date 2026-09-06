@@ -1,6 +1,8 @@
 name: TestFlight
 
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
 
 concurrency:
@@ -22,6 +24,17 @@ jobs:
     environment: testflight
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify tag and application version
+        if: ${{ github.ref_type == 'tag' }}
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          pubspec_version="$(sed -n 's/^version: \([0-9][^+]*\).*/\1/p' apps/expert_listing_mobile/pubspec.yaml | head -1)"
+          echo "Tag version: $tag_version"
+          echo "pubspec version: $pubspec_version"
+          if [ -z "$pubspec_version" ] || [ "$tag_version" != "$pubspec_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the application version $pubspec_version."
+            exit 1
+          fi
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
         with:
           flutter-version: 3.47.0

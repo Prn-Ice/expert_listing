@@ -12,13 +12,14 @@ curated record remains at `docs/releases/v0.1.0.md`; it is historical evidence,
 not a template or gate for later releases. Subsequent versions are follow-up
 improvements.
 
-The Android release workflow listens for `v*` tags, rejects a tag that does not
-match the application version, and generates release notes from GitHub history.
-It does not require a matching file under `docs/releases/`. For a later release:
+The Android Release and TestFlight workflows listen for `v*` tags and reject a
+tag that does not match the application version. Android generates release notes
+from GitHub history and does not require a matching file under `docs/releases/`.
+For a later release:
 
 1. Update and verify the application version.
 2. Tag the intended commit as `v<version>`.
-3. Push the tag and monitor the **Release** workflow.
+3. Push the tag and monitor both the **Release** and **TestFlight** workflows.
 
 ## Release gate
 
@@ -145,11 +146,11 @@ step. No IPA artifact is retained automatically.
 
 ## TestFlight upload and states
 
-Use **Actions → TestFlight → Run workflow** from the intended commit. It is
-`workflow_dispatch` only; merges and Android release tags cannot upload iOS
-builds. The workflow waits for the reusable release gate and serializes uploads.
-Its run number becomes `CFBundleVersion`; start a new dispatch instead of
-rerunning an upload that may have reached App Store Connect.
+Every `v*` tag triggers TestFlight delivery after the reusable release gate.
+Merges do not upload iOS builds. **Actions → TestFlight → Run workflow** remains
+available for an explicit retry or delivery from an intended commit. Uploads are
+serialized, and each run number becomes `CFBundleVersion`; start a new dispatch
+instead of rerunning an upload that may have reached App Store Connect.
 
 | State | Meaning |
 | --- | --- |
