@@ -6,16 +6,15 @@ media from Supabase.
 
 ## Try it
 
-- [Download Expert Listing v0.1.0 for Android](https://github.com/Prn-Ice/expert_listing/releases/tag/v0.1.0), including the signed APK and checksum.
-- Watch the [Android walkthrough](https://github.com/Prn-Ice/expert_listing/releases/download/v0.1.0/recording-android.webm) or [iOS walkthrough](https://github.com/Prn-Ice/expert_listing/releases/download/v0.1.0/recording-ios.mov).
+- [Download Expert Listing v0.2.1 for Android](https://github.com/Prn-Ice/expert_listing/releases/tag/v0.2.1), including the signed APK and checksum.
+- Watch the assessment [Android walkthrough](https://github.com/Prn-Ice/expert_listing/releases/download/v0.1.0/recording-android.webm) or [iOS walkthrough](https://github.com/Prn-Ice/expert_listing/releases/download/v0.1.0/recording-ios.mov).
 - Check the [hosted API health endpoint](https://chvhwausefhvaceygppc.supabase.co/functions/v1/api/health).
 
-The published `v0.1.0` app includes the network-first feed, filters, persistent
-likes and comments, sharing, local bookmarks, property search and listings,
-profiles, and light and dark appearances. It does not include post creation or
-activity notifications. Current `main` adds those two features after the
-release tag. Post-publication checksum verification, installation, launch, and
-hosted-API verification of the downloaded APK remain unverified.
+`v0.2.1` contains the expanded assessment scope: the network-first feed,
+filters, post creation with ordered property images, persistent likes and
+comments, foreground activity notifications, sharing, local bookmarks,
+property search and listings, profiles, and light and dark appearances.
+`v0.1.0` remains the immutable original assessment-review release.
 
 ## Run the app
 

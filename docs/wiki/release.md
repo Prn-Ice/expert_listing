@@ -175,11 +175,11 @@ launched. Check export compliance and Beta App Review where applicable.
 
 ## Post-publication verification
 
-The `v0.1.0` GitHub Release already contains the signed Android APK,
-`SHA256SUMS.txt`, and both walkthrough recordings. The remaining Android check
-is to download those published files, verify the checksum, install that APK, and
-launch it against the hosted API. A locally built APK is not equivalent release
-evidence.
+For each delivery release, download the published APK and `SHA256SUMS.txt`,
+verify the checksum and signing certificate, install that downloaded APK, and
+launch it against the hosted API. Record the exact tag, artifact name, checksum,
+device, and outcome in the release evidence. A locally built APK is not
+equivalent evidence.
 
 If optional TestFlight delivery is used, record signed-build upload, processing,
 tester assignment, installation, and launch evidence separately. A green upload
