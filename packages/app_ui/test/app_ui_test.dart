@@ -452,7 +452,7 @@ void main() {
   });
 
   group('AppNetworkImage and AppAvatar', () {
-    testWidgets('derives a 40px decode target from finite constraints', (
+    testWidgets('decodes from the 40px width constraint', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -473,11 +473,13 @@ void main() {
       final image = tester.widget<CachedNetworkImage>(
         find.byType(CachedNetworkImage),
       );
+      expect(image.width, 40);
+      expect(image.height, 40);
       expect(image.memCacheWidth, 80);
-      expect(image.memCacheHeight, 80);
+      expect(image.memCacheHeight, isNull);
     });
 
-    testWidgets('derives both rectangular decode axes from layout and DPR', (
+    testWidgets('preserves source ratio for cover previews', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -498,8 +500,10 @@ void main() {
       final image = tester.widget<CachedNetworkImage>(
         find.byType(CachedNetworkImage),
       );
+      expect(image.width, 160);
+      expect(image.height, 90);
       expect(image.memCacheWidth, 320);
-      expect(image.memCacheHeight, 180);
+      expect(image.memCacheHeight, isNull);
     });
 
     testWidgets('preserves source aspect ratio for contained images', (
@@ -524,6 +528,8 @@ void main() {
       final image = tester.widget<CachedNetworkImage>(
         find.byType(CachedNetworkImage),
       );
+      expect(image.width, 160);
+      expect(image.height, 320);
       expect(image.memCacheWidth, 320);
       expect(image.memCacheHeight, isNull);
     });

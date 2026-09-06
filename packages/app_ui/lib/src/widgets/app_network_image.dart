@@ -45,26 +45,21 @@ class AppNetworkImage extends StatelessWidget {
         final reducedMotion =
             MediaQuery.maybeOf(context)?.disableAnimations ?? false;
         final fadeDuration = reducedMotion ? Duration.zero : AppMotion.fast;
-        final preserveSourceAspectRatio = fit == BoxFit.contain;
+        final imageWidth = _layoutDimension(width, constraints.maxWidth);
+        final imageHeight = _layoutDimension(height, constraints.maxHeight);
         final image = CachedNetworkImage(
           imageUrl: imageUrl,
-          width: width,
-          height: height,
+          width: imageWidth,
+          height: imageHeight,
           fit: fit,
-          memCacheWidth: _decodeDimension(
+          memCacheWidth: _decodeWidth(
             width,
             constraints.maxWidth,
             devicePixelRatio,
           ),
-          // ResizeImage treats two dimensions as an exact decode size. A
-          // contain preview must derive its height from the source image.
-          memCacheHeight: preserveSourceAspectRatio
-              ? null
-              : _decodeDimension(
-                  height,
-                  constraints.maxHeight,
-                  devicePixelRatio,
-                ),
+          // ResizeImage treats two dimensions as an exact decode size. Decode
+          // from width only so a fixed-ratio preview crops rather than
+          // stretches a portrait or landscape source.
           placeholder: (_, _) => placeholder ?? const SizedBox.expand(),
           errorWidget: (_, _, _) => fallback ?? const SizedBox.expand(),
           placeholderFadeInDuration: fadeDuration,
@@ -86,16 +81,17 @@ class AppNetworkImage extends StatelessWidget {
   }
 }
 
-int? _decodeDimension(
+double? _layoutDimension(double? explicit, double constrained) {
+  if (explicit?.isFinite == true) return explicit;
+  return constrained.isFinite ? constrained : null;
+}
+
+int? _decodeWidth(
   double? explicit,
   double constrained,
   double devicePixelRatio,
 ) {
-  final logicalPixels = explicit?.isFinite == true
-      ? explicit
-      : constrained.isFinite
-      ? constrained
-      : null;
+  final logicalPixels = _layoutDimension(explicit, constrained);
   if (logicalPixels == null || logicalPixels <= 0) return null;
   return (logicalPixels * devicePixelRatio).round();
 }
