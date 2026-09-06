@@ -29,8 +29,8 @@ flutter pub get --enforce-lockfile
 flutter run --dart-define=API_BASE_URL=https://chvhwausefhvaceygppc.supabase.co/functions/v1/api
 ~~~
 
-See [Development](docs/wiki/development.md) for backend, test, and device
-workflows.
+See [Development](docs/wiki/development.md) for the toolchain, Beads project
+tracking, backend, test, and device workflows.
 
 ## Project documentation
 

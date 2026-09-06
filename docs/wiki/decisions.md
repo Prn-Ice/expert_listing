@@ -27,25 +27,24 @@ lifecycle test shows the bridge cannot close instances exactly once.
 
 ## Why cursor pagination instead of offsets?
 
-Use the ordered tuple created_at descending, id descending and encode the last
-returned tuple in an opaque versioned cursor.
+Posts are ordered by `created_at` descending, then `id` descending. Each
+response encodes the last pair in an opaque, versioned cursor used to fetch the
+next page.
 
-Offsets can duplicate or skip rows when new posts arrive between requests. A
-cursor is slightly more work to validate but preserves stable continuation.
-Revisit only if the product needs random page access or a different ranking key;
-any replacement must prove insertion and tied-timestamp behaviour.
+Unlike an offset, this cursor does not skip or repeat posts when newer rows are
+inserted between requests. The cost is extra cursor validation. Revisit if the
+product needs random page access or a different ranking; any replacement must
+still handle new insertions and tied timestamps correctly.
 
 ## Why separate requests and properties from posts?
 
-A post describes feed presentation and engagement. A request owns the area and
-intent someone is seeking; a property owns its physical location, sale or rent
-status, and images. Keeping those values on their domain rows prevents an
-impossible feed item such as a general post with property images or a request
-with a property status.
+A post stores the fields every feed item shares. A request stores the area and
+intent someone is seeking. A property stores its physical location, sale or rent
+status, and images. Separate rows prevent invalid combinations such as property
+images on a general post or property status on a request.
 
-The trade-off is a small join when hydrating the feed. Revisit only if the
-product gains a shared, real domain object that needs a different relationship;
-do not reintroduce a combined subtype field merely to avoid that join.
+This requires a small join when loading the feed. Change the relationship only
+when the product gains a real shared domain object, not merely to avoid the join.
 
 ## Why does the repository own offline fallback?
 
@@ -79,6 +78,48 @@ trade-off is weaker fresh-machine reproduction. Revisit only after the flake is
 proven to supply the complete intended toolset without overriding host Xcode or
 downloading mobile SDKs.
 
+## Why are Dart classes final or sealed?
+
+Concrete classes are `final` when they are complete implementations rather than
+supported extension points. This makes that intent compiler-enforced and avoids
+accidental subclassing or implementation outside their library. Deliberate
+replacement seams, such as repositories and native services, remain abstract or
+interface contracts instead of requiring tests to subclass concrete classes.
+
+`sealed` roots represent a closed family of variants, including Bloc events and
+discriminated feed models. Keeping every permitted subtype in the same library
+lets Dart check exhaustive switches; making concrete leaves `final` prevents
+the family from being reopened indirectly. The trade-off is less downstream
+extension. Revisit a modifier only when a real external subtype is required,
+not for speculative flexibility.
+
+## Why can controls be larger than the Figma geometry?
+
+The visible icon or artwork retains its specified dimensions, but an interactive
+control keeps at least a 48 by 48 logical-pixel hit region. Standard control
+padding may therefore occupy more space than the compact reference. That small
+geometry difference reduces mispresses and preserves accessible touch behavior;
+normal parent spacing is adjusted before diverging from the design.
+
+Do not recover compact geometry with overlapping, invisible, or custom hit
+targets. Revisit the extra padding when the design supplies a suitable 48 by 48
+control or named-device testing proves a standard control can meet both
+contracts without increasing mispress risk.
+
+## Why do some Flutter controls vary by platform?
+
+The app shares product behavior, semantic tokens, and feature state while using
+narrow platform conditionals for interaction mechanics and native presentation.
+Routes, sheets, dialogs, scrolling, press feedback, text editing, image picking,
+sharing, and back behavior should feel expected on iOS and Android rather than
+forcing one platform's conventions onto the other.
+
+The trade-off is an additional rendering path to verify. Keep platform
+selection at the app root, theme, or shared-control boundary; do not scatter
+`Platform.isIOS` through feature widgets or fork business logic. Revisit a
+conditional when the platform APIs converge or one shared standard control
+provides equivalent native behavior on both platforms.
+
 ## Why are tests selected by promise rather than coverage?
 
 Test the required mobile journeys against real boundaries. Repository fakes are
@@ -88,18 +129,17 @@ persistence need integration evidence.
 Revisit a test when its protected risk disappears or a cheaper test proves the
 same contract. Coverage percentage is not the goal.
 
-## Why is the database surface security-definer functions only?
+## Why does the database expose only security-definer functions?
 
-Feed tables carry no direct grants to API roles. The PostgREST surface is limited
-to vetted security-definer functions executable only by `service_role`; the
-current function inventory belongs in [API and data](api-and-data.md#relational-data).
-This also repaired a latent defect: a security-invoker `create_post` would have
-failed through PostgREST because `service_role` has no table privileges.
+API roles cannot access feed tables directly. Hono instead calls reviewed
+PostgREST functions that run with the function owner's privileges, and only
+`service_role` may execute them. A security-invoker `create_post` would inherit
+`service_role`'s lack of table access and fail.
+[API and data](api-and-data.md#relational-data) lists the available functions.
 
-The trade-off is discipline inside the functions: each pins `search_path` so
-the definer context cannot be hijacked. Revisit if per-caller RLS policies are
-introduced; then selective grants with security-invoker functions may express
-the contract more directly.
+Elevated functions require careful review, so each fixes its `search_path` before
+running. Revisit if the app gains per-user RLS policies; selective grants and
+security-invoker functions may then express the access rules more directly.
 
 ## Why are demo personas fixed public aliases?
 
