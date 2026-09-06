@@ -142,3 +142,7 @@ supabase/functions/.env
 2026-09-02-expert-listing-assessment-handoff.md
 2026-09-02-expert-listing-assessment-plan.md
 raw_test_images/
+
+# Proprietary design-source artifacts.
+apps/expert_listing_mobile/assets/design/
+*.jsx
