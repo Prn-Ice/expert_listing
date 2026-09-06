@@ -548,6 +548,32 @@ void main() {
     expect(commentsOpened, 1);
   });
 
+  testWidgets('uses concise copy for one comment', (tester) async {
+    final post = FeedPost.fromJson({
+      ..._commonPost(id: 9),
+      'commentCount': 1,
+    });
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: PostCard(post: post, onNotice: (_) {}),
+        ),
+      ),
+    );
+
+    expect(find.text('View comments'), findsOneWidget);
+    expect(find.text('View all 1 comments'), findsNothing);
+    expect(
+      tester
+          .getSemantics(
+            find.byKey(const ValueKey<String>('post-comments-9')),
+          )
+          .label,
+      'View comments',
+    );
+  });
+
   testWidgets('counted edge actions align with the property image', (
     tester,
   ) async {

@@ -239,10 +239,13 @@ final class _CommentsPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = AppColors.of(context);
     final latest = post.latestComment;
+    final commentsLabel = post.commentCount == 1
+        ? 'View comments'
+        : 'View all ${post.commentCount} comments';
     final semanticsLabel = latest == null
-        ? 'View all ${post.commentCount} comments'
+        ? commentsLabel
         : '${latest.author.handle} commented: ${latest.body}. '
-              'View all ${post.commentCount} comments';
+              '$commentsLabel';
     return Align(
       alignment: Alignment.centerLeft,
       child: Semantics(
@@ -281,7 +284,7 @@ final class _CommentsPreview extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xsmall),
               ],
               Text(
-                'View all ${post.commentCount} comments',
+                commentsLabel,
                 style: AppTypography.bodyMedium(
                   colors,
                   color: colors.textTertiary,
