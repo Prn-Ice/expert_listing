@@ -115,8 +115,16 @@ jobs:
             printf '%s\n' 'keyAlias=probe-release'
             printf '%s\n' 'keyPassword=probe-store-password'
           } > apps/expert_listing_mobile/android/key.properties
-      - name: Build a release APK with the disposable keystore
-        run: flutter build apk --release
+      - name: Build a configured release APK with the disposable keystore
+        env:
+          PUBLIC_API_BASE_URL: ${{ vars.PUBLIC_API_BASE_URL }}
+        run: |
+          expected_api_url='https://chvhwausefhvaceygppc.supabase.co/functions/v1/api'
+          if [ "$PUBLIC_API_BASE_URL" != "$expected_api_url" ]; then
+            echo "::error::PUBLIC_API_BASE_URL must equal $expected_api_url for a CI probe build."
+            exit 1
+          fi
+          flutter build apk --release --dart-define=API_BASE_URL="$PUBLIC_API_BASE_URL"
         working-directory: apps/expert_listing_mobile
       - name: Verify the APK is signed by the probe keystore
         run: |

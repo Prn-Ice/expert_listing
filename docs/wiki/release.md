@@ -30,18 +30,19 @@ also called by both release workflows before they build an artifact.
 | --- | --- |
 | Flutter and Dart checks | Enforced mobile and `app_ui` lockfiles, formatting, analysis, and tests |
 | Hono and Supabase checks | Enforced Deno lockfile, formatting, lint, frozen type-checking, local migrations, deterministic seed, pgTAP, and real API tests |
-| Release APK build probe | A disposable keystore signs a release APK; its signer digest must match the generated keystore |
+| Release APK build probe | A disposable keystore signs a release APK configured against the verified hosted API; its signer digest must match the generated keystore |
 
-The probe intentionally has no deployed API URL. It proves that a release APK
-can be built and signed, not that a hosted backend works at runtime. CI does not
-run the required named-device journeys; those remain separately required
-evidence.
+The probe uses the same verified public hosted API URL as an artifact release,
+so its preserved APK can launch normally. It remains non-distributable because
+its signature is disposable, and it does not prove hosted runtime behavior. CI
+does not run the required named-device journeys; those remain separately
+required evidence.
 
 ## Android GitHub configuration
 
 | Name | Kind | Purpose |
 | --- | --- | --- |
-| `PUBLIC_API_BASE_URL` | repository variable | Required only for artifact release builds; it must exactly equal `https://chvhwausefhvaceygppc.supabase.co/functions/v1/api` |
+| `PUBLIC_API_BASE_URL` | repository variable | Required for Android probe and release artifacts; it must exactly equal `https://chvhwausefhvaceygppc.supabase.co/functions/v1/api` |
 | `ANDROID_KEYSTORE_BASE64` | `android-release` environment secret | Release keystore encoded as base64 |
 | `ANDROID_KEYSTORE_PASSWORD` | `android-release` environment secret | Keystore password |
 | `ANDROID_KEY_ALIAS` | `android-release` environment secret | Signing key alias |
@@ -49,8 +50,8 @@ evidence.
 
 The `release` job references `android-release`; reusable CI and `release-gate`
 jobs do not. `PUBLIC_API_BASE_URL` stays a shared repository variable because it
-is public configuration used by both artifact jobs. They reject any other value
-so a signed build cannot target a lookalike or unrelated hosted API.
+is public configuration used by both Android artifact jobs. They reject any
+other value so a signed build cannot target a lookalike or unrelated hosted API.
 
 ## Android signing
 
